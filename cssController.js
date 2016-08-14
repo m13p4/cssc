@@ -1,6 +1,6 @@
 /**
  * cssController - Manipulation von CSS Eigenschaften über "document.styleSheets"
- * |-CSSC          keine Iteration über die zu veränderten Elemente nötig.
+ * |-> CSSC        keine Iteration über die zu veränderten Elemente nötig.
  *                 Eigenschaften werden an der Klassen-Definition von CSS verändert.
  * 
  * @version 0.4a
@@ -24,19 +24,25 @@ var CSSC = cssController = (function()
 
         var init = function()
         {
-            if("cssRules" in styleSheetsDOM)
+            initElements(styleSheetsDOM);
+            
+            console.log(index);
+            
+            isInit = true;
+        },
+        initElements = function(toInit)
+        {
+            if("cssRules" in toInit)
             {
-                indexCssRules(styleSheetsDOM.cssRules);
+                indexCssRules(toInit.cssRules);
             }
-            else if("length" in styleSheetsDOM)
+            else if("length" in toInit)
             {
-                for(var i = 0; i < styleSheetsDOM.length; i++)
+                for(var i = 0; i < toInit.length; i++)
                 {
-                    indexCssRules(styleSheetsDOM[i].cssRules);
+                    indexCssRules(toInit[i].cssRules);
                 }
             }
-            console.log(index);
-            isInit = true;
         },
         indexCssRules = function(cssRules)
         {
@@ -49,17 +55,22 @@ var CSSC = cssController = (function()
         {
             if("conditionText" in cssRule)
             {
-            	if(!!index[cssRule.conditionText])
-            	    index[cssRule.selectorText].content.push(new controller(cssRule, _this, true));
-            	else
-                    index[cssRule.conditionText] = {'type':CSSC.cssCondition,"content":[new controller(cssRule, _this, true)]};
+                if(!!index[cssRule.conditionText])
+                {
+                    //console.log(index[cssRule.conditionText].content[0]);
+                    index[cssRule.conditionText].content.append(cssRule);
+                }
+                else
+                {
+                    index[cssRule.conditionText] = {'type':CSSC.cssCondition,"content":new controller(cssRule, _this, true)};
+                }
             }
             else if("selectorText" in cssRule)
             {
-            	if(!!index[cssRule.selectorText])
-            	    index[cssRule.selectorText].content.push(cssRule);
-            	else
-            	    index[cssRule.selectorText] = {'type':CSSC.cssRule,"content":[cssRule]};
+                if(!!index[cssRule.selectorText])
+                    index[cssRule.selectorText].content.push(cssRule);
+                else
+                    index[cssRule.selectorText] = {'type':CSSC.cssRule,"content":[cssRule]};
             }
         },
         getFromIndex = function(selector)
@@ -157,7 +168,15 @@ var CSSC = cssController = (function()
                     var toReturn = "";
                     for(var i = 0; i < elems.length; i++)
                     {
-                        toReturn = elems[i].style[property];
+                        for(var j = 0; j < elems[i].style.length; j++)
+                        {
+                            if(elems[i].style[j] == property)
+                            {
+                                toReturn = elems[i].style[property];
+                                break;
+                            }
+                        }
+                        
                     }
                     return toReturn;
                 },
@@ -180,37 +199,24 @@ var CSSC = cssController = (function()
                 }
             };
         },
-        conditionWrapper = function(elems, selector)
-        {
-            return {
-                'get': function(property)
-                {
-                    var toReturn = "";
-                    for(var i = 0; i < elems.length; i++)
-                    {
-                        toReturn = elems[i].get(property);
-                    }
-                    return toReturn;
-                },
-                'set': function(property, value)
-                {
-		            
-                }
-            };
-        },
-	cssc = function(selector)
+        cssc = function(selector)
         {
             var elems = getFromIndex(selector);
         
             if(elems.type == CSSC.cssCondition)
             {
-                return conditionWrapper(elems.content, selector);
+                return elems.content;
             }
             else
             {    
                 return controllerWrapper(elems.content, selector);
             }
         };
+        cssc.append = function(appendElems)
+        {
+            initElements(appendElems);
+        };
+        
         cssc.cssRule = 0;
         cssc.cssCondition = 1;
         
