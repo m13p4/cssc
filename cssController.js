@@ -13,10 +13,6 @@ var CSSC = cssController = (function()
 {
     var controller = function(styleSheetsDOM, parent, initOnRun)
     {
-        //console.log("styleSheetsDOM:");
-        //console.log(styleSheetsDOM);
-        
-            
         var index = {}, 
             isInit = false, 
             ownStyleElem,
@@ -62,22 +58,26 @@ var CSSC = cssController = (function()
                 }
                 else
                 {
-                    index[cssRule.conditionText] = {'type':CSSC.cssCondition,"content":new controller(cssRule, _this, true)};
+                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":new controller(cssRule, _this, true),"events":{}};
                 }
             }
             else if("selectorText" in cssRule)
             {
                 if(!!index[cssRule.selectorText])
+                {
                     index[cssRule.selectorText].content.push(cssRule);
+                }
                 else
-                    index[cssRule.selectorText] = {'type':CSSC.cssRule,"content":[cssRule]};
+                {
+                    index[cssRule.selectorText] = {'type':CSSC.typeRule,"content":[cssRule],"events":{}};
+				}
             }
         },
         getFromIndex = function(selector)
         {
             if(!isInit) init();
 
-            return !!index[selector] ? index[selector] : [];
+            return !!index[selector] ? index[selector] : {};
         },
         deleteFromIndex = function(selector)
         {
@@ -129,8 +129,21 @@ var CSSC = cssController = (function()
 
             addToIndex(ownStyleElem.sheet.cssRules[rulePos]);
         },
-        controllerWrapper = function(elems, selector)
+        controllerWrapper = function(elemsObj, selector)
         {
+			var elems = elemsObj.content;
+				
+			var eventHandler = function(eventType, property, value)
+			{
+				if(!!elemsObj.events[eventType])
+				{
+					for(var i = 0; i < elemsObj.events[eventType].length; i++)
+					{
+						elemsObj.events[eventType][i].call(property, value);
+					}
+				}
+			}; 
+			
             return {
                 'set': function(property, value)
                 { 
@@ -160,7 +173,10 @@ var CSSC = cssController = (function()
                         addNewRule(selector, property, value);
                         elems = getFromIndex(selector);
                     }
-
+                    
+                    eventHandler(CSSC.eventChange, property, value);
+                    eventHandler(CSSC.eventSet, property, value);
+                    
                     return this;
                 },
                 'get': function(property)
@@ -186,6 +202,9 @@ var CSSC = cssController = (function()
                     {
                         elems[i].style[property] = null;
                     }
+                    
+                    eventHandler(CSSC.eventChange, property, null);
+                    eventHandler(CSSC.eventDelete, property, null);
 
                     return this;
                 },
@@ -196,29 +215,70 @@ var CSSC = cssController = (function()
                         elems[i].parentStyleSheet.deleteRule(elems[i]);
                         deleteFromIndex(selector);
                     }
-                }
+                    
+                    eventHandler(CSSC.eventDestroy, property, null);
+                },
+                'event': function(eventType, eventFunction)
+                {
+					var event = {
+						'type': function () { return eventType },
+						'call': eventFunction,
+						'index': null,
+						'destroy': function()
+						{
+							//@todo: implement event destroy 
+						}
+					};
+					
+					if(!!elemsObj.events[eventType])
+					{
+						elemsObj.events[eventType].push(event);
+					}
+					else
+					{
+						elemsObj.events[eventType] = [event];
+					}
+					
+					event.index = function() { return elemsObj.events[eventType].length-1 };
+					
+					return event;
+				}
             };
         },
         cssc = function(selector)
         {
             var elems = getFromIndex(selector);
         
-            if(elems.type == CSSC.cssCondition)
+            if(elems.type == CSSC.typeCondition)
             {
                 return elems.content;
             }
             else
             {    
-                return controllerWrapper(elems.content, selector);
+                return controllerWrapper(elems, selector);
             }
         };
         cssc.append = function(appendElems)
         {
             initElements(appendElems);
         };
+        cssc.import = function(toImport)
+        {
+			//@todo: implement import
+		};
+		cssc.export = function(exportType)
+		{
+			//@todo: implement export
+		};
         
-        cssc.cssRule = 0;
-        cssc.cssCondition = 1;
+        cssc.typeRule 		= 0;
+        cssc.typeCondition 	= 1;
+        
+        cssc.eventChange 	= "change";
+        cssc.eventSet 		= "set";
+        cssc.eventDelete 	= "delete";
+        cssc.eventDestroy	= "destroy";
+        
         
         if(!!initOnRun)
         {
