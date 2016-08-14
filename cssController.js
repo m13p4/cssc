@@ -3,7 +3,7 @@
  * |-> CSSC        keine Iteration über die zu veränderten Elemente nötig.
  *                 Eigenschaften werden an der Klassen-Definition von CSS verändert.
  * 
- * @version 0.4a
+ * @version 0.5a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
