@@ -1,5 +1,5 @@
 /**
- * cssController - Manipulation von CSS Eigenschaften über "document.styleSheets"
+ * CSSController - Manipulation von CSS Eigenschaften über "document.styleSheets"
  * |-> CSSC        keine Iteration über die zu veränderten Elemente nötig.
  *                 Eigenschaften werden an der Klassen-Definition von CSS verändert.
  * 
@@ -9,7 +9,7 @@
  * @copyright Pavel Meliantchenkov
  */
 
-var CSSC = cssController = (function()
+var CSSC = CSSController = (function()
 {
     var controller = function(styleSheetsDOM, parent, initOnRun)
     {
