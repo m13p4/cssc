@@ -11,9 +11,10 @@
 
 var CSSC = CSSController = (function()
 {
-    var controller = function(styleSheetsDOM, parent, initOnRun)
+    var controller = function(styleSheetsDOM, parent, initOnRun, myType)
     {
         var index = {}, 
+            keyframes = {},
             isInit = false, 
             ownStyleElem,
             _this = this;
@@ -58,7 +59,7 @@ var CSSC = CSSController = (function()
                 }
                 else
                 {
-                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":new controller(cssRule, _this, true),"events":{}};
+                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":new controller(cssRule, _this, true, CSSC.typeCondition),"events":{}};
                 }
             }
             else if("selectorText" in cssRule)
@@ -72,12 +73,33 @@ var CSSC = CSSController = (function()
                     index[cssRule.selectorText] = {'type':CSSC.typeRule,"content":[cssRule],"events":{}};
                 }
             }
+            else if("name" in cssRule)
+            {
+                addToKeyFrames(cssRule);
+            }
+        },
+        addToKeyFrames = function(keyFrame)
+        {
+            if(!!keyframes[keyFrame.name])
+            {
+                keyframes[keyFrame.name].content.append(keyFrame);
+            }
+            else
+            {
+                keyframes[keyFrame.name] = {'type':CSSC.typeKeyFrames,"content":new controller(keyFrame, _this, true, CSSC.typeKeyFrames),"events":{}}:
+            }
         },
         getFromIndex = function(selector)
         {
             if(!isInit) init();
 
             return !!index[selector] ? index[selector] : {};
+        },
+        getFromKeyFrames = function(name)
+        {
+            if(!isInit) init();
+
+            return !!keyframes[name] ? keyframes[name] : {};
         },
         deleteFromIndex = function(selector)
         {
@@ -172,6 +194,8 @@ var CSSC = CSSController = (function()
                     {
                         addNewRule(selector, property, value);
                         elems = getFromIndex(selector);
+                        
+                        eventHandler(CSSC.eventCreate, property, value);
                     }
                     
                     eventHandler(CSSC.eventChange, property, value);
@@ -270,12 +294,19 @@ var CSSC = CSSController = (function()
         {
             //@todo: implement export
         };
+        cssc.animate = function(animationName, propertys)
+        {
+            
+        };
+        cssc.keyframes = cssc.animate;
         
         cssc.typeRule 		= 0;
         cssc.typeCondition 	= 1;
+        cssc.typeKeyFrames  = 2;
         
         cssc.eventChange 	= "change";
         cssc.eventSet 		= "set";
+        cssc.eventCreate    = "create";
         cssc.eventDelete 	= "delete";
         cssc.eventDestroy	= "destroy";
         
@@ -295,5 +326,5 @@ var CSSC = CSSController = (function()
         return cssc;
     };
     
-    return new controller(document.styleSheets, null, false);
+    return new controller(document.styleSheets, null, false, null);
 })();
