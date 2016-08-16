@@ -1,9 +1,9 @@
 /**
- * CSSController - Manipulation von CSS Eigenschaften über "document.styleSheets"
- * |-> CSSC        keine Iteration über die zu veränderten Elemente nötig.
- *                 Eigenschaften werden an der Klassen-Definition von CSS verändert.
+ * CSSController - Manipulation von CSS Eigenschaften Ã¼ber "document.styleSheets"
+ * |-> CSSC        keine Iteration Ã¼ber die zu verÃ¤nderten Elemente nÃ¶tig.
+ *                 Eigenschaften werden an der Klassen-Definition von CSS verÃ¤ndert.
  * 
- * @version 0.6a
+ * @version 0.7a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -11,12 +11,13 @@
 
 var CSSC = CSSController = (function()
 {
+    var ownStyleElem;
+    
     var controller = function(styleSheetsDOM, parent, initOnRun, myType)
     {
         var index = {}, 
             keyframes = {},
-            isInit = false, 
-            ownStyleElem,
+            isInit = false,
             updatable = {},
             _this = this;
 
@@ -24,7 +25,7 @@ var CSSC = CSSController = (function()
         {
             initElements(styleSheetsDOM);
             
-            console.log(index);
+            //console.log(index);
             
             isInit = true;
         },
@@ -32,24 +33,24 @@ var CSSC = CSSController = (function()
         {
             if("cssRules" in toInit)
             {
-                indexCssRules(toInit.cssRules);
+                indexCssRules(toInit.cssRules, toInit);
             }
             else if("length" in toInit)
             {
                 for(var i = 0; i < toInit.length; i++)
                 {
-                    indexCssRules(toInit[i].cssRules);
+                    indexCssRules(toInit[i].cssRules, toInit[i]);
                 }
             }
         },
-        indexCssRules = function(cssRules)
+        indexCssRules = function(cssRules, parent)
         {
             for(var i = 0; i < cssRules.length; i++)
             {
-                addToIndex(cssRules[i]);
+                addToIndex(cssRules[i], parent);
             }
         },
-        addToIndex = function(cssRule)
+        addToIndex = function(cssRule, parent)
         {
             if("conditionText" in cssRule)
             {
@@ -60,8 +61,11 @@ var CSSC = CSSController = (function()
                 }
                 else
                 {
-                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":new controller(cssRule, _this, true, CSSC.typeCondition),"events":{}};
+                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":new controller(cssRule, parent, true, CSSC.typeCondition),"events":{}};
                 }
+                
+                //console.log(index[cssRule.conditionText]);
+                return index[cssRule.conditionText];
             }
             else if("selectorText" in cssRule)
             {
@@ -73,13 +77,17 @@ var CSSC = CSSController = (function()
                 {
                     index[cssRule.selectorText] = {'type':CSSC.typeRule,"content":[cssRule],"events":{}};
                 }
+                
+                return index[cssRule.selectorText];
             }
             else if("name" in cssRule)
             {
-                addToKeyFrames(cssRule);
+                return addToKeyFrames(cssRule, parent);
             }
+            
+            return false;
         },
-        addToKeyFrames = function(keyFrame)
+        addToKeyFrames = function(keyFrame, parent)
         {
             if(!!keyframes[keyFrame.name])
             {
@@ -87,20 +95,22 @@ var CSSC = CSSController = (function()
             }
             else
             {
-                keyframes[keyFrame.name] = {'type':CSSC.typeKeyFrames,"content":new controller(keyFrame, _this, true, CSSC.typeKeyFrames),"events":{}}:
+                keyframes[keyFrame.name] = {'type':CSSC.typeKeyFrames,"content":new controller(keyFrame, parent, true, CSSC.typeKeyFrames),"events":{}}; 
             }
-        },
+            
+            return keyframes[keyFrame.name];
+        }, 
         getFromIndex = function(selector)
         {
             if(!isInit) init();
 
-            return !!index[selector] ? index[selector] : {};
+            return !!index[selector] ? index[selector] : null;
         },
         getFromKeyFrames = function(name)
         {
             if(!isInit) init();
 
-            return !!keyframes[name] ? keyframes[name] : {};
+            return !!keyframes[name] ? keyframes[name] : null;
         },
         deleteFromIndex = function(selector)
         {
@@ -122,35 +132,53 @@ var CSSC = CSSController = (function()
         },
         addNewRule = function(selector, property, value)
         {
-            if(!ownStyleElem)
+            var appendToElem;
+            
+            if(myType === CSSC.typeCondition || myType === CSSC.typeKeyFrames)
+            {
+                appendToElem = styleSheetsDOM;
+            }
+            else if(!ownStyleElem)
             {
                 createNewStyleElem();
-            }
-
-            var rulePos = ownStyleElem.sheet.cssRules.length,
-                ruleString = "";
-            if(Object.prototype.toString.call(property) == "[object Object]")
-            {
-                for(var key in property)
-                {
-                    ruleString += key+":"+property[key]+"; ";
-                }
+                
+                appendToElem = ownStyleElem.sheet;
             }
             else
-            { 
-                ruleString = property+":"+value+";";
+            {
+                appendToElem = ownStyleElem.sheet;
+            }
+            
+            var rulePos = appendToElem.cssRules.length,
+                ruleString = "";
+        
+            if(!!property)
+            {
+                if(Object.prototype.toString.call(property) === "[object Object]")
+                {
+                    for(var key in property)
+                    {
+                        ruleString += key+":"+property[key]+"; ";
+                    }
+                }
+                else
+                { 
+                    ruleString = property+":"+value+";";
+                }
             }
 
-            if("insertRule" in ownStyleElem.sheet)
+            if("insertRule" in appendToElem)
             {
-                ownStyleElem.sheet.insertRule(selector+"{"+ruleString+"}", rulePos);
+                appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
-            else if("addRule" in ownStyleElem.sheet)
+            else if("addRule" in appendToElem)
             {
-                ownStyleElem.sheet.addRule(selector, ruleString, rulePos);
+                appendToElem.addRule(selector, ruleString, rulePos);
             }
 
-            addToIndex(ownStyleElem.sheet.cssRules[rulePos]);
+            console.log("das da:");
+            console.log(appendToElem.cssRules[rulePos]);
+            return addToIndex(appendToElem.cssRules[rulePos], parent);
         },
         controllerWrapper = function(elemsObj, selector)
         {
@@ -168,24 +196,46 @@ var CSSC = CSSController = (function()
             }; 
             
             return {
+                'singleSet': function(property, value, elemPos)
+                {
+                    if(!elemPos) elemPos = 0;
+                    
+                    if(Object.prototype.toString.call(value) === "[object Function]")
+                    {
+                        elems[elemPos].style[property] = value(elems[elemPos].style[property]);
+
+                        if(!updatable[selector]) updatable[selector] = {};
+                        
+                        updatable[selector][property] = value;
+                    }
+                    else
+                    {
+                        elems[elemPos].style[property] = value;
+                        
+                        if(!!updatable[selector] && !!updatable[selector][property])
+                        {
+                            delete updatable[selector][property];
+                        }
+                    }
+                    
+                    return this;
+                },
                 'set': function(property, value)
                 { 
                     if(elems.length > 0)
                     {
+                        //Before events
+                        eventHandler(CSSC.eventBeforeChange, property, value);
+                        eventHandler(CSSC.eventBeforeSet, property, value);
+                        
                         //Multi set if property a object with key & value
-                        if(Object.prototype.toString.call(property) == "[object Object]")
+                        if(Object.prototype.toString.call(property) === "[object Object]")
                         {
                             for(var i = 0; i < elems.length; i++)
                             {
                                 for(var key in property)
                                 {
-                                    if(Object.prototype.toString.call(property[key]) == "[object Function]")
-                                    {
-                                        elems[i].style[key] = property[key](elems[i].style[key]);
-                                        
-                                        updatable[selector][key] = property[key];
-                                    }
-                                    else elems[i].style[key] = property[key];
+                                    this.singleSet(key,property[key],i);
                                 }
                             }
                         }
@@ -193,13 +243,7 @@ var CSSC = CSSController = (function()
                         {
                             for(var i = 0; i < elems.length; i++)
                             {
-                                if(Object.prototype.toString.call(value) == "[object Function]")
-                                {
-                                    elems[i].style[property] = value(elems[i].style[property]);
-                                        
-                                    updatable[selector][property] = value[property];
-                                }
-                                else elems[i].style[property] = value;
+                                this.singleSet(property,value,i);
                             }
                         }
                     }
@@ -223,7 +267,7 @@ var CSSC = CSSController = (function()
                     {
                         for(var j = 0; j < elems[i].style.length; j++)
                         {
-                            if(elems[i].style[j] == property)
+                            if(elems[i].style[j] === property)
                             {
                                 toReturn = elems[i].style[property];
                                 break;
@@ -235,6 +279,10 @@ var CSSC = CSSController = (function()
                 },
                 'delete': function(property)
                 {
+                    //Before events
+                    eventHandler(CSSC.eventBeforeChange, property, null);
+                    eventHandler(CSSC.eventBeforeDelete, property, null);
+                    
                     for(var i = 0; i < elems.length; i++)
                     {
                         elems[i].style[property] = null;
@@ -247,18 +295,21 @@ var CSSC = CSSController = (function()
                 },
                 'destroy': function()
                 {
+                    //Before events
+                    eventHandler(CSSC.eventBeforeDestroy, null, null);
+                    
                     for(var i = 0; i < elems.length; i++)
                     {
                         elems[i].parentStyleSheet.deleteRule(elems[i]);
                         deleteFromIndex(selector);
                     }
                     
-                    eventHandler(CSSC.eventDestroy, property, null);
+                    eventHandler(CSSC.eventDestroy, null, null);
                 },
                 'event': function(eventType, eventFunction)
                 {
                     var event = {
-                        'type': function () { return eventType },
+                        'type': function () { return eventType; },
                         'call': eventFunction,
                         'index': null,
                         'destroy': function()
@@ -276,7 +327,7 @@ var CSSC = CSSController = (function()
                         elemsObj.events[eventType] = [event];
                     }
                     
-                    event.index = function() { return elemsObj.events[eventType].length-1 };
+                    event.index = function() { return elemsObj.events[eventType].length-1; };
                     
                     return event;
                 }
@@ -284,26 +335,97 @@ var CSSC = CSSController = (function()
         },
         cssc = function(selector)
         {
-            var elems = getFromIndex(selector);
-        
-            if(elems.type == CSSC.typeCondition)
+            if(typeof selector === "string")
             {
-                return elems.content;
+                var indexKey = selector,
+                    selectorType = CSSC.typeRule;
+                
+                if(selector.indexOf("@media ") === 0)
+                {
+                    indexKey = selector.substr(7);
+                    
+                    selectorType = CSSC.typeCondition;
+                }
+                else if(selector.indexOf("@keyframes ") === 0)
+                {
+                    indexKey = selector.substr(11);
+                    
+                    selectorType = CSSC.typeKeyFrames;
+                }
+                
+                var elems = getFromIndex(indexKey);
+                
+                if(elems === null)
+                {
+                    var newRule = addNewRule(selector, null, null);
+                    
+                    if(selectorType === CSSC.typeCondition || selectorType === CSSC.typeKeyFrames)
+                    {
+                        return newRule.content; //addNewRule(selector, null, null);
+                    }
+                    else
+                    {
+                        return controllerWrapper(newRule, indexKey);
+                    }
+                }
+                else if(elems.type === CSSC.typeCondition)
+                {
+                    return elems.content;
+                }
+                else
+                {    
+                    return controllerWrapper(elems, indexKey);
+                }
             }
             else
-            {    
-                return controllerWrapper(elems, selector);
+            {
+                //import
+                cssc.imp(selector);
             }
         };
         cssc.append = function(appendElems)
         {
             initElements(appendElems);
         };
-        cssc.import = function(toImport)
+        cssc.imp = function(toImport)
         {
             //@todo: implement import
+            var importElem, rule, indexKey, importType, cntrlWrapper;
+            for(var importKey in toImport)
+            {
+                importElem = toImport[importKey];
+                
+                importType = CSSC.typeRule;
+                indexKey = importKey;
+                
+                if(importKey.indexOf("@media ") === 0)
+                {
+                    indexKey = importKey.substr(7);
+                    
+                    importType = CSSC.typeCondition;
+                }
+                else if(importKey.indexOf("@keyframes ") === 0)
+                {
+                    indexKey = importKey.substr(11);
+                    
+                    importType = CSSC.typeKeyFrames;
+                }
+                
+                rule = addNewRule(importKey, null, null);
+                
+                if(importType === CSSC.typeCondition || importType === CSSC.typeKeyFrames)
+                {
+                    console.log(rule);
+                    rule.content.imp(importElem);
+                }
+                else if(importType === CSSC.typeRule)
+                {
+                    cntrlWrapper = controllerWrapper(rule, indexKey);
+                    cntrlWrapper.set(importElem);
+                }
+            }
         };
-        cssc.export = function(exportType)
+        cssc.exp = function(exportType)
         {
             //@todo: implement export
         };
@@ -314,34 +436,58 @@ var CSSC = CSSController = (function()
         cssc.keyframes = cssc.animate;
         cssc.update = function(selector)
         {
-            //@todo: use selector
-            
             var elems, wrapper;
-            for(var i in updatable)
+            
+            if(!!selector)
             {
-                elems = getFromIndex(i);
-        
-                if(elems.type == CSSC.typeCondition)
+                if(!!updatable[selector])
                 {
-                    elems.content.update();
-                }
-                else
-                {    
-                    wrapper = controllerWrapper(elems, selector);
-                    wrapper.set(updatable[i]);
+                    elems = getFromIndex(selector);
+
+                    if(elems.type === CSSC.typeCondition)
+                    {
+                        elems.content.update();
+                    }
+                    else
+                    {
+                        wrapper = controllerWrapper(elems, selector);
+                        wrapper.set(updatable[selector]);
+                    }
                 }
             }
-        }
+            else
+            {
+                for(var i in updatable)
+                {
+                    elems = getFromIndex(i);
+
+                    if(elems.type === CSSC.typeCondition)
+                    {
+                        elems.content.update();
+                    }
+                    else
+                    {
+                        wrapper = controllerWrapper(elems, i);
+                        wrapper.set(updatable[i]);
+                    }
+                }
+            }
+        };
         
         cssc.typeRule 		= 0;
         cssc.typeCondition 	= 1;
-        cssc.typeKeyFrames  = 2;
+        cssc.typeKeyFrames      = 2;
         
-        cssc.eventChange 	= "change";
-        cssc.eventSet 		= "set";
-        cssc.eventCreate    = "create";
-        cssc.eventDelete 	= "delete";
-        cssc.eventDestroy	= "destroy";
+        cssc.eventBeforeChange 	= "beforechange";
+        cssc.eventChange        = "change";
+        cssc.eventBeforeSet	    = "beforeset";
+        cssc.eventSet 	        = "set";
+        cssc.eventBeforeCreate  = "beforecreate";
+        cssc.eventCreate        = "create";
+        cssc.eventBeforeDelete  = "beforedelete";
+        cssc.eventDelete        = "delete";
+        cssc.eventBeforeDestroy	= "beforedestroy";
+        cssc.eventDestroy       = "destroy";
         
         
         if(!!initOnRun)
