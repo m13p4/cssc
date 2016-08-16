@@ -1,7 +1,6 @@
 /**
- * CSSController - Manipulation von CSS Eigenschaften Ã¼ber "document.styleSheets"
- * |-> CSSC        keine Iteration Ã¼ber die zu verÃ¤nderten Elemente nÃ¶tig.
- *                 Eigenschaften werden an der Klassen-Definition von CSS verÃ¤ndert.
+ * CSSController - Dynamic CSS Controller. 
+ * |-> CSSC        A way to manage style sheets.
  * 
  * @version 0.7a
  *
@@ -175,9 +174,7 @@ var CSSC = CSSController = (function()
             {
                 appendToElem.addRule(selector, ruleString, rulePos);
             }
-
-            console.log("das da:");
-            console.log(appendToElem.cssRules[rulePos]);
+            
             return addToIndex(appendToElem.cssRules[rulePos], parent);
         },
         controllerWrapper = function(elemsObj, selector)
@@ -196,23 +193,26 @@ var CSSC = CSSController = (function()
             }; 
             
             return {
-                'singleSet': function(property, value, elemPos)
+                'singleSet': function(property, value, elemPos, notAddFunctionToUpdatableIndex)
                 {
                     if(!elemPos) elemPos = 0;
                     
                     if(Object.prototype.toString.call(value) === "[object Function]")
                     {
                         elems[elemPos].style[property] = value(elems[elemPos].style[property]);
-
-                        if(!updatable[selector]) updatable[selector] = {};
                         
-                        updatable[selector][property] = value;
+                        if(!notAddFunctionToUpdatableIndex)
+                        {
+                            if(!updatable[selector]) updatable[selector] = {};
+                            
+                            updatable[selector][property] = value;
+                        }
                     }
                     else
                     {
                         elems[elemPos].style[property] = value;
                         
-                        if(!!updatable[selector] && !!updatable[selector][property])
+                        if(!notAddFunctionToUpdatableIndex && !!updatable[selector] && !!updatable[selector][property])
                         {
                             delete updatable[selector][property];
                         }
@@ -238,12 +238,38 @@ var CSSC = CSSController = (function()
                                     this.singleSet(key,property[key],i);
                                 }
                             }
+                            
+                            if(!!updatable[selector] && !!updatable[selector]["__full__"])
+                            {
+                                delete updatable[selector]["__full__"];
+                            }
+                        }
+                        else if(Object.prototype.toString.call(property) === "[object Function]")
+                        {
+                            var myPropertys = property();
+                            
+                            for(var i = 0; i < elems.length; i++)
+                            {
+                                for(var key in myPropertys)
+                                {
+                                    this.singleSet(key, myPropertys[key], i, true);
+                                ]
+                            }
+                            
+                            if(!updatable[selector]) updatable[selector] = {};
+                            
+                            updatable[selector]["__full__"] = property;
                         }
                         else //Single set
                         {
                             for(var i = 0; i < elems.length; i++)
                             {
-                                this.singleSet(property,value,i);
+                                this.singleSet(property, value, i);
+                            }
+                            
+                            if(!!updatable[selector] && !!updatable[selector]["__full__"])
+                            {
+                                delete updatable[selector]["__full__"];
                             }
                         }
                     }
@@ -415,7 +441,6 @@ var CSSC = CSSController = (function()
                 
                 if(importType === CSSC.typeCondition || importType === CSSC.typeKeyFrames)
                 {
-                    console.log(rule);
                     rule.content.imp(importElem);
                 }
                 else if(importType === CSSC.typeRule)
@@ -436,14 +461,14 @@ var CSSC = CSSController = (function()
         cssc.keyframes = cssc.animate;
         cssc.update = function(selector)
         {
-            var elems, wrapper;
+            var elems, wrapper, toUpdate;
             
             if(!!selector)
             {
                 if(!!updatable[selector])
                 {
                     elems = getFromIndex(selector);
-
+                    
                     if(elems.type === CSSC.typeCondition)
                     {
                         elems.content.update();
@@ -451,7 +476,14 @@ var CSSC = CSSController = (function()
                     else
                     {
                         wrapper = controllerWrapper(elems, selector);
-                        wrapper.set(updatable[selector]);
+                        
+                        toUpdate = updatable[selector];
+                        if(toUpdate["__full__"])
+                        {
+                            wrapper.set(toUpdate["__full__"]);
+                            delete toUpdate["__full__"];
+                        }
+                        wrapper.set(toUpdate);
                     }
                 }
             }
@@ -474,8 +506,8 @@ var CSSC = CSSController = (function()
             }
         };
         
-        cssc.typeRule 		= 0;
-        cssc.typeCondition 	= 1;
+        cssc.typeRule           = 0;
+        cssc.typeCondition      = 1;
         cssc.typeKeyFrames      = 2;
         
         cssc.eventBeforeChange 	= "beforechange";
