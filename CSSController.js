@@ -3,7 +3,7 @@
  * |-> CSSC        keine Iteration über die zu veränderten Elemente nötig.
  *                 Eigenschaften werden an der Klassen-Definition von CSS verändert.
  * 
- * @version 0.5a
+ * @version 0.6a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -17,6 +17,7 @@ var CSSC = CSSController = (function()
             keyframes = {},
             isInit = false, 
             ownStyleElem,
+            updatable = {},
             _this = this;
 
         var init = function()
@@ -178,7 +179,13 @@ var CSSC = CSSController = (function()
                             {
                                 for(var key in property)
                                 {
-                                    elems[i].style[key] = property[key];
+                                    if(Object.prototype.toString.call(property[key]) == "[object Function]")
+                                    {
+                                        elems[i].style[key] = property[key](elems[i].style[key]);
+                                        
+                                        updatable[selector][key] = property[key];
+                                    }
+                                    else elems[i].style[key] = property[key];
                                 }
                             }
                         }
@@ -186,7 +193,13 @@ var CSSC = CSSController = (function()
                         {
                             for(var i = 0; i < elems.length; i++)
                             {
-                                elems[i].style[property] = value;
+                                if(Object.prototype.toString.call(value) == "[object Function]")
+                                {
+                                    elems[i].style[property] = value(elems[i].style[property]);
+                                        
+                                    updatable[selector][property] = value[property];
+                                }
+                                else elems[i].style[property] = value;
                             }
                         }
                     }
@@ -299,6 +312,26 @@ var CSSC = CSSController = (function()
             
         };
         cssc.keyframes = cssc.animate;
+        cssc.update = function(selector)
+        {
+            //@todo: use selector
+            
+            var elems, wrapper;
+            for(var i in updatable)
+            {
+                elems = getFromIndex(i);
+        
+                if(elems.type == CSSC.typeCondition)
+                {
+                    elems.content.update();
+                }
+                else
+                {    
+                    wrapper = controllerWrapper(elems, selector);
+                    wrapper.set(updatable[i]);
+                }
+            }
+        }
         
         cssc.typeRule 		= 0;
         cssc.typeCondition 	= 1;
