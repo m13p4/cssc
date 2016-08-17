@@ -1,6 +1,6 @@
 # CSSC / CSSController
 
-CSSC is a simple way to make you CSS dynamicle
+CSSC is a simple way to make you CSS dynamicle with JavaScript
 ```bash
 CSSC({
     ".myCSSClass": 
