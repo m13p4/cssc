@@ -43,7 +43,7 @@ You can pass a selector to the method.
 ```bash
 CSSC.update(".myCSSClass");
 ```
-It might be useful to call the method within an events.
+It might be useful to call the method within an event.
 ```bash
 window.addEventListener("resize", function()
 {
