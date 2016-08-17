@@ -31,6 +31,7 @@ CSSC(".myCSSClass").set(function()
 });
 ```
 
+Additionally can also complete with CSS to define your style sheets.
 ```bash
 CSSC({
     ".myCSSClass": 
