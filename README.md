@@ -67,7 +67,55 @@ CSSC({
 });
 ```
 ##Methods: get / set / delete / destroy
-coming soon..
+###get
+return value as string
+```bash
+CSSC(".myCSSClass").get("width");
+```
+return value as string or function if this is defined as function
+```bash
+CSSC(".myCSSClass").get("width", true);
+```
+return all values as object, key and value as as string or function if this is defined as function.
+```bash
+CSSC(".myCSSClass").get();
+```
+return all values as object, key as string and value as string.
+if the css class as function defined is the return value a function.
+```bash
+CSSC(".myCSSClass").get(true);
+```
+###set
+set with key/value
+```bash
+CSSC(".myCSSClass").set("width", "50px");
+CSSC(".myCSSClass").set("height", (window.innerHeight / 2)+"px");
+```
+make the value updatable
+```bash
+CSSC(".myCSSClass").set("width", function()
+{
+    return (window.innerWidth / 2)+"px";
+});
+```
+set as object with key and value or a function which returns a key / value object.
+```bash
+CSSC(".myCSSClass").set({
+    width: "50px",
+    height: function() //updatable
+    {
+        return (window.innerHeight / 3)+"px";
+    },
+});
+
+CSSC(".myCSSClass").set(function()
+{
+    return {
+        width: (window.innerWidth / 2)+"px",
+        height: (window.innerHeight / 3)+"px",
+    };
+});
+```
 
 ##Events
 coming soon..
