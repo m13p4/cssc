@@ -17,7 +17,7 @@ CSSC({
     {
         return {
             'width':  "50px", //static
-            'height': CSSC(".myCSSClass").get("height"), //you cann use values of another css classes
+            'height': CSSC(".myCSSClass").get("height"), //you can use values of other css classes
             'margin': function() //this setter is not updatable because the entire class is updatable
             {
                 return (parseInt(CSSC(".myCSSClass").get("margin")) / 2) + "px";
