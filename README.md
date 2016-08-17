@@ -161,5 +161,8 @@ window.addEventListener("resize", function()
 });
 ```
 
+##conf
+coming soon..
+
 ##Import / Export
 coming soon..
