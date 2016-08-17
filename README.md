@@ -34,7 +34,7 @@ CSSC(".myCSSClass").set(function()
 });
 ```
 
-Additionally can also complete with CSS to define your style sheets.
+Additionally can also complete with CSSC to define your style sheets.
 ```bash
 CSSC({
     ".myCSSClass": 
@@ -93,3 +93,4 @@ window.addEventListener("resize", function()
 ```
 
 ##Import / Export
+coming soon..
