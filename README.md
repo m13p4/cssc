@@ -6,11 +6,11 @@ CSSC indexed already loaded style sheets.
 
 After the index, you can access the features
 * Set with key/value
-    ```bash
-    CSSC(".myCSSClass").set("width", "50px");
-    ```
 ```bash
-//Set with object
+CSSC(".myCSSClass").set("width", "50px");
+```
+* Set with object
+```bash
 CSSC(".myCSSClass").set({
     "width":  "50px",
     "height": "25px",
