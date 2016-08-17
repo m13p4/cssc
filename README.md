@@ -117,6 +117,27 @@ CSSC(".myCSSClass").set(function()
 });
 ```
 
+###delete
+delete a css property
+```bash
+CSSC(".myCSSClass").delete("width");
+```
+delete several css propertys
+```bash
+//as array
+CSSC(".myCSSClass").delete(["width","height"]);
+
+//or as object value will be ignored
+CSSC(".myCSSClass").delete({width:"foo",height:"bar"});
+```
+
+###destroy
+the complete definition of ".myCSSClass" will be deleted
+```bash
+CSSC(".myCSSClass").destroy();
+```
+
+
 ##Events
 coming soon..
 
