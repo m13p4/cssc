@@ -1,7 +1,36 @@
 # CSSC / CSSController
-CSSC is a simple way to make you CSS dynamicle with JavaScript
+CSSC is a simple way to make you CSS dynamic with JavaScript
 
 ##General
+CSSC indexed already loaded style sheets.
+
+After the index, you can access the features
+```bash
+//Set with key/value
+CSSC(".myCSSClass").set("width", "50px");
+
+//Set with object
+CSSC(".myCSSClass").set({
+    "width":  "50px",
+    "height": "25px",
+});
+
+//Set updatable property
+CSSC(".myCSSClass").set("width", function()
+{
+    return window.innerWidth+"px";
+});
+
+//Set updatable class
+CSSC(".myCSSClass").set(function()
+{
+    return {
+        width:  window.innerWidth+"px",
+        height: window.innerHeight+"px",
+    }
+});
+```
+
 ```bash
 CSSC({
     ".myCSSClass": 
