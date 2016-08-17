@@ -27,7 +27,7 @@ CSSC({
         'float': "left",
         'margin': function()
         {
-            return parseInt(window.innerHeight * 0.05 / 2)+ "px "+parseInt(window.innerWidth * 0.05 / 2) + "px";
+            return parseInt(window.innerHeight * 0.025)+ "px "+parseInt(window.innerWidth * 0.025) + "px";
         },
         'width': function()
         {
@@ -37,6 +37,17 @@ CSSC({
         {
             return parseInt(window.innerHeight * 0.45)+"px";
         }
+    },
+    '.loadedFromFunc': function()
+    {
+        return {
+            'width': window.innerWidth,
+            'height': (window.innerWidth / 2),
+            'margin': function()
+            {
+                return (window.innerWidth > 900 ? 2 : 4) + "px";
+            }
+        };
     },
     "@media screen and (max-width: 680px)": 
     {
