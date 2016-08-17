@@ -30,11 +30,11 @@ CSSC(".myCSSClass").set(function()
     return {
         width:  window.innerWidth+"px",
         height: window.innerHeight+"px",
-    }
+    };
 });
 ```
 
-Additionally can also complete with CSSC to define your style sheets.
+Othermore the style sheets can be defined with CSSC in that case
 ```bash
 CSSC({
     ".myCSSClass": 
