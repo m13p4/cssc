@@ -66,6 +66,11 @@ CSSC({
     },
 });
 ```
+##Methods: get / set / delete / destroy
+
+##Events
+
+##Animate (keyframes)
 
 ##Updatable
 The update method must be called in order to use the advantages of updatable setter.
