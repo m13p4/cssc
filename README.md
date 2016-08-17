@@ -15,14 +15,16 @@ CSSC(".myCSSClass").set({
     "width":  "50px",
     "height": "25px",
 });
-
-//Set updatable property
+```
+* Set updatable property
+```bash
 CSSC(".myCSSClass").set("width", function()
 {
     return window.innerWidth+"px";
 });
-
-//Set updatable class
+```
+* Set updatable class
+```bash
 CSSC(".myCSSClass").set(function()
 {
     return {
