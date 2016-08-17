@@ -5,10 +5,10 @@ CSSC is a simple way to make you CSS dynamic with JavaScript
 CSSC indexed already loaded style sheets.
 
 After the index, you can access the features
-*Set with key/value
-```bash
-CSSC(".myCSSClass").set("width", "50px");
-```
+* Set with key/value
+    ```bash
+    CSSC(".myCSSClass").set("width", "50px");
+    ```
 ```bash
 //Set with object
 CSSC(".myCSSClass").set({
