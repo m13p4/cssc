@@ -33,5 +33,20 @@ CSSC({
     },
 });
 ```
+
 ##Updatable
-To use the advantages of updatable setter, the update method must be called
+The update method must be called in order to use the advantages of updatable setter.
+```bash
+CSSC.update();
+```
+You can pass a selector to the method.
+```bash
+CSSC.update(".myCSSClass");
+```
+It might be useful to call the method within an events.
+```bash
+window.addEventListener("resize", function()
+{
+    CSSC.update();
+});
+```
