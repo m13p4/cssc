@@ -505,6 +505,20 @@ var CSSC = CSSController = (function()
                 }
             }
         };
+        cssc.conf = {
+            "get": function(key)
+            {
+                
+            },
+            "set": function(key, value)
+            {
+                
+            },
+            
+            "dontTouchAllreadyLoadedCss": false,
+            //...
+        };
+        cssc.conf._default = cssc.conf;
         
         cssc.typeRule           = 0;
         cssc.typeCondition      = 1;
