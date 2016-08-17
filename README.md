@@ -39,9 +39,9 @@ Additionally can also complete with CSS to define your style sheets.
 CSSC({
     ".myCSSClass": 
     {
-        'width':  "50px",                   //static set
-        'height': window.innerHeight+"px",  //dynamic set
-        'margin': function()                //updatable set
+        'width':  "50px",                   //static 
+        'height': window.innerHeight+"px",  //dynamic 
+        'margin': function()                //updatable 
         {
             //return the value to set
             return parseInt(Math.random() * (25 - 15) + 15)+"px";
