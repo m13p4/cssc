@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.7a
+ * @version 0.8a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -56,11 +56,11 @@ var CSSC = CSSController = (function()
                 if(!!index[cssRule.conditionText])
                 {
                     //console.log(index[cssRule.conditionText].content[0]);
-                    index[cssRule.conditionText].content.append(cssRule);
+                    index[cssRule.conditionText].content.push(new controller(cssRule, parent, true, CSSC.typeCondition));
                 }
                 else
                 {
-                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":new controller(cssRule, parent, true, CSSC.typeCondition),"events":{}};
+                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":[new controller(cssRule, parent, true, CSSC.typeCondition)],"events":{}};
                 }
                 
                 //console.log(index[cssRule.conditionText]);
@@ -190,9 +190,8 @@ var CSSC = CSSController = (function()
                         elemsObj.events[eventType][i].call(property, value);
                     }
                 }
-            }; 
-            
-            return {
+            },
+            rulesWrapper = {
                 'singleSet': function(property, value, elemPos, notAddFunctionToUpdatableIndex)
                 {
                     if(!elemPos) elemPos = 0;
@@ -357,9 +356,19 @@ var CSSC = CSSController = (function()
                     
                     return event;
                 }
+            },
+            conditionsWrapper = function(selector, generateNewRule)
+            {
+                return elems[elems.length-1](selector, generateNewRule);
             };
+            conditionsWrapper.first = function()
+            {
+                
+            }
+            
+            return rulesWrapper;
         },
-        cssc = function(selector)
+        cssc = function(selector, generateNewRule)
         {
             if(typeof selector === "string")
             {
@@ -379,28 +388,21 @@ var CSSC = CSSController = (function()
                     selectorType = CSSC.typeKeyFrames;
                 }
                 
-                var elems = getFromIndex(indexKey);
+                var elems = null;
+                if(!generateNewRule)
+                {
+                    elems = getFromIndex(indexKey);
+                }
                 
                 if(elems === null)
                 {
                     var newRule = addNewRule(selector, null, null);
                     
-                    if(selectorType === CSSC.typeCondition || selectorType === CSSC.typeKeyFrames)
-                    {
-                        return newRule.content; //addNewRule(selector, null, null);
-                    }
-                    else
-                    {
-                        return controllerWrapper(newRule, indexKey);
-                    }
-                }
-                else if(elems.type === CSSC.typeCondition)
-                {
-                    return elems.content;
+                    return controllerWrapper(newRule, indexKey);
                 }
                 else
-                {    
-                    return controllerWrapper(elems, indexKey);
+                {
+                     return controllerWrapper(elems, indexKey);
                 }
             }
             else
