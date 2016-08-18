@@ -15,7 +15,6 @@ var CSSC = CSSController = (function()
     var controller = function(styleSheetsDOM, parent, initOnRun, myType)
     {
         var index = {}, 
-            keyframes = {},
             isInit = false,
             updatable = {},
             _this = this;
@@ -51,65 +50,40 @@ var CSSC = CSSController = (function()
         },
         addToIndex = function(cssRule, parent)
         {
-            if("conditionText" in cssRule)
+            var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
+                indexType = CSSC.typeRule, 
+                toIndex   = cssRule;
+            
+            if(indexKey.indexOf("@media ") === 0)
             {
-                if(!!index[cssRule.conditionText])
-                {
-                    //console.log(index[cssRule.conditionText].content[0]);
-                    index[cssRule.conditionText].content.push(new controller(cssRule, parent, true, CSSC.typeCondition));
-                }
-                else
-                {
-                    index[cssRule.conditionText] = {'type':CSSC.typeCondition,"content":[new controller(cssRule, parent, true, CSSC.typeCondition)],"events":{}};
-                }
-                
-                //console.log(index[cssRule.conditionText]);
-                return index[cssRule.conditionText];
+                indexType = CSSC.typeCondition;
             }
-            else if("selectorText" in cssRule)
+            else if(indexKey.indexOf("@keyframes ") === 0)
             {
-                if(!!index[cssRule.selectorText])
-                {
-                    index[cssRule.selectorText].content.push(cssRule);
-                }
-                else
-                {
-                    index[cssRule.selectorText] = {'type':CSSC.typeRule,"content":[cssRule],"events":{}};
-                }
-                
-                return index[cssRule.selectorText];
-            }
-            else if("name" in cssRule)
-            {
-                return addToKeyFrames(cssRule, parent);
+                indexType = CSSC.typeKeyFrames;
             }
             
-            return false;
-        },
-        addToKeyFrames = function(keyFrame, parent)
-        {
-            if(!!keyframes[keyFrame.name])
+            if(indexType !== CSSC.typeRule)
             {
-                keyframes[keyFrame.name].content.append(keyFrame);
+                toIndex = new controller(cssRule, parent, true, indexType);
+            }
+                
+            if(!!index[indexKey])
+            {
+                index[indexKey].content.push(toIndex);
             }
             else
             {
-                keyframes[keyFrame.name] = {'type':CSSC.typeKeyFrames,"content":new controller(keyFrame, parent, true, CSSC.typeKeyFrames),"events":{}}; 
+                index[indexKey] = {'type':indexType,"content":[toIndex],"events":{}};
             }
             
-            return keyframes[keyFrame.name];
-        }, 
+            return index[indexKey];
+        },
         getFromIndex = function(selector)
         {
             if(!isInit) init();
 
             return !!index[selector] ? index[selector] : null;
-        },
-        getFromKeyFrames = function(name)
-        {
-            if(!isInit) init();
-
-            return !!keyframes[name] ? keyframes[name] : null;
         },
         deleteFromIndex = function(selector)
         {
@@ -361,9 +335,14 @@ var CSSC = CSSController = (function()
             {
                 return elems[elems.length-1](selector, generateNewRule);
             };
-            conditionsWrapper.first = function()
+            conditionsWrapper.first = function(selector, generateNewRule)
             {
-                
+                return elems[0](selector, generateNewRule);
+            };
+            
+            if(elemsObj.type === CSSC.typeCondition)
+            {
+                return conditionsWrapper;
             }
             
             return rulesWrapper;
@@ -441,15 +420,8 @@ var CSSC = CSSController = (function()
                 
                 rule = addNewRule(importKey, null, null);
                 
-                if(importType === CSSC.typeCondition || importType === CSSC.typeKeyFrames)
-                {
-                    rule.content.imp(importElem);
-                }
-                else if(importType === CSSC.typeRule)
-                {
-                    cntrlWrapper = controllerWrapper(rule, indexKey);
-                    cntrlWrapper.set(importElem);
-                }
+                cntrlWrapper = controllerWrapper(rule, indexKey);
+                cntrlWrapper.set(importElem);
             }
         };
         cssc.exp = function(exportType)
