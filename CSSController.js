@@ -10,7 +10,7 @@
 
 var CSSC = CSSController = (function()
 {
-    var ownStyleElem;
+    var ownStyleElem, ownStyleElemId = "cssc-container";
     
     var controller = function(styleSheetsDOM, parent, initOnRun, myType)
     {
@@ -96,7 +96,7 @@ var CSSC = CSSController = (function()
         {
             var styleElem = document.createElement("style");
             styleElem.setAttribute("type", "text/css");
-            styleElem.setAttribute("id", "cssc-container");
+            styleElem.setAttribute("id", ownStyleElemId);
             styleElem.appendChild(document.createTextNode(""));
 
             document.head.appendChild(styleElem);
@@ -144,11 +144,11 @@ var CSSC = CSSController = (function()
 
             if("insertRule" in appendToElem)
             {
-                var a = appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
+                 appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("addRule" in appendToElem)
             {
-                var a = appendToElem.addRule(selector, ruleString, rulePos);
+                 appendToElem.addRule(selector, ruleString, rulePos);
             }
             
             return addToIndex(appendToElem.cssRules[rulePos], parent);
@@ -173,11 +173,13 @@ var CSSC = CSSController = (function()
                     'singleSet': function(property, value, elemPos, notAddFunctionToUpdatableIndex)
                     {
                         if(!elemPos) elemPos = 0;
-
+                        
+                        console.log(elems[elemPos].parentStyleSheet.ownerNode.id);
+                        
                         if(Object.prototype.toString.call(value) === "[object Function]")
                         {
                             elems[elemPos].style[property] = value(elems[elemPos].style[property]);
-
+                            
                             if(!notAddFunctionToUpdatableIndex)
                             {
                                 if(!updatable[selector]) updatable[selector] = {};
@@ -334,7 +336,7 @@ var CSSC = CSSController = (function()
 
                         return event;
                     },
-                    "elems": elems;
+                    "elems": elems,
                     "pos": function(position)
                     {
                         if(position >= 0 && position < elems.length)
