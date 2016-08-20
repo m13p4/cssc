@@ -137,6 +137,25 @@ the complete definition of ".myCSSClass" will be deleted
 CSSC(".myCSSClass").destroy();
 ```
 
+##Methods: pos / first / last
+If you selector finds more as one css rule objects, you can select one of them with this methods.
+###pos
+if you know the position of the element what you need, use the method ".pos".
+```bash
+CSSC(".myCSSClass").pos(3).set("width", "50px");
+```
+###first
+If you need first element, use the method ".first".
+```bash
+CSSC(".myCSSClass").first().set("width", "50px");
+//it's the same as
+CSSC(".myCSSClass").pos(0).set("width", "50px");
+```
+###last
+if you need last element, use the method ".last".
+```bash
+CSSC(".myCSSClass").last().set("width", "50px");
+```
 
 ##Events
 Events can be used to react on changes in your css class.
