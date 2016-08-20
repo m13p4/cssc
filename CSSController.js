@@ -8,7 +8,7 @@
  * @copyright Pavel Meliantchenkov
  */
 
-var CSSC = CSSController = (function()
+var CSSC = CSSController = (function() 
 {
     var ownStyleElem, ownStyleElemId = "cssc-container";
     
@@ -103,6 +103,10 @@ var CSSC = CSSController = (function()
 
             ownStyleElem = styleElem;
         },
+        isElemInOwnNode = function(elem)
+        {
+            return elem.parentStyleSheet.ownerNode.id === ownStyleElemId;
+        },
         addNewRule = function(selector, property, value)
         {
             var appendToElem;
@@ -174,6 +178,7 @@ var CSSC = CSSController = (function()
                     'singleSet': function(property, value, elemPos, notAddFunctionToUpdatableIndex)
                     {
                         if(!elemPos) elemPos = 0;
+                        if(elemPos === 0 && elems.length > 0) elemPos = elems.length-1;
                         
                         //console.log(elems[elemPos].parentStyleSheet.ownerNode.id);
                         
@@ -222,7 +227,6 @@ var CSSC = CSSController = (function()
 
                                 if(!!updatable[selector] && !!updatable[selector][0])
                                 {
-                                    console.log(selector + " <--> ");
                                     updatable[selector][0] = false;
                                 }
                             }
@@ -252,13 +256,14 @@ var CSSC = CSSController = (function()
 
                                 if(!!updatable[selector] && !!updatable[selector][0])
                                 {
-                                    console.log(selector + " <==> "+property+':'+value);
                                     updatable[selector][0] = false;
                                 }
                             }
                         }
                         else //create new rule
                         {
+                            eventHandler(CSSC.eventBeforeCreate, property, value);
+                            
                             addNewRule(selector, property, value);
                             elems = getFromIndex(selector);
 
@@ -358,9 +363,70 @@ var CSSC = CSSController = (function()
                         return this.pos(elems.length-1);
                     },
                     "type": elemsObj.type,
-                    "merge": function()
+                    "merge": function(mergeType)
                     {
-                        var toMerge = elemsObj.content;
+                        if(!elems || elems.length <= 0)
+                        {
+                            return this;
+                        }
+                        
+                        var mergeTo;
+                        
+                        if(mergeType === null)
+                        {
+                            mergeType = CSSC.conf.defaultMergeType;
+                        }
+                        
+                        if(mergeType === CSSC.mergeToFirst)
+                        {
+                            mergeTo = elems[0];
+                        }
+                        else if(mergeType === CSSC.mergeToLast)
+                        {
+                            mergeTo = elems[elems.length-1];
+                        }
+                        else if(mergeType === CSSC.mergeToOwnFirst
+                               || mergeType === CSSC.mergeToOwnLast)
+                        {
+                            for(var i = 0; i < elems.length; i++)
+                            {
+                                if(isElemInOwnNode(elem[i]))
+                                {
+                                    mergeTo = elem[i];
+                                    if(mergeType === CSSC.mergeToOwnFirst)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if(!mergeTo)
+                            {
+                                var newRuleSet = addNewRule(selector);
+                                
+                                if(isElemInOwnNode(newRuleSet.content[newRuleSet.content.length-1]))
+                                {
+                                    mergeTo = newRuleSet.content[newRuleSet.content.length-1];
+                                }
+                            }
+                        }
+                        
+                        if(mergeTo)
+                        {
+                            var mergeFrom;
+                            for(var i = 0; i < elems.length; i++)
+                            {
+                                if(elems[i] === mergeTo) continue;
+                                
+                                mergeFrom = elems[i];
+                                
+                                //@todo: merge variables mergeTo & mergeFrom
+                            }
+                            
+                            elems = [mergeTo];
+                        }
+                        
+                        return this;
                     }
                 };
             },
@@ -468,7 +534,7 @@ var CSSC = CSSController = (function()
         {
             var elems, wrapper, toUpdate;
             
-            console.log(updatable);
+            //console.log(updatable);
             if(!!selector)
             {
                 if(!!updatable[selector])
@@ -476,7 +542,7 @@ var CSSC = CSSController = (function()
                     elems = getFromIndex(selector);
                     wrapper = controllerWrapper(elems, selector);
                     
-                    if(elems.type === CSSC.typeCondition)
+                    if(elems.type !== CSSC.typeRule)
                     {
                         wrapper.update();
                     }
@@ -512,24 +578,6 @@ var CSSC = CSSController = (function()
                 }
             }
         };
-        cssc.conf = {
-            "get": function(key)
-            {
-                
-            },
-            "set": function(key, value)
-            {
-                
-            },
-            "reset": function(key)
-            {
-                
-            },
-            
-            "dontTouchAllreadyLoadedCss": false,
-            //...
-        };
-        cssc.conf._default = Object.assign({}, cssc.conf);
         
         cssc.typeRule           = 0;
         cssc.typeCondition      = 1;
@@ -545,6 +593,31 @@ var CSSC = CSSController = (function()
         cssc.eventDelete        = "delete";
         cssc.eventBeforeDestroy	= "beforedestroy";
         cssc.eventDestroy       = "destroy";
+        
+        cssc.mergeToLast        = 0;
+        cssc.mergeToFirst       = 1;
+        cssc.mergeToOwnLast     = 2;
+        cssc.mergeToOwnFirst    = 3;
+        
+        cssc.conf = {
+            "get": function(key)
+            {
+                
+            },
+            "set": function(key, value)
+            {
+                
+            },
+            "reset": function(key)
+            {
+                
+            },
+            
+            "defaultMergeType": cssc.mergeToLast,
+            "dontTouchAllreadyLoadedCss": false,
+            //...
+        };
+        cssc.conf._default = Object.assign({}, cssc.conf);
         
         
         if(!!initOnRun)
