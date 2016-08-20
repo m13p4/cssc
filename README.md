@@ -139,7 +139,18 @@ CSSC(".myCSSClass").destroy();
 
 
 ##Events
-coming soon..
+Events can be used to react on changes in your css class.
+List of supported events:
+* beforechange
+* change
+* beforeset
+* set
+* beforecreate
+* create
+* beforedelete
+* delete
+* beforedestroy
+* destroy
 
 ##Animate (keyframes)
 coming soon..
