@@ -140,17 +140,23 @@ CSSC(".myCSSClass").destroy();
 
 ##Events
 Events can be used to react on changes in your css class.
+```bash
+CSSC(".myCSSClass").event("change", function(property, value)
+{
+    //white you code here..
+});
+```
 List of supported events:
-* beforechange
-* change
-* beforeset
-* set
-* beforecreate
-* create
-* beforedelete
-* delete
-* beforedestroy
-* destroy
+* "beforechange"
+* "change"
+* "beforeset"
+* "set"
+* "beforecreate"
+* "create"
+* "beforedelete"
+* "delete"
+* "beforedestroy"
+* "destroy"
 
 ##Animate (keyframes)
 coming soon..
