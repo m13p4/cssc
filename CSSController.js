@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.8a
+ * @version 0.9a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -144,11 +144,12 @@ var CSSC = CSSController = (function()
 
             if("insertRule" in appendToElem)
             {
-                 appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
+                //console.log(selector+"{"+ruleString+"}");
+                var a = appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("addRule" in appendToElem)
             {
-                 appendToElem.addRule(selector, ruleString, rulePos);
+                var a = appendToElem.addRule(selector, ruleString, rulePos);
             }
             
             return addToIndex(appendToElem.cssRules[rulePos], parent);
@@ -174,7 +175,7 @@ var CSSC = CSSController = (function()
                     {
                         if(!elemPos) elemPos = 0;
                         
-                        console.log(elems[elemPos].parentStyleSheet.ownerNode.id);
+                        //console.log(elems[elemPos].parentStyleSheet.ownerNode.id);
                         
                         if(Object.prototype.toString.call(value) === "[object Function]")
                         {
@@ -182,19 +183,19 @@ var CSSC = CSSController = (function()
                             
                             if(!notAddFunctionToUpdatableIndex)
                             {
-                                if(!updatable[selector]) updatable[selector] = {};
+                                if(!updatable[selector]) updatable[selector] = [false,{}];
 
-                                updatable[selector][property] = value;
+                                updatable[selector][1][property] = value;
                             }
                         }
                         else
                         {
                             elems[elemPos].style[property] = value;
 
-                            if(!notAddFunctionToUpdatableIndex && !!updatable[selector] && !!updatable[selector][property])
+                            if(!notAddFunctionToUpdatableIndex && !!updatable[selector] && !!updatable[selector][1][property])
                             {
-                                delete updatable[selector][property];
-                            }
+                                delete updatable[selector][1][property];
+                            } 
                         }
 
                         return this;
@@ -208,7 +209,8 @@ var CSSC = CSSController = (function()
                             eventHandler(CSSC.eventBeforeSet, property, value);
 
                             //Multi set if property a object with key & value
-                            if(Object.prototype.toString.call(property) === "[object Object]")
+                            if(Object.prototype.toString.call(property) === "[object Object]" 
+                               && Object.keys(property).length > 0) 
                             {
                                 for(var i = 0; i < elems.length; i++)
                                 {
@@ -218,9 +220,10 @@ var CSSC = CSSController = (function()
                                     }
                                 }
 
-                                if(!!updatable[selector] && !!updatable[selector]["__full__"])
+                                if(!!updatable[selector] && !!updatable[selector][0])
                                 {
-                                    delete updatable[selector]["__full__"];
+                                    console.log(selector + " <--> ");
+                                    updatable[selector][0] = false;
                                 }
                             }
                             else if(Object.prototype.toString.call(property) === "[object Function]")
@@ -235,20 +238,22 @@ var CSSC = CSSController = (function()
                                     }
                                 }
 
-                                if(!updatable[selector]) updatable[selector] = {};
+                                if(!updatable[selector]) updatable[selector] = [false,{}];
 
-                                updatable[selector]["__full__"] = property;
+                                updatable[selector][0] = property;
                             }
-                            else //Single set
+                            else if(Object.prototype.toString.call(property) === "[object String]" 
+                                    && Object.prototype.toString.call(value) === "[object String]") //Single set
                             {
                                 for(var i = 0; i < elems.length; i++)
                                 {
                                     this.singleSet(property, value, i);
                                 }
 
-                                if(!!updatable[selector] && !!updatable[selector]["__full__"])
+                                if(!!updatable[selector] && !!updatable[selector][0])
                                 {
-                                    delete updatable[selector]["__full__"];
+                                    console.log(selector + " <==> "+property+':'+value);
+                                    updatable[selector][0] = false;
                                 }
                             }
                         }
@@ -463,27 +468,25 @@ var CSSC = CSSController = (function()
         {
             var elems, wrapper, toUpdate;
             
+            console.log(updatable);
             if(!!selector)
             {
                 if(!!updatable[selector])
                 {
                     elems = getFromIndex(selector);
+                    wrapper = controllerWrapper(elems, selector);
                     
                     if(elems.type === CSSC.typeCondition)
                     {
-                        elems.content.update();
+                        wrapper.update();
                     }
                     else
                     {
-                        wrapper = controllerWrapper(elems, selector);
-                        
-                        toUpdate = updatable[selector];
-                        if(toUpdate["__full__"])
+                        if(updatable[selector][0])
                         {
-                            wrapper.set(toUpdate["__full__"]);
-                            delete toUpdate["__full__"];
+                            wrapper.set(updatable[selector][0]);
                         }
-                        wrapper.set(toUpdate);
+                        wrapper.set(updatable[selector][1]);
                     }
                 }
             }
@@ -492,15 +495,19 @@ var CSSC = CSSController = (function()
                 for(var i in updatable)
                 {
                     elems = getFromIndex(i);
-
+                    wrapper = controllerWrapper(elems, i);
+                    
                     if(elems.type === CSSC.typeCondition)
                     {
-                        elems.content.update();
+                        wrapper.update();
                     }
                     else
                     {
-                        wrapper = controllerWrapper(elems, i);
-                        wrapper.set(updatable[i]);
+                        if(updatable[i][0])
+                        {
+                            wrapper.set(updatable[i][0]);
+                        }
+                        wrapper.set(updatable[i][1]);
                     }
                 }
             }
