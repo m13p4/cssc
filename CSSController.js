@@ -24,7 +24,8 @@ var CSSC = CSSController = (function()
             
             isInit = true;
             
-            //console.log(index);
+            cssc_index = index;
+            
         },
         initElements = function(toInit)
         {
@@ -44,7 +45,10 @@ var CSSC = CSSController = (function()
         {
             for(var i = 0; i < cssRules.length; i++)
             {
-                addToIndex(cssRules[i], parent);
+                if(!isElemInOwnNode(cssRules[i]))
+                {
+                    addToIndex(cssRules[i], parent);
+                }
             }
         },
         addToIndex = function(cssRule, parent)
@@ -74,12 +78,20 @@ var CSSC = CSSController = (function()
             
             indexObjWrapper = {
                 indexElem: toIndex,
-                updatableClass: false,
+                updatableClass: false, 
                 updatablePropertys: {}
             };
             
             if(!!index[indexKey])
             {
+                if(index[indexKey].content[0].indexElem === toIndex)
+                {
+                    console.log("Dublicate: ");
+                    var a = new Error();
+                    console.log(a.stack+"\n\n");
+                    
+                }
+                
                 index[indexKey].content.push(indexObjWrapper);
             }
             else
@@ -274,7 +286,7 @@ var CSSC = CSSController = (function()
                             
                             addNewRule(selector, property, value);
                             elems = getFromIndex(selector);
-
+                            
                             eventHandler(CSSC.eventCreate, property, value);
                         }
 
@@ -454,7 +466,7 @@ var CSSC = CSSController = (function()
                             
                             for(var key in elems[i].updatablePropertys)
                             {
-                                this.singleSet(key, elems[i].updatablePropertys, i, false);
+                                this.singleSet(key, elems[i].updatablePropertys[key], i, false);
                             }
                         }
                     }
