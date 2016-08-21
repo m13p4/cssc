@@ -20,6 +20,8 @@ var CSSC = CSSController = (function()
 
         var init = function()
         {
+            if(isInit) return;
+            
             initElements(styleSheetsDOM);
             
             isInit = true;
@@ -86,7 +88,7 @@ var CSSC = CSSController = (function()
             {
                 if(index[indexKey].content[0].indexElem === toIndex)
                 {
-                    console.log("Dublicate: ");
+                    console.log("Dublicate \""+indexKey+"\": ");
                     var a = new Error();
                     console.log(a.stack+"\n\n");
                     
@@ -116,6 +118,24 @@ var CSSC = CSSController = (function()
         },
         createNewStyleElem = function()
         {
+            if(!!document.getElementById(ownStyleElemId))
+            {
+                for(var i = 0; i < 10; i++)
+                {
+                    if(!document.getElementById(ownStyleElemId+'-'+i))
+                    {
+                        ownStyleElemId = ownStyleElemId+'-'+i;
+                        break;
+                    }
+                }
+                
+                if(!!document.getElementById(ownStyleElemId))
+                {
+                    throw new Error("cann not create new element..");
+                    return;
+                }
+            }
+            
             var styleElem = document.createElement("style");
             styleElem.setAttribute("type", "text/css");
             styleElem.setAttribute("id", ownStyleElemId);
@@ -647,7 +667,7 @@ var CSSC = CSSController = (function()
         {
             window.addEventListener("load", function()
             {
-                init();
+                //init();
             });
         }
         
