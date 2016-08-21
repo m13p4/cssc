@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.9a
+ * @version 0.10a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -14,8 +14,7 @@ var CSSC = CSSController = (function()
     
     var controller = function(styleSheetsDOM, parent, initOnRun, myType)
     {
-        var index = {}, 
-            updatable = {},
+        var index = {},
             isInit = false,
             _this = this;
 
@@ -52,7 +51,8 @@ var CSSC = CSSController = (function()
         {
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = CSSC.typeRule, 
-                toIndex   = cssRule;
+                toIndex   = cssRule,
+                indexObjWrapper;
             
             if(indexKey.indexOf("@media ") === 0)
             {
@@ -67,14 +67,24 @@ var CSSC = CSSController = (function()
             {
                 toIndex = new controller(cssRule, parent, true, indexType);
             }
-                
+            else
+            {
+                //lasttoindex = toIndex; //toIndex.prototype.updatable = [false,{}];
+            }
+            
+            indexObjWrapper = {
+                indexElem: toIndex,
+                updatableClass: false,
+                updatablePropertys: {}
+            };
+            
             if(!!index[indexKey])
             {
-                index[indexKey].content.push(toIndex);
+                index[indexKey].content.push(indexObjWrapper);
             }
             else
             {
-                index[indexKey] = {'type':indexType,"content":[toIndex],"events":{}};
+                index[indexKey] = {'type':indexType,"content":[indexObjWrapper],"events":{}};
             }
             
             return index[indexKey];
@@ -184,22 +194,20 @@ var CSSC = CSSController = (function()
                         
                         if(Object.prototype.toString.call(value) === "[object Function]")
                         {
-                            elems[elemPos].style[property] = value(elems[elemPos].style[property]);
+                            elems[elemPos].indexElem.style[property] = value(elems[elemPos].indexElem.style[property]);
                             
                             if(!notAddFunctionToUpdatableIndex)
                             {
-                                if(!updatable[selector]) updatable[selector] = [false,{}];
-
-                                updatable[selector][1][property] = value;
+                                elems[elemPos].updatablePropertys[property] = value;
                             }
                         }
                         else
                         {
-                            elems[elemPos].style[property] = value;
+                            elems[elemPos].indexElem.style[property] = value;
 
-                            if(!notAddFunctionToUpdatableIndex && !!updatable[selector] && !!updatable[selector][1][property])
+                            if(!notAddFunctionToUpdatableIndex && !!elems[elemPos].updatablePropertys[property])
                             {
-                                delete updatable[selector][1][property];
+                                delete elems[elemPos].updatablePropertys[property];
                             } 
                         }
 
@@ -223,28 +231,28 @@ var CSSC = CSSController = (function()
                                     {
                                         this.singleSet(key,property[key],i);
                                     }
-                                }
-
-                                if(!!updatable[selector] && !!updatable[selector][0])
-                                {
-                                    updatable[selector][0] = false;
+                                    
+                                    if(!!elems[i].updatableClass)
+                                    {
+                                        elems[i].updatableClass = false;
+                                    }
                                 }
                             }
                             else if(Object.prototype.toString.call(property) === "[object Function]")
                             {
-                                var myPropertys = property();
-
+                                var myPropertys;
+                                
                                 for(var i = 0; i < elems.length; i++)
                                 {
+                                    myPropertys = property();
+                                    
                                     for(var key in myPropertys)
                                     {
                                         this.singleSet(key, myPropertys[key], i, true);
                                     }
+                                    
+                                    elems[i].updatableClass = property;
                                 }
-
-                                if(!updatable[selector]) updatable[selector] = [false,{}];
-
-                                updatable[selector][0] = property;
                             }
                             else if(Object.prototype.toString.call(property) === "[object String]" 
                                     && Object.prototype.toString.call(value) === "[object String]") //Single set
@@ -252,11 +260,11 @@ var CSSC = CSSController = (function()
                                 for(var i = 0; i < elems.length; i++)
                                 {
                                     this.singleSet(property, value, i);
-                                }
-
-                                if(!!updatable[selector] && !!updatable[selector][0])
-                                {
-                                    updatable[selector][0] = false;
+                                    
+                                    if(!!elems[i].updatableClass)
+                                    {
+                                        elems[i].updatableClass = false;
+                                    }
                                 }
                             }
                         }
@@ -275,16 +283,16 @@ var CSSC = CSSController = (function()
 
                         return this;
                     },
-                    'get': function(property)
+                    'get': function(property, ifUpdatableGetTheMethode)
                     {
                         var toReturn = "";
                         for(var i = 0; i < elems.length; i++)
                         {
-                            for(var j = 0; j < elems[i].style.length; j++)
+                            for(var j = 0; j < elems[i].indexElem.style.length; j++)
                             {
-                                if(elems[i].style[j] === property)
+                                if(elems[i].indexElem.style[j] === property)
                                 {
-                                    toReturn = elems[i].style[property];
+                                    toReturn = elems[i].indexElem.style[property];
                                     break;
                                 }
                             }
@@ -300,7 +308,7 @@ var CSSC = CSSController = (function()
 
                         for(var i = 0; i < elems.length; i++)
                         {
-                            elems[i].style[property] = null;
+                            elems[i].indexElem.style[property] = "";
                         }
 
                         eventHandler(CSSC.eventChange, property, null);
@@ -315,7 +323,7 @@ var CSSC = CSSController = (function()
 
                         for(var i = 0; i < elems.length; i++)
                         {
-                            elems[i].parentStyleSheet.deleteRule(elems[i]);
+                            elems[i].indexElem.parentStyleSheet.deleteRule(elems[i]);
                             deleteFromIndex(selector);
                         }
 
@@ -353,6 +361,8 @@ var CSSC = CSSController = (function()
                         {
                             return rulesWrapper([elems[position]]);
                         }
+                        
+                        return null;
                     },
                     "first": function()
                     {
@@ -389,8 +399,8 @@ var CSSC = CSSController = (function()
                                || mergeType === CSSC.mergeToOwnLast)
                         {
                             for(var i = 0; i < elems.length; i++)
-                            {
-                                if(isElemInOwnNode(elem[i]))
+                            { //@todo: optimieren => rückwertsdurchlauf bei bedarf
+                                if(isElemInOwnNode(elem[i].indexElem))
                                 {
                                     mergeTo = elem[i];
                                     if(mergeType === CSSC.mergeToOwnFirst)
@@ -427,6 +437,26 @@ var CSSC = CSSController = (function()
                         }
                         
                         return this;
+                    },
+                    update: function()
+                    {
+                        var tmp;
+                        for(var i = 0; i < elems.length; i++)
+                        {
+                            if(!!elems[i].updatableClass)
+                            {
+                                tmp = elems[i].updatableClass();
+                                for(var key in tmp)
+                                {
+                                    this.singleSet(key, tmp[key], i, true);
+                                }
+                            }
+                            
+                            for(var key in elems[i].updatablePropertys)
+                            {
+                                this.singleSet(key, elems[i].updatablePropertys, i, false);
+                            }
+                        }
                     }
                 };
             },
