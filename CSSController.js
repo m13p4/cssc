@@ -569,56 +569,19 @@ var CSSC = CSSController = (function()
         cssc.keyframes = cssc.animate;
         cssc.update = function(selector)
         {
-            var elems, wrapper, toUpdate;
+            var wrapper;
             
-            for(var i in index)
-            {
-                for(var j = 0; j < index[i].content.length; j++)
-                {
-                    index[i].content[j].indexElem.update();
-                }
-            }
-            //console.log(updatable);
             if(!!selector)
             {
-                if(!!updatable[selector])
-                {
-                    elems = getFromIndex(selector);
-                    wrapper = controllerWrapper(elems, selector);
-                    
-                    if(elems.type !== CSSC.typeRule)
-                    {
-                        wrapper.update();
-                    }
-                    else
-                    {
-                        if(updatable[selector][0])
-                        {
-                            wrapper.set(updatable[selector][0]);
-                        }
-                        wrapper.set(updatable[selector][1]);
-                    }
-                }
+                wrapper = controllerWrapper(getFromIndex(selector), selector);
+                wrapper.update();
             }
             else
             {
-                for(var i in updatable)
+                for(var i in index)
                 {
-                    elems = getFromIndex(i);
-                    wrapper = controllerWrapper(elems, i);
-                    
-                    if(elems.type === CSSC.typeCondition)
-                    {
-                        wrapper.update();
-                    }
-                    else
-                    {
-                        if(updatable[i][0])
-                        {
-                            wrapper.set(updatable[i][0]);
-                        }
-                        wrapper.set(updatable[i][1]);
-                    }
+                    wrapper = controllerWrapper(index[i], selector);
+                    wrapper.update();
                 }
             }
         };
