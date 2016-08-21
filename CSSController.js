@@ -472,9 +472,9 @@ var CSSC = CSSController = (function()
                 {
                     if(!selector)
                     {
-                        return elems[position];
+                        return elems[position].indexElem;
                     }
-                    return elems[position](selector, generateNewRule);
+                    return elems[position].indexElem(selector, generateNewRule);
                 }
             };
             conditionsWrapper.first = function(selector, generateNewRule)
@@ -484,6 +484,13 @@ var CSSC = CSSController = (function()
             conditionsWrapper.last = function(selector, generateNewRule)
             {
                 return this.pos(elems.length-1, selector, generateNewRule);
+            };
+            conditionsWrapper.update = function()
+            {
+                for(var i = 0; i < elems.length; i++)
+                {
+                    elems[i].indexElem.update();
+                }
             };
             
             if(elemsObj.type === CSSC.typeCondition)
@@ -564,6 +571,13 @@ var CSSC = CSSController = (function()
         {
             var elems, wrapper, toUpdate;
             
+            for(var i in index)
+            {
+                for(var j = 0; j < index[i].content.length; j++)
+                {
+                    index[i].content[j].indexElem.update();
+                }
+            }
             //console.log(updatable);
             if(!!selector)
             {
