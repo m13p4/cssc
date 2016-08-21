@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.9a
+ * @version 0.10a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -14,18 +14,20 @@ var CSSC = CSSController = (function()
     
     var controller = function(styleSheetsDOM, parent, initOnRun, myType)
     {
-        var index = {}, 
-            updatable = {},
+        var index = {},
             isInit = false,
             _this = this;
 
         var init = function()
         {
+            if(isInit) return;
+            
             initElements(styleSheetsDOM);
             
             isInit = true;
             
-            //console.log(index);
+            cssc_index = index;
+            
         },
         initElements = function(toInit)
         {
@@ -45,14 +47,18 @@ var CSSC = CSSController = (function()
         {
             for(var i = 0; i < cssRules.length; i++)
             {
-                addToIndex(cssRules[i], parent);
+                if(!isElemInOwnNode(cssRules[i]))
+                {
+                    addToIndex(cssRules[i], parent);
+                }
             }
         },
         addToIndex = function(cssRule, parent)
         {
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = CSSC.typeRule, 
-                toIndex   = cssRule;
+                toIndex   = cssRule,
+                indexObjWrapper;
             
             if(indexKey.indexOf("@media ") === 0)
             {
@@ -67,14 +73,32 @@ var CSSC = CSSController = (function()
             {
                 toIndex = new controller(cssRule, parent, true, indexType);
             }
-                
+            else
+            {
+                //lasttoindex = toIndex; //toIndex.prototype.updatable = [false,{}];
+            }
+            
+            indexObjWrapper = {
+                indexElem: toIndex,
+                updatableClass: false, 
+                updatablePropertys: {}
+            };
+            
             if(!!index[indexKey])
             {
-                index[indexKey].content.push(toIndex);
+                if(index[indexKey].content[0].indexElem === toIndex)
+                {
+                    console.log("Dublicate \""+indexKey+"\": ");
+                    var a = new Error();
+                    console.log(a.stack+"\n\n");
+                    
+                }
+                
+                index[indexKey].content.push(indexObjWrapper);
             }
             else
             {
-                index[indexKey] = {'type':indexType,"content":[toIndex],"events":{}};
+                index[indexKey] = {'type':indexType,"content":[indexObjWrapper],"events":{}};
             }
             
             return index[indexKey];
@@ -94,6 +118,24 @@ var CSSC = CSSController = (function()
         },
         createNewStyleElem = function()
         {
+            if(!!document.getElementById(ownStyleElemId))
+            {
+                for(var i = 0; i < 10; i++)
+                {
+                    if(!document.getElementById(ownStyleElemId+'-'+i))
+                    {
+                        ownStyleElemId = ownStyleElemId+'-'+i;
+                        break;
+                    }
+                }
+                
+                if(!!document.getElementById(ownStyleElemId))
+                {
+                    throw new Error("cann not create new element..");
+                    return;
+                }
+            }
+            
             var styleElem = document.createElement("style");
             styleElem.setAttribute("type", "text/css");
             styleElem.setAttribute("id", ownStyleElemId);
@@ -184,22 +226,20 @@ var CSSC = CSSController = (function()
                         
                         if(Object.prototype.toString.call(value) === "[object Function]")
                         {
-                            elems[elemPos].style[property] = value(elems[elemPos].style[property]);
+                            elems[elemPos].indexElem.style[property] = value(elems[elemPos].indexElem.style[property]);
                             
                             if(!notAddFunctionToUpdatableIndex)
                             {
-                                if(!updatable[selector]) updatable[selector] = [false,{}];
-
-                                updatable[selector][1][property] = value;
+                                elems[elemPos].updatablePropertys[property] = value;
                             }
                         }
                         else
                         {
-                            elems[elemPos].style[property] = value;
+                            elems[elemPos].indexElem.style[property] = value;
 
-                            if(!notAddFunctionToUpdatableIndex && !!updatable[selector] && !!updatable[selector][1][property])
+                            if(!notAddFunctionToUpdatableIndex && !!elems[elemPos].updatablePropertys[property])
                             {
-                                delete updatable[selector][1][property];
+                                delete elems[elemPos].updatablePropertys[property];
                             } 
                         }
 
@@ -223,28 +263,28 @@ var CSSC = CSSController = (function()
                                     {
                                         this.singleSet(key,property[key],i);
                                     }
-                                }
-
-                                if(!!updatable[selector] && !!updatable[selector][0])
-                                {
-                                    updatable[selector][0] = false;
+                                    
+                                    if(!!elems[i].updatableClass)
+                                    {
+                                        elems[i].updatableClass = false;
+                                    }
                                 }
                             }
                             else if(Object.prototype.toString.call(property) === "[object Function]")
                             {
-                                var myPropertys = property();
-
+                                var myPropertys;
+                                
                                 for(var i = 0; i < elems.length; i++)
                                 {
+                                    myPropertys = property();
+                                    
                                     for(var key in myPropertys)
                                     {
                                         this.singleSet(key, myPropertys[key], i, true);
                                     }
+                                    
+                                    elems[i].updatableClass = property;
                                 }
-
-                                if(!updatable[selector]) updatable[selector] = [false,{}];
-
-                                updatable[selector][0] = property;
                             }
                             else if(Object.prototype.toString.call(property) === "[object String]" 
                                     && Object.prototype.toString.call(value) === "[object String]") //Single set
@@ -252,11 +292,11 @@ var CSSC = CSSController = (function()
                                 for(var i = 0; i < elems.length; i++)
                                 {
                                     this.singleSet(property, value, i);
-                                }
-
-                                if(!!updatable[selector] && !!updatable[selector][0])
-                                {
-                                    updatable[selector][0] = false;
+                                    
+                                    if(!!elems[i].updatableClass)
+                                    {
+                                        elems[i].updatableClass = false;
+                                    }
                                 }
                             }
                         }
@@ -266,7 +306,7 @@ var CSSC = CSSController = (function()
                             
                             addNewRule(selector, property, value);
                             elems = getFromIndex(selector);
-
+                            
                             eventHandler(CSSC.eventCreate, property, value);
                         }
 
@@ -275,16 +315,16 @@ var CSSC = CSSController = (function()
 
                         return this;
                     },
-                    'get': function(property)
+                    'get': function(property, ifUpdatableGetTheMethode)
                     {
                         var toReturn = "";
                         for(var i = 0; i < elems.length; i++)
                         {
-                            for(var j = 0; j < elems[i].style.length; j++)
+                            for(var j = 0; j < elems[i].indexElem.style.length; j++)
                             {
-                                if(elems[i].style[j] === property)
+                                if(elems[i].indexElem.style[j] === property)
                                 {
-                                    toReturn = elems[i].style[property];
+                                    toReturn = elems[i].indexElem.style[property];
                                     break;
                                 }
                             }
@@ -300,7 +340,7 @@ var CSSC = CSSController = (function()
 
                         for(var i = 0; i < elems.length; i++)
                         {
-                            elems[i].style[property] = null;
+                            elems[i].indexElem.style[property] = "";
                         }
 
                         eventHandler(CSSC.eventChange, property, null);
@@ -315,7 +355,7 @@ var CSSC = CSSController = (function()
 
                         for(var i = 0; i < elems.length; i++)
                         {
-                            elems[i].parentStyleSheet.deleteRule(elems[i]);
+                            elems[i].indexElem.parentStyleSheet.deleteRule(elems[i]);
                             deleteFromIndex(selector);
                         }
 
@@ -353,6 +393,8 @@ var CSSC = CSSController = (function()
                         {
                             return rulesWrapper([elems[position]]);
                         }
+                        
+                        return null;
                     },
                     "first": function()
                     {
@@ -389,8 +431,8 @@ var CSSC = CSSController = (function()
                                || mergeType === CSSC.mergeToOwnLast)
                         {
                             for(var i = 0; i < elems.length; i++)
-                            {
-                                if(isElemInOwnNode(elem[i]))
+                            { //@todo: optimieren => rückwertsdurchlauf bei bedarf
+                                if(isElemInOwnNode(elem[i].indexElem))
                                 {
                                     mergeTo = elem[i];
                                     if(mergeType === CSSC.mergeToOwnFirst)
@@ -427,6 +469,26 @@ var CSSC = CSSController = (function()
                         }
                         
                         return this;
+                    },
+                    update: function()
+                    {
+                        var tmp;
+                        for(var i = 0; i < elems.length; i++)
+                        {
+                            if(!!elems[i].updatableClass)
+                            {
+                                tmp = elems[i].updatableClass();
+                                for(var key in tmp)
+                                {
+                                    this.singleSet(key, tmp[key], i, true);
+                                }
+                            }
+                            
+                            for(var key in elems[i].updatablePropertys)
+                            {
+                                this.singleSet(key, elems[i].updatablePropertys[key], i, false);
+                            }
+                        }
                     }
                 };
             },
@@ -442,9 +504,9 @@ var CSSC = CSSController = (function()
                 {
                     if(!selector)
                     {
-                        return elems[position];
+                        return elems[position].indexElem;
                     }
-                    return elems[position](selector, generateNewRule);
+                    return elems[position].indexElem(selector, generateNewRule);
                 }
             };
             conditionsWrapper.first = function(selector, generateNewRule)
@@ -454,6 +516,13 @@ var CSSC = CSSController = (function()
             conditionsWrapper.last = function(selector, generateNewRule)
             {
                 return this.pos(elems.length-1, selector, generateNewRule);
+            };
+            conditionsWrapper.update = function()
+            {
+                for(var i = 0; i < elems.length; i++)
+                {
+                    elems[i].indexElem.update();
+                }
             };
             
             if(elemsObj.type === CSSC.typeCondition)
@@ -532,49 +601,19 @@ var CSSC = CSSController = (function()
         cssc.keyframes = cssc.animate;
         cssc.update = function(selector)
         {
-            var elems, wrapper, toUpdate;
+            var wrapper;
             
-            //console.log(updatable);
             if(!!selector)
             {
-                if(!!updatable[selector])
-                {
-                    elems = getFromIndex(selector);
-                    wrapper = controllerWrapper(elems, selector);
-                    
-                    if(elems.type !== CSSC.typeRule)
-                    {
-                        wrapper.update();
-                    }
-                    else
-                    {
-                        if(updatable[selector][0])
-                        {
-                            wrapper.set(updatable[selector][0]);
-                        }
-                        wrapper.set(updatable[selector][1]);
-                    }
-                }
+                wrapper = controllerWrapper(getFromIndex(selector), selector);
+                wrapper.update();
             }
             else
             {
-                for(var i in updatable)
+                for(var i in index)
                 {
-                    elems = getFromIndex(i);
-                    wrapper = controllerWrapper(elems, i);
-                    
-                    if(elems.type === CSSC.typeCondition)
-                    {
-                        wrapper.update();
-                    }
-                    else
-                    {
-                        if(updatable[i][0])
-                        {
-                            wrapper.set(updatable[i][0]);
-                        }
-                        wrapper.set(updatable[i][1]);
-                    }
+                    wrapper = controllerWrapper(index[i], selector);
+                    wrapper.update();
                 }
             }
         };
@@ -628,7 +667,7 @@ var CSSC = CSSController = (function()
         {
             window.addEventListener("load", function()
             {
-                init();
+                //init();
             });
         }
         
