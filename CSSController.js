@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.10a
+ * @version 0.11a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -55,6 +55,12 @@ var CSSC = CSSController = (function()
         },
         addToIndex = function(cssRule, parent)
         {
+//            if(!cssRule)
+//            {
+//                console.log("NULL Rule\n");
+//                console.log((new Error()).stack+"\n\n");
+//            }
+            
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = CSSC.typeRule, 
                 toIndex   = cssRule,
@@ -68,7 +74,16 @@ var CSSC = CSSController = (function()
             {
                 indexType = CSSC.typeKeyFrames;
             }
+            else if(indexKey.indexOf("@import ") === 0)
+            {
+                indexType = CSSC.typeImport;
+            }
             
+            
+            if(indexType === CSSC.typeImport)
+            {
+                toIndex = null;
+            }
             if(indexType !== CSSC.typeRule)
             {
                 toIndex = new controller(cssRule, parent, true, indexType);
@@ -81,7 +96,8 @@ var CSSC = CSSController = (function()
             indexObjWrapper = {
                 indexElem: toIndex,
                 updatableClass: false, 
-                updatablePropertys: {}
+                updatablePropertys: {},
+                events: {},
             };
             
             if(!!index[indexKey])
@@ -153,7 +169,7 @@ var CSSC = CSSController = (function()
         {
             var appendToElem;
             
-            //console.log(selector+ " => "+myType);
+//            console.log(selector+ " => "+myType);
             
             if(myType === CSSC.typeCondition || myType === CSSC.typeKeyFrames)
             {
@@ -169,6 +185,8 @@ var CSSC = CSSController = (function()
             {
                 appendToElem = ownStyleElem.sheet;
             }
+            
+//            console.log(appendToElem);
             
             var rulePos = appendToElem.cssRules.length,
                 ruleString = "";
@@ -193,12 +211,31 @@ var CSSC = CSSController = (function()
                 //console.log(selector+"{"+ruleString+"}");
                 var a = appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
+            else if("appendRule" in appendToElem)
+            {
+                var a = appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
+            }
             else if("addRule" in appendToElem)
             {
                 var a = appendToElem.addRule(selector, ruleString, rulePos);
             }
             
             return addToIndex(appendToElem.cssRules[rulePos], parent);
+        },
+        helper = {
+            parseValue: function(value)
+            {
+                if(isFinite(value))
+                {
+                    if(value%1 === 0)
+                    {
+                        return value+"px";
+                    }
+                    
+                    return (Math.round(value * 100) / 100)+"px";
+                }
+                return value;
+            },
         },
         controllerWrapper = function(elemsObj, selector)
         {
@@ -226,7 +263,7 @@ var CSSC = CSSController = (function()
                         
                         if(Object.prototype.toString.call(value) === "[object Function]")
                         {
-                            elems[elemPos].indexElem.style[property] = value(elems[elemPos].indexElem.style[property]);
+                            elems[elemPos].indexElem.style[property] = helper.parseValue(value(elems[elemPos].indexElem.style[property]));
                             
                             if(!notAddFunctionToUpdatableIndex)
                             {
@@ -235,7 +272,7 @@ var CSSC = CSSController = (function()
                         }
                         else
                         {
-                            elems[elemPos].indexElem.style[property] = value;
+                            elems[elemPos].indexElem.style[property] = helper.parseValue(value);
 
                             if(!notAddFunctionToUpdatableIndex && !!elems[elemPos].updatablePropertys[property])
                             {
@@ -431,7 +468,7 @@ var CSSC = CSSController = (function()
                                || mergeType === CSSC.mergeToOwnLast)
                         {
                             for(var i = 0; i < elems.length; i++)
-                            { //@todo: optimieren => rückwertsdurchlauf bei bedarf
+                            { //@todo: optimieren => rÃ¼ckwertsdurchlauf bei bedarf
                                 if(isElemInOwnNode(elem[i].indexElem))
                                 {
                                     mergeTo = elem[i];
@@ -500,14 +537,14 @@ var CSSC = CSSController = (function()
             conditionsWrapper.type = elemsObj.type;
             conditionsWrapper.pos = function(position, selector, generateNewRule)
             {
-                if(position >= 0 && position < elems.length)
-                {
+                //if(position >= 0 && position < elems.length)
+                //{
                     if(!selector)
                     {
                         return elems[position].indexElem;
                     }
                     return elems[position].indexElem(selector, generateNewRule);
-                }
+                //}
             };
             conditionsWrapper.first = function(selector, generateNewRule)
             {
@@ -525,7 +562,7 @@ var CSSC = CSSController = (function()
                 }
             };
             
-            if(elemsObj.type === CSSC.typeCondition)
+            if(elemsObj.type !== CSSC.typeRule)
             {
                 return conditionsWrapper;
             }
@@ -582,6 +619,8 @@ var CSSC = CSSController = (function()
                 
                 if(cntrlWrapper.type !== CSSC.typeRule)
                 {
+                    //console.log(importKey+ " last:");
+                    //console.log(cntrlWrapper.last());
                     cntrlWrapper.last().imp(importElem);
                 }
                 else
@@ -621,6 +660,7 @@ var CSSC = CSSController = (function()
         cssc.typeRule           = 0;
         cssc.typeCondition      = 1;
         cssc.typeKeyFrames      = 2;
+        cssc.typeImport         = 3;
         
         cssc.eventBeforeChange 	= "beforechange";
         cssc.eventChange        = "change";
