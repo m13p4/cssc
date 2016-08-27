@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.11a
+ * @version 0.12a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -66,6 +66,12 @@ var CSSC = CSSController = (function()
                 toIndex   = cssRule,
                 indexObjWrapper;
             
+            //webkit "hack"
+            if(indexKey.indexOf("-webkit-") >= 0)
+            {
+                indexKey = indexKey.replace("-webkit-","");
+            }
+            
             if(indexKey.indexOf("@media ") === 0)
             {
                 indexType = CSSC.typeCondition;
@@ -80,13 +86,14 @@ var CSSC = CSSController = (function()
             }
             
             
+            
             if(indexType === CSSC.typeImport)
             {
                 toIndex = null;
             }
             if(indexType !== CSSC.typeRule)
             {
-                toIndex = new controller(cssRule, parent, true, indexType);
+                toIndex = controller(cssRule, parent, true, indexType);
             }
             else
             {
@@ -148,7 +155,6 @@ var CSSC = CSSController = (function()
                 if(!!document.getElementById(ownStyleElemId))
                 {
                     throw new Error("cann not create new element..");
-                    return;
                 }
             }
             
@@ -209,15 +215,15 @@ var CSSC = CSSController = (function()
             if("insertRule" in appendToElem)
             {
                 //console.log(selector+"{"+ruleString+"}");
-                var a = appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
+                appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("appendRule" in appendToElem)
             {
-                var a = appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
+                appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("addRule" in appendToElem)
             {
-                var a = appendToElem.addRule(selector, ruleString, rulePos);
+                appendToElem.addRule(selector, ruleString, rulePos);
             }
             
             return addToIndex(appendToElem.cssRules[rulePos], parent);
@@ -232,7 +238,7 @@ var CSSC = CSSController = (function()
                         return value+"px";
                     }
                     
-                    return (Math.round(value * 100) / 100)+"px";
+                    return (Math.floor(value * 100) / 100)+"px";
                 }
                 return value;
             },
@@ -272,7 +278,10 @@ var CSSC = CSSController = (function()
                         }
                         else
                         {
+                            //console.log(selector + " -> " + property);
+                            //console.log(elems[elemPos].indexElem.style[property]);
                             elems[elemPos].indexElem.style[property] = helper.parseValue(value);
+                            //console.log(index);
 
                             if(!notAddFunctionToUpdatableIndex && !!elems[elemPos].updatablePropertys[property])
                             {
@@ -374,10 +383,33 @@ var CSSC = CSSController = (function()
                         //Before events
                         eventHandler(CSSC.eventBeforeChange, property, null);
                         eventHandler(CSSC.eventBeforeDelete, property, null);
-
-                        for(var i = 0; i < elems.length; i++)
+                        
+                        if(Object.prototype.toString.call(property) === "[object Array]")
                         {
-                            elems[i].indexElem.style[property] = "";
+                            for(var k = 0; k < property.length; k++)
+                            {
+                                for(var i = 0; i < elems.length; i++)
+                                {
+                                    elems[i].indexElem.style[property[k]] = "";
+                                }
+                            }
+                        }
+                        else if(Object.prototype.toString.call(property) === "[object Object]") 
+                        {
+                            for(var prop in property)
+                            {
+                                for(var i = 0; i < elems.length; i++)
+                                {
+                                    elems[i].indexElem.style[prop] = "";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for(var i = 0; i < elems.length; i++)
+                            {
+                                elems[i].indexElem.style[property] = "";
+                            }
                         }
 
                         eventHandler(CSSC.eventChange, property, null);
@@ -468,7 +500,7 @@ var CSSC = CSSController = (function()
                                || mergeType === CSSC.mergeToOwnLast)
                         {
                             for(var i = 0; i < elems.length; i++)
-                            { //@todo: optimieren => rÃ¼ckwertsdurchlauf bei bedarf
+                            { //@todo: optimieren => rÃƒÂ¼ckwertsdurchlauf bei bedarf
                                 if(isElemInOwnNode(elem[i].indexElem))
                                 {
                                     mergeTo = elem[i];
@@ -481,7 +513,7 @@ var CSSC = CSSController = (function()
                             
                             if(!mergeTo)
                             {
-                                var newRuleSet = addNewRule(selector);
+                                var newRuleSet = addNewRule(selector, null, null);
                                 
                                 if(isElemInOwnNode(newRuleSet.content[newRuleSet.content.length-1]))
                                 {
@@ -714,5 +746,5 @@ var CSSC = CSSController = (function()
         return cssc;
     };
     
-    return new controller(document.styleSheets, null, false, null);
+    return controller(document.styleSheets, null, false, null);
 })();
