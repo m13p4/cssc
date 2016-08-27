@@ -93,7 +93,7 @@ var CSSC = CSSController = (function()
             }
             if(indexType !== CSSC.typeRule)
             {
-                toIndex = new controller(cssRule, parent, true, indexType);
+                toIndex = controller(cssRule, parent, true, indexType);
             }
             else
             {
@@ -155,7 +155,6 @@ var CSSC = CSSController = (function()
                 if(!!document.getElementById(ownStyleElemId))
                 {
                     throw new Error("cann not create new element..");
-                    return;
                 }
             }
             
@@ -216,15 +215,15 @@ var CSSC = CSSController = (function()
             if("insertRule" in appendToElem)
             {
                 //console.log(selector+"{"+ruleString+"}");
-                var a = appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
+                appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("appendRule" in appendToElem)
             {
-                var a = appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
+                appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("addRule" in appendToElem)
             {
-                var a = appendToElem.addRule(selector, ruleString, rulePos);
+                appendToElem.addRule(selector, ruleString, rulePos);
             }
             
             return addToIndex(appendToElem.cssRules[rulePos], parent);
@@ -514,7 +513,7 @@ var CSSC = CSSController = (function()
                             
                             if(!mergeTo)
                             {
-                                var newRuleSet = addNewRule(selector);
+                                var newRuleSet = addNewRule(selector, null, null);
                                 
                                 if(isElemInOwnNode(newRuleSet.content[newRuleSet.content.length-1]))
                                 {
@@ -747,5 +746,5 @@ var CSSC = CSSController = (function()
         return cssc;
     };
     
-    return new controller(document.styleSheets, null, false, null);
+    return controller(document.styleSheets, null, false, null);
 })();
