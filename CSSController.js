@@ -2,7 +2,7 @@
  * CSSController - Dynamic CSS Controller. 
  * |-> CSSC        A way to manage style sheets.
  * 
- * @version 0.12a
+ * @version 0.13a
  *
  * @author Pavel
  * @copyright Pavel Meliantchenkov
@@ -26,34 +26,33 @@ var CSSC = CSSController = (function()
             
             isInit = true;
             
-            cssc_index = index;
-            
+            //console.log(index);
         },
         initElements = function(toInit)
         {
             if("cssRules" in toInit)
             {
-                indexCssRules(toInit.cssRules, toInit);
+                indexCssRules(toInit.cssRules, toInit, false);
             }
             else if("length" in toInit)
             {
                 for(var i = 0; i < toInit.length; i++)
                 {
-                    indexCssRules(toInit[i].cssRules, toInit[i]);
+                    indexCssRules(toInit[i].cssRules, toInit[i], false);
                 }
             }
         },
-        indexCssRules = function(cssRules, parent)
+        indexCssRules = function(cssRules, parent, imported)
         {
             for(var i = 0; i < cssRules.length; i++)
             {
                 if(!isElemInOwnNode(cssRules[i]))
                 {
-                    addToIndex(cssRules[i], parent);
+                    addToIndex(cssRules[i], parent, imported);
                 }
             }
         },
-        addToIndex = function(cssRule, parent)
+        addToIndex = function(cssRule, parent, importedElem)
         {
 //            if(!cssRule)
 //            {
@@ -65,6 +64,11 @@ var CSSC = CSSController = (function()
                 indexType = CSSC.typeRule, 
                 toIndex   = cssRule,
                 indexObjWrapper;
+            
+            if(!indexKey && cssRule.cssText.indexOf("@") === 0)
+            {
+                indexKey  = cssRule.cssText.substr(0,cssRule.cssText.indexOf(";")).trim();
+            }
             
             //webkit "hack"
             if(indexKey.indexOf("-webkit-") >= 0)
@@ -89,9 +93,9 @@ var CSSC = CSSController = (function()
             
             if(indexType === CSSC.typeImport)
             {
-                toIndex = null;
+                //toIndex = null;
             }
-            if(indexType !== CSSC.typeRule)
+            else if(indexType !== CSSC.typeRule)
             {
                 toIndex = controller(cssRule, parent, true, indexType);
             }
@@ -105,7 +109,22 @@ var CSSC = CSSController = (function()
                 updatableClass: false, 
                 updatablePropertys: {},
                 events: {},
+                imported: importedElem,
+                indexImportedElems: (indexType === CSSC.typeImport ? true : null)
             };
+            
+            if(indexType === CSSC.typeImport)
+            {
+                try
+                {
+                    indexCssRules(toIndex.styleSheet.cssRules, parent, indexObjWrapper);
+                }
+                catch(e)
+                {
+                    indexObjWrapper.indexImportedElems = false;
+                }
+                    
+            }
             
             if(!!index[indexKey])
             {
@@ -169,7 +188,9 @@ var CSSC = CSSController = (function()
         },
         isElemInOwnNode = function(elem)
         {
-            return elem.parentStyleSheet.ownerNode.id === ownStyleElemId;
+            return (elem && !!elem.parentStyleSheet 
+                    && !!elem.parentStyleSheet.ownerNode 
+                    && elem.parentStyleSheet.ownerNode.id === ownStyleElemId);
         },
         addNewRule = function(selector, property, value)
         {
@@ -442,16 +463,19 @@ var CSSC = CSSController = (function()
                             }
                         };
 
-                        if(!!elemsObj.events[eventType])
+                        for(var i = 0; i < elems.length; i++)
                         {
-                            elemsObj.events[eventType].push(event);
-                        }
-                        else
-                        {
-                            elemsObj.events[eventType] = [event];
+                            if(!!elems[i].events[eventType])
+                            {
+                                elems[i].events[eventType].push(event);
+                            }
+                            else
+                            {
+                                elems[i].events[eventType] = [event];
+                            }
                         }
 
-                        event.index = function() { return elemsObj.events[eventType].length-1; };
+                        event.index = function() { return elems[i].events[eventType].length-1; };
 
                         return event;
                     },
