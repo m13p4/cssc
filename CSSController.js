@@ -8,7 +8,8 @@
  * @copyright Pavel Meliantchenkov
  */
 
-var CSSC = CSSController = (function() 
+var CSSC, CSSController;
+CSSC=CSSController=(function() 
 {
     var ownStyleElem, ownStyleElemId = "cssc-container";
     
@@ -267,19 +268,20 @@ var CSSC = CSSController = (function()
         controllerWrapper = function(elemsObj, selector)
         {
             var elems = elemsObj.content;
-                
-            var eventHandler = function(eventType, property, value)
+            
+            var rulesWrapper = function(elems)
             {
-                if(!!elemsObj.events[eventType])
+                var eventHandler = function(i, eventType, property, value)
                 {
-                    for(var i = 0; i < elemsObj.events[eventType].length; i++)
+                    if(!!elems[i].events[eventType])
                     {
-                        elemsObj.events[eventType][i].call(property, value);
+                        for(var j = 0; j < elems[i].events[eventType].length; j++)
+                        {
+                            elems[i].events[eventType][j].call(property, value);
+                        }
                     }
-                }
-            },
-            rulesWrapper = function(elems)
-            {
+                };
+                
                 return {
                     'singleSet': function(property, value, elemPos, notAddFunctionToUpdatableIndex)
                     {
@@ -287,10 +289,16 @@ var CSSC = CSSController = (function()
                         if(elemPos === 0 && elems.length > 0) elemPos = elems.length-1;
                         
                         //console.log(elems[elemPos].parentStyleSheet.ownerNode.id);
+                        var val;
                         
                         if(Object.prototype.toString.call(value) === "[object Function]")
                         {
-                            elems[elemPos].indexElem.style[property] = helper.parseValue(value(elems[elemPos].indexElem.style[property]));
+                            val = helper.parseValue(value(elems[elemPos].indexElem.style[property]));
+                            
+                            eventHandler(elemPos, CSSC.eventBeforeChange, property, val);
+                            eventHandler(elemPos, CSSC.eventBeforeSet, property, val);
+                            
+                            elems[elemPos].indexElem.style[property] = val;
                             
                             if(!notAddFunctionToUpdatableIndex)
                             {
@@ -299,9 +307,15 @@ var CSSC = CSSController = (function()
                         }
                         else
                         {
+                            val = helper.parseValue(value);
+                            
+                            eventHandler(elemPos, CSSC.eventBeforeChange, property, val);
+                            eventHandler(elemPos, CSSC.eventBeforeSet, property, val);
+                            
                             //console.log(selector + " -> " + property);
                             //console.log(elems[elemPos].indexElem.style[property]);
-                            elems[elemPos].indexElem.style[property] = helper.parseValue(value);
+                            elems[elemPos].indexElem.style[property] = val;
+                            
                             //console.log(index);
 
                             if(!notAddFunctionToUpdatableIndex && !!elems[elemPos].updatablePropertys[property])
@@ -309,6 +323,9 @@ var CSSC = CSSController = (function()
                                 delete elems[elemPos].updatablePropertys[property];
                             } 
                         }
+                        
+                        eventHandler(elemPos, CSSC.eventChange, property, val);
+                        eventHandler(elemPos, CSSC.eventSet, property, val);
 
                         return this;
                     },
@@ -316,10 +333,6 @@ var CSSC = CSSController = (function()
                     { 
                         if(elems.length > 0)
                         {
-                            //Before events
-                            eventHandler(CSSC.eventBeforeChange, property, value);
-                            eventHandler(CSSC.eventBeforeSet, property, value);
-
                             //Multi set if property a object with key & value
                             if(Object.prototype.toString.call(property) === "[object Object]" 
                                && Object.keys(property).length > 0) 
@@ -377,8 +390,6 @@ var CSSC = CSSController = (function()
                             eventHandler(CSSC.eventCreate, property, value);
                         }
 
-                        eventHandler(CSSC.eventChange, property, value);
-                        eventHandler(CSSC.eventSet, property, value);
 
                         return this;
                     },
@@ -402,8 +413,6 @@ var CSSC = CSSController = (function()
                     'delete': function(property)
                     {
                         //Before events
-                        eventHandler(CSSC.eventBeforeChange, property, null);
-                        eventHandler(CSSC.eventBeforeDelete, property, null);
                         
                         if(Object.prototype.toString.call(property) === "[object Array]")
                         {
@@ -411,7 +420,13 @@ var CSSC = CSSController = (function()
                             {
                                 for(var i = 0; i < elems.length; i++)
                                 {
+                                    eventHandler(i, CSSC.eventBeforeChange, property, null);
+                                    eventHandler(i, CSSC.eventBeforeDelete, property, null);
+                                    
                                     elems[i].indexElem.style[property[k]] = "";
+                                    
+                                    eventHandler(i, CSSC.eventChange, property, null);
+                                    eventHandler(i, CSSC.eventDelete, property, null);
                                 }
                             }
                         }
@@ -421,7 +436,13 @@ var CSSC = CSSController = (function()
                             {
                                 for(var i = 0; i < elems.length; i++)
                                 {
+                                    eventHandler(i, CSSC.eventBeforeChange, property, null);
+                                    eventHandler(i, CSSC.eventBeforeDelete, property, null);
+                                    
                                     elems[i].indexElem.style[prop] = "";
+                                    
+                                    eventHandler(i, CSSC.eventChange, property, null);
+                                    eventHandler(i, CSSC.eventDelete, property, null);
                                 }
                             }
                         }
@@ -429,27 +450,29 @@ var CSSC = CSSController = (function()
                         {
                             for(var i = 0; i < elems.length; i++)
                             {
+                                eventHandler(i, CSSC.eventBeforeChange, property, null);
+                                eventHandler(i, CSSC.eventBeforeDelete, property, null);
+                                
                                 elems[i].indexElem.style[property] = "";
+                                
+                                eventHandler(i, CSSC.eventChange, property, null);
+                                eventHandler(i, CSSC.eventDelete, property, null);
                             }
                         }
-
-                        eventHandler(CSSC.eventChange, property, null);
-                        eventHandler(CSSC.eventDelete, property, null);
 
                         return this;
                     },
                     'destroy': function()
                     {
-                        //Before events
-                        eventHandler(CSSC.eventBeforeDestroy, null, null);
-
                         for(var i = 0; i < elems.length; i++)
                         {
+                            eventHandler(i, CSSC.eventBeforeDestroy, null, null);
+                            
                             elems[i].indexElem.parentStyleSheet.deleteRule(elems[i]);
                             deleteFromIndex(selector);
+                            
+                            eventHandler(i, CSSC.eventDestroy, null, null);
                         }
-
-                        eventHandler(CSSC.eventDestroy, null, null);
                     },
                     'event': function(eventType, eventFunction)
                     {
@@ -587,6 +610,12 @@ var CSSC = CSSController = (function()
             },
             conditionsWrapper = function(selector, generateNewRule)
             {
+                /*
+                var rules = [];
+                for(var i = 0; i < elems.length; i++)
+                {
+                    @todo: weiter..
+                }*/
                 return elems[elems.length-1](selector, generateNewRule);
             };
             conditionsWrapper.elems = elems;
@@ -614,6 +643,7 @@ var CSSC = CSSController = (function()
             {
                 for(var i = 0; i < elems.length; i++)
                 {
+                    console.log(elems[i]);
                     elems[i].indexElem.update();
                 }
             };
