@@ -8,25 +8,25 @@ CSSC indexed already loaded style sheets.
 
 After the index, you can access the features
 * Set with key/value
-```bash
+```javascript
 CSSC(".myCSSClass").set("width", "50px");
 ```
 * Set with object
-```bash
+```javascript
 CSSC(".myCSSClass").set({
     "width":  "50px",
     "height": "25px",
 });
 ```
 * Set updatable property
-```bash
+```javascript
 CSSC(".myCSSClass").set("width", function()
 {
     return window.innerWidth+"px";
 });
 ```
 * Set updatable class
-```bash
+```javascript
 CSSC(".myCSSClass").set(function()
 {
     return {
@@ -37,7 +37,7 @@ CSSC(".myCSSClass").set(function()
 ```
 
 Othermore the style sheets can be defined with CSSC in that case
-```bash
+```javascript
 CSSC({
     ".myCSSClass": 
     {
@@ -71,7 +71,7 @@ CSSC({
 ##Methods: get / set / delete / destroy
 ###get
 return value as string
-```bash
+```javascript
 CSSC(".myCSSClass").get("width");
 ```
 return value as string or function if this is defined as function
@@ -79,29 +79,29 @@ return value as string or function if this is defined as function
 CSSC(".myCSSClass").get("width", true);
 ```
 return all values as object, key and value as as string or function if this is defined as function.
-```bash
+```javascript
 CSSC(".myCSSClass").get();
 ```
 return all values as object, key as string and value as string.
 if the css class as function defined is the return value a function.
-```bash
+```javascript
 CSSC(".myCSSClass").get(true);
 ```
 ###set
 set with key/value
-```bash
+```javascript
 CSSC(".myCSSClass").set("width", "50px");
 CSSC(".myCSSClass").set("height", (window.innerHeight / 2)+"px");
 ```
 make the value updatable
-```bash
+```javascript
 CSSC(".myCSSClass").set("width", function()
 {
     return (window.innerWidth / 2)+"px";
 });
 ```
 set as object with key and value or a function which returns a key / value object.
-```bash
+```javascript
 CSSC(".myCSSClass").set({
     width: "50px",
     height: function() //updatable
@@ -121,11 +121,11 @@ CSSC(".myCSSClass").set(function()
 
 ###delete
 delete a css property
-```bash
+```javascript
 CSSC(".myCSSClass").delete("width");
 ```
 delete several css propertys
-```bash
+```javascript
 //as array
 CSSC(".myCSSClass").delete(["width","height"]);
 
@@ -135,7 +135,7 @@ CSSC(".myCSSClass").delete({width:"foo",height:"bar"});
 
 ###destroy
 the complete definition of ".myCSSClass" will be deleted
-```bash
+```javascript
 CSSC(".myCSSClass").destroy();
 ```
 
@@ -143,25 +143,25 @@ CSSC(".myCSSClass").destroy();
 If you selector finds more as one css rule objects, you can select one of them with this methods.
 ###pos
 if you know the position of the element what you need, use the method ".pos".
-```bash
+```javascript
 CSSC(".myCSSClass").pos(3).set("width", "50px");
 ```
 ###first
 If you need first element, use the method ".first".
-```bash
+```javascript
 CSSC(".myCSSClass").first().set("width", "50px");
 //it's the same as
 CSSC(".myCSSClass").pos(0).set("width", "50px");
 ```
 ###last
 if you need last element, use the method ".last".
-```bash
+```javascript
 CSSC(".myCSSClass").last().set("width", "50px");
 ```
 
 ##Events
 Events can be used to react on changes in your css class.
-```bash
+```javascript
 CSSC(".myCSSClass").event("change", function(property, value)
 {
     //white you code here..
@@ -184,15 +184,15 @@ coming soon..
 
 ##Updatable
 The update method must be called in order to use the advantages of updatable setter.
-```bash
+```javascript
 CSSC.update();
 ```
 You can pass a selector to the method.
-```bash
+```javascript
 CSSC.update(".myCSSClass");
 ```
 It might be useful to call the method within an event.
-```bash
+```javascript
 window.addEventListener("resize", function()
 {
     CSSC.update();
