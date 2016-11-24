@@ -1,4 +1,4 @@
-!!! Use this version at most to test, otherwise wait for the beta !!!
+!!! Caution: This version is an early alpha and not suitable for productive use !!!
 
 # CSSC / CSSController
 CSSC is a simple way to make you CSS dynamic with JavaScript
