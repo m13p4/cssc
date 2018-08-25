@@ -263,7 +263,7 @@ CSSC=CSSController=(function()
                     return (Math.floor(value * 100) / 100)+"px";
                 }
                 return value;
-            }
+            },
         },
         controllerWrapper = function(elemsObj, selector)
         {
