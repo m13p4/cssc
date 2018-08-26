@@ -13,7 +13,7 @@ var _debug = true,
 
 var CSSC = (function()
 {
-    var ownStyleElem, ownStyleElemId = "cssc-style";
+    var ownStyleElem;
     
     var cntrl = function(styleSheetsDOM, parent, initOnRun, myType)
     {
@@ -184,18 +184,18 @@ var CSSC = (function()
         helper = {
             createNewStyleElem: function()
             {
-                if(!!document.getElementById(ownStyleElemId))
+                if(!!document.getElementById(cssc.conf.styleId))
                 {
                     for(var i = 0; i < 10; i++)
                     {
-                        if(!document.getElementById(ownStyleElemId+'-'+i))
+                        if(!document.getElementById(cssc.conf.styleId+'-'+i))
                         {
-                            ownStyleElemId = ownStyleElemId+'-'+i;
+                            cssc.conf.styleId = cssc.conf.styleId+'-'+i;
                             break;
                         }
                     }
 
-                    if(!!document.getElementById(ownStyleElemId))
+                    if(!!document.getElementById(cssc.conf.styleId))
                     {
                         throw new Error("cann not create new element..");
                     }
@@ -203,7 +203,7 @@ var CSSC = (function()
 
                 var styleElem = document.createElement("style");
                 styleElem.setAttribute("type", "text/css");
-                styleElem.setAttribute("id", ownStyleElemId);
+                styleElem.setAttribute("id", cssc.conf.styleId);
                 styleElem.appendChild(document.createTextNode(""));
 
                 document.head.appendChild(styleElem);
@@ -214,7 +214,7 @@ var CSSC = (function()
             {
                 return (elem && !!elem.parentStyleSheet 
                         && !!elem.parentStyleSheet.ownerNode 
-                        && elem.parentStyleSheet.ownerNode.id === ownStyleElemId);
+                        && elem.parentStyleSheet.ownerNode.id === cssc.conf.styleId);
             },
             parseValue: function(value)
             {
@@ -258,7 +258,10 @@ var CSSC = (function()
                     {
                         if(Object.prototype.toString.call(val) === "[object Function]")
                         {
-                            
+                            var oldVal = helper.findPropInCssText(elems[pos].indexElem.cssText, prop),
+                                valToSet = val(oldVal);
+                        
+                            elems[pos].indexElem.style[prop] = helper.parseValue(valToSet);
                         }
                         else
                         {
@@ -283,7 +286,15 @@ var CSSC = (function()
                         }
                         else if(Object.prototype.toString.call(prop) === "[object Function]")
                         {
-                            
+                            var props = prop();
+                                
+                            for(var i = 0; i < elems.length; i++)
+                            {
+                                for(var key in props)
+                                {
+                                    this.set(key, props[key], i);
+                                }
+                            }
                         }
                         else
                         {
@@ -418,6 +429,9 @@ var CSSC = (function()
             delete:         "delete",
             beforeDestroy:  "beforedestroy",
             destroy:        "destroy"
+        };
+        cssc.conf = {
+            'style-id': "cssc-style"
         };
         
         if(!!initOnRun)
