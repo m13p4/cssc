@@ -78,10 +78,11 @@ var CSSC = (function()
                 return;
             }
             
+            toIndex._update = false;
+            toIndex.style._update = {};
+            
             indexObjWrapper = {
                 indexElem: toIndex,
-                updatableClass: false, 
-                updatablePropertys: {},
                 events: {},
                 imported: importedElem,
                 indexImportedElems: (indexType === cssc.ruleType.import ? true : null)
@@ -263,6 +264,9 @@ var CSSC = (function()
                                 valToSet = val(oldVal);
                         
                             this.e[pos].indexElem.style[prop] = helper.parseValue(valToSet);
+                            
+                            //add to updatable
+                            this.e[pos].indexElem.style._update[prop] = val;
                         }
                         else
                         {
@@ -277,7 +281,7 @@ var CSSC = (function()
                                && Object.keys(prop).length > 0) 
                         {
                             var key;
-                            for(i = 0; i < elems.length; i++)
+                            for(i = 0; i < this.e.length; i++)
                             {
                                 for(key in prop)
                                 {
@@ -289,17 +293,20 @@ var CSSC = (function()
                         {
                             var props = prop();
                                 
-                            for(var i = 0; i < elems.length; i++)
+                            for(var i = 0; i < this.e.length; i++)
                             {
                                 for(var key in props)
                                 {
                                     this.set(key, props[key], i);
                                 }
+                                
+                                //add to updatable
+                                this.e[i].indexElem._update = prop;
                             }
                         }
                         else
                         {
-                            for(i = 0; i < elems.length; i++)
+                            for(i = 0; i < this.e.length; i++)
                             {
                                 this.set(prop, val, i);
                             }
@@ -312,7 +319,7 @@ var CSSC = (function()
                     
                     returnAllProps = !!returnAllProps;
                     
-                    for(i = 0; i < elems.length; i++)
+                    for(i = 0; i < this.e.length; i++)
                     {
                         tmp = helper.findPropInCssText(elems[i].indexElem.cssText, prop);
                         
@@ -324,6 +331,29 @@ var CSSC = (function()
                         }
                     }
                     return returnAllProps ? arrToRet : propToRet;
+                },
+                'update': function()
+                {
+                    var i, tmp, key;
+                    
+                    for(i = 0; i < this.e.length; i++)
+                    {
+                        if(this.e[i].indexElem._update !== false)
+                        {
+                            tmp = this.e[i].indexElem._update();
+                            
+                            for(key in tmp)
+                            {
+                                this.set(key, tmp[key], i);
+                            }
+                        }
+                        
+                        for(key in this.e[i].indexElem.style._update)
+                        {
+                            tmp = this.e[i].indexElem.style._update[key]();
+                            this.set(key, tmp, i);
+                        }
+                    }
                 },
                 'delete': function(prop)
                 {
@@ -346,7 +376,7 @@ var CSSC = (function()
                 }
             };
         },
-        cssc = function(sel, crNewRule)
+        cssc = function(sel)
         {
             //console.log(Object.prototype.toString.call(sel));
             
@@ -377,6 +407,16 @@ var CSSC = (function()
                 }
                 
                 return ruleHandler(matches, sel);
+            }
+            else if(Object.prototype.toString.call(sel) === "[object Array]")
+            {
+                var matches = [], i;
+                
+                for(i = 0; i < sel.length; i++)
+                {
+                    //@todo: weiter...
+                    //@todo: array mit regex unterstützen
+                }
             }
             else
             {
@@ -409,6 +449,16 @@ var CSSC = (function()
             }
             
             return exportString.trim();
+        },
+        cssc.update = function()
+        {
+            var handler, i;
+            
+            for(i in index)
+            {
+                handler = ruleHandler(index[i].content);
+                handler.update();
+            }
         },
         cssc.ruleType = {
             rule:       1,
