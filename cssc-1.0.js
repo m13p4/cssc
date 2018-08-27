@@ -12,8 +12,7 @@ var _debug = true,
     csscDebug = {};
 
 var CSSC = (function()
-{
-    'use strict';
+{ 'use strict';
     
     var ownStyleElem;
     
@@ -399,7 +398,7 @@ var CSSC = (function()
         },
         cssc.export = function()
         {
-            var exportString = "", indexElem, i;
+            var exportString = '', indexElem, i;
             
             for(indexElem in index)
             {
@@ -457,7 +456,7 @@ var CSSC = (function()
             destroy:        "destroy"
         };
         cssc.conf = {
-            'style-id': "cssc-style"
+            'styleId': "cssc-style"
         };
         
         if(!!initOnRun)
