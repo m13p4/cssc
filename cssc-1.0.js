@@ -410,13 +410,22 @@ var CSSC = (function()
             }
             else if(Object.prototype.toString.call(sel) === "[object Array]")
             {
-                var matches = [], i;
+                var matches = [], i, j, tmp;
                 
                 for(i = 0; i < sel.length; i++)
                 {
-                    //@todo: weiter...
-                    //@todo: array mit regex unterstützen
+                    tmp = getFromIndex(sel[i]);
+                    
+                    if(tmp !== null)
+                    {
+                        for(j = 0; j < tmp.content.length; j++)
+                        {
+                            matches.push(tmp.content[j]);
+                        }
+                    }
                 }
+                
+                return ruleHandler(matches, sel);
             }
             else
             {
@@ -450,14 +459,22 @@ var CSSC = (function()
             
             return exportString.trim();
         },
-        cssc.update = function()
+        cssc.update = function(sel)
         {
-            var handler, i;
+            var handler;
             
-            for(i in index)
+            if(!!sel)
             {
-                handler = ruleHandler(index[i].content);
+                handler = cssc(sel);
                 handler.update();
+            }
+            else
+            {
+                for(var i in index)
+                {
+                    handler = ruleHandler(index[i].content);
+                    handler.update();
+                }
             }
         },
         cssc.ruleType = {
