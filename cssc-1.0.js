@@ -33,8 +33,6 @@ var CSSC = (function()
             initElements(styleSheetsDOM);
             
             isInit = true;
-            
-            //console.log(index);
         },
         initElements = function(toInit)
         {
@@ -48,6 +46,10 @@ var CSSC = (function()
             {
                 for(var i = 0; i < toInit.length; i++)
                 {
+                    if(toInit[i].ownerNode.getAttribute('data-cssc-ignore') === "true")
+                    {
+                        continue;
+                    }
                     indexCssRules(toInit[i].cssRules, toInit[i], false);
                 }
             }
@@ -69,7 +71,6 @@ var CSSC = (function()
                 indexType = cssRule.type, 
                 toIndex   = cssRule,
                 indexObjWrapper;
-        
             
             //@todo: support all types
             if(indexType !== cssc.ruleType.rule)
@@ -97,8 +98,7 @@ var CSSC = (function()
                 catch(e)
                 {
                     indexObjWrapper.indexImportedElems = false;
-                }
-                    
+                }   
             }
             
             if(!!index[indexKey])
@@ -127,8 +127,6 @@ var CSSC = (function()
         {
             var appendToElem;
             
-//            console.log(selector+ " => "+myType);
-            
             if(!ownStyleElem)
             {
                 helper.createNewStyleElem();
@@ -156,7 +154,6 @@ var CSSC = (function()
 
             if("insertRule" in appendToElem)
             {
-                //console.log(selector+"{"+ruleString+"}");
                 appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
             }
             else if("appendRule" in appendToElem)
@@ -249,10 +246,6 @@ var CSSC = (function()
             }
             
             return {
-                /*
-                'type': indexElem.type,
-                'typeName': cssc.ruleType.names[indexElem.type],
-                */
                 'e': elems,
                 'set': function(prop, val, pos)
                 {
@@ -378,8 +371,6 @@ var CSSC = (function()
         },
         cssc = function(sel)
         {
-            //console.log(Object.prototype.toString.call(sel));
-            
             if(Object.prototype.toString.call(sel) === "[object String]")
             {
                 var indexElem = getFromIndex(sel);
@@ -478,7 +469,7 @@ var CSSC = (function()
                                                 return p + "\n";
                                             else if(p === ";")
                                                 return p + "\n    ";
-                                        }).replace("    }", "}");
+                                        }).replace(/\s+}/, "\n}");
                     }
                 }
             }
