@@ -445,7 +445,7 @@ var CSSC = (function()
                 handlerObj.set(importElem);
             }
         },
-        cssc.export = function()
+        cssc.export = function(type)
         {
             var exportString = '', indexElem, i;
             
@@ -453,7 +453,33 @@ var CSSC = (function()
             {
                 for(i = 0; i < index[indexElem].content.length; i++)
                 {
-                    exportString += index[indexElem].content[i].indexElem.cssText + "\n";
+                    if(type === cssc.export.type.ruleRow)
+                    {
+                        exportString += index[indexElem].content[i].indexElem.cssText + "\n";
+                    }
+                    else if(type === cssc.export.type.min)
+                    {
+                        exportString += index[indexElem].content[i].indexElem.cssText
+                                        .replace(/(;|:|\s*?{|}|,)\s+/gi,function(p)
+                                        {
+                                            return p.trim();
+                                        });
+                    }
+                    else //Normal
+                    {
+                        exportString += index[indexElem].content[i].indexElem.cssText
+                                        .replace(/({|}|;)\s*/gi, function(p)
+                                        { 
+                                            p = p.trim();
+                                            
+                                            if(p === "{")
+                                                return p + "\n    ";
+                                            else if(p === "}")
+                                                return p + "\n";
+                                            else if(p === ";")
+                                                return p + "\n    ";
+                                        }).replace("    }", "}");
+                    }
                 }
             }
             
@@ -521,6 +547,11 @@ var CSSC = (function()
             delete:         "delete",
             beforeDestroy:  "beforedestroy",
             destroy:        "destroy"
+        };
+        cssc.export.type = {
+            normal:  'normal',
+            ruleRow: 'ruleRow',
+            min:      'min'
         };
         cssc.conf = {
             'styleId': "cssc-style"
