@@ -281,7 +281,7 @@ var CSSC = (function()
                     {
                         if(Object.prototype.toString.call(val) === "[object Function]")
                         {
-                            var oldVal = helper.findPropInCssText(elems[pos].indexElem.cssText, prop),
+                            var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
                                 valToSet = val(oldVal);
                         
                             this.e[pos].indexElem.style[prop] = helper.parseValue(valToSet);
@@ -449,9 +449,9 @@ var CSSC = (function()
                     }
                     else
                     {
-                        for(i = 0; i < elems.length; i++)
+                        for(i = 0; i < this.e.length; i++)
                         {
-                            elems[i].indexElem.style[prop] = "";
+                            this.e[i].indexElem.style[prop] = "";
                         }
                     }
                 },
