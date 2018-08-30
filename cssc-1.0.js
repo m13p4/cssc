@@ -469,13 +469,15 @@ var CSSC = (function()
             //find Elements with hasProp
             if(!!hasProp)
             {
+                var propVal = hasProp.split(":");
+                
                 matches = [];
                 
                 for(i = 0; i < ret.e.length; i++)
                 {
-                    tmp = helper.findPropInCssText(ret.e[i].indexElem.cssText, hasProp);
+                    tmp = helper.findPropInCssText(ret.e[i].indexElem.cssText, propVal[0]);
                     
-                    if(tmp !== "")
+                    if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
                     {
                         matches.push(ret.e[i]);
                     }
