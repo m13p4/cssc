@@ -388,6 +388,18 @@ var CSSC = (function()
                             }
                         }
                     }
+                    else if(Object.prototype.toString.call(prop) === "[object RegExp]")
+                    {
+                        for(i = 0; i < this.e.length; i++)
+                        {
+                            tmp = this.e[i].indexElem.cssText.match(prop);
+
+                            if(!!tmp)
+                            {
+                                matches.push(this.e[i]);
+                            }
+                        }
+                    }
 
                     return ruleHandler(matches, sel);
                 },
