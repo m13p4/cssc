@@ -73,7 +73,7 @@ var CSSC = (function()
                 indexObjWrapper;
             
             //@todo: support all types
-            if(indexType !== cssc.ruleType.rule)
+            if(indexType !== cssc.ruleType.rule && indexType !== cssc.ruleType.fontFace)
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
                 return;
@@ -279,6 +279,14 @@ var CSSC = (function()
                 {
                     if(typeof pos === "number") // single Set
                     {
+                        //can not change font-face values on Firefox..
+                        if(this.e[pos].indexElem.type === cssc.ruleType.fontFace)
+                        {
+                            console.log("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
+                            
+                            return this;
+                        }
+                        
                         if(Object.prototype.toString.call(val) === "[object Function]")
                         {
                             var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
@@ -333,6 +341,8 @@ var CSSC = (function()
                             }
                         }
                     }
+                    
+                    return this;
                 },
                 'get': function(prop, returnAllProps)
                 {
@@ -435,6 +445,8 @@ var CSSC = (function()
                             this.set(key, tmp, i);
                         }
                     }
+                    
+                    return this;
                 },
                 'delete': function(prop)
                 {
@@ -627,7 +639,7 @@ var CSSC = (function()
         cssc.export.type = {
             normal:  'normal',
             ruleRow: 'ruleRow',
-            min:      'min'
+            min:     'min'
         };
         cssc.conf = {
             'styleId': "cssc-style"
