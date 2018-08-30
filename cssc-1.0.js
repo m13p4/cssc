@@ -352,6 +352,44 @@ var CSSC = (function()
                         }
                     }
                     return returnAllProps ? arrToRet : propToRet;
+                }, 
+                'has': function(prop)
+                {
+                    var matches = [], propVal, i, tmp;
+
+                    if(Object.prototype.toString.call(prop) === "[object String]")
+                    {
+                        propVal = prop.split(":");
+                        
+                        for(i = 0; i < this.e.length; i++)
+                        {
+                            tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
+
+                            if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
+                            {
+                                matches.push(this.e[i]);
+                            }
+                        }
+                    }
+                    else if(Object.prototype.toString.call(prop) === "[object Array]")
+                    {
+                        for(var j = 0; j < prop.length; j++)
+                        {
+                            propVal = prop[j].split(":");
+                        
+                            for(i = 0; i < this.e.length; i++)
+                            {
+                                tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
+
+                                if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
+                                {
+                                    matches.push(this.e[i]);
+                                }
+                            }
+                        }
+                    }
+
+                    return ruleHandler(matches, sel);
                 },
                 'update': function()
                 {
@@ -410,7 +448,7 @@ var CSSC = (function()
         },
         cssc = function(sel, hasProp)
         {
-            var ret, matches = [], i, tmp; 
+            var ret;
             
             if(Object.prototype.toString.call(sel) === "[object String]")
             {
@@ -425,7 +463,7 @@ var CSSC = (function()
             }
             else if(Object.prototype.toString.call(sel) === "[object RegExp]")
             {
-                var key;
+                var matches = [], key;
                 
                 for(key in index)
                 {
@@ -442,7 +480,7 @@ var CSSC = (function()
             }
             else if(Object.prototype.toString.call(sel) === "[object Array]")
             {
-                var j;
+                var matches = [], i, j, tmp;
                 
                 for(i = 0; i < sel.length; i++)
                 {
@@ -466,24 +504,10 @@ var CSSC = (function()
                 return;
             }
             
-            //find Elements with hasProp
+            //return Elements with hasProp
             if(!!hasProp)
             {
-                var propVal = hasProp.split(":");
-                
-                matches = [];
-                
-                for(i = 0; i < ret.e.length; i++)
-                {
-                    tmp = helper.findPropInCssText(ret.e[i].indexElem.cssText, propVal[0]);
-                    
-                    if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
-                    {
-                        matches.push(ret.e[i]);
-                    }
-                }
-                
-                return ruleHandler(matches, sel);
+                return ret.has(hasProp);
             }
             
             return ret;
