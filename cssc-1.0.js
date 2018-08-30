@@ -445,7 +445,6 @@ var CSSC = (function()
                             this.set(key, tmp, i);
                         }
                     }
-                    
                     return this;
                 },
                 'delete': function(prop)
@@ -466,6 +465,7 @@ var CSSC = (function()
                             this.e[i].indexElem.style[prop] = "";
                         }
                     }
+                    return this;
                 },
                 'export': function(type)
                 {
