@@ -234,6 +234,34 @@ var CSSC = (function()
                     find = cssText.match(regExp);
                 
                 return !!find ? find[1].trim() : "";
+            },
+            exportParser: function(cssText, type)
+            {
+                if(type === cssc.export.type.ruleRow)
+                {
+                    return cssText+"\n";
+                }
+                else if(type === cssc.export.type.min)
+                {
+                    return cssText.replace(/(;|:|\s*?{|}|,)\s+/gi,function(p)
+                    {
+                        return p.trim();
+                    });
+                }
+                else //Normal
+                {
+                    return cssText.replace(/({|}|;)\s*/gi, function(p)
+                    { 
+                        p = p.trim();
+
+                        if(p === "{")
+                            return p + "\n    ";
+                        else if(p === "}")
+                            return p + "\n";
+                        else if(p === ";")
+                            return p + "\n    ";
+                    }).replace(/\s+}/, "\n}");
+                }
             }
         },
         ruleHandler = function(indexElemArr, sel)
@@ -314,7 +342,7 @@ var CSSC = (function()
                     
                     for(i = 0; i < this.e.length; i++)
                     {
-                        tmp = helper.findPropInCssText(elems[i].indexElem.cssText, prop);
+                        tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, prop);
                         
                         if(!!tmp)
                         {
@@ -353,9 +381,9 @@ var CSSC = (function()
                     var i;
                     if(typeof prop === "undefined")
                     {
-                        for(i = 0; i < elems.length; i++)
+                        for(i = 0; i < this.e.length; i++)
                         {
-                            elems[i].indexElem.parentStyleSheet.deleteRule(elems[i]);
+                            this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
                             delFromIndex(sel);
                         }
                     }
@@ -366,11 +394,24 @@ var CSSC = (function()
                             elems[i].indexElem.style[prop] = "";
                         }
                     }
+                },
+                'export': function(type)
+                {
+                    var exportString = "", i;
+                    
+                    for(i = 0; i < this.e.length; i++)
+                    {
+                        exportString += helper.exportParser(this.e[i].indexElem.cssText, type);
+                    }
+                    
+                    return exportString.trim();
                 }
             };
         },
-        cssc = function(sel)
+        cssc = function(sel, hasProp)
         {
+            var ret, matches = [], i, tmp; 
+            
             if(Object.prototype.toString.call(sel) === "[object String]")
             {
                 var indexElem = getFromIndex(sel);
@@ -380,11 +421,11 @@ var CSSC = (function()
                     indexElem = createRule(sel, null, null);
                 }
 
-                return ruleHandler(indexElem.content, sel);
+                ret = ruleHandler(indexElem.content, sel);
             }
             else if(Object.prototype.toString.call(sel) === "[object RegExp]")
             {
-                var key, matches = [], i;
+                var key;
                 
                 for(key in index)
                 {
@@ -397,11 +438,11 @@ var CSSC = (function()
                     }
                 }
                 
-                return ruleHandler(matches, sel);
+                ret = ruleHandler(matches, sel);
             }
             else if(Object.prototype.toString.call(sel) === "[object Array]")
             {
-                var matches = [], i, j, tmp;
+                var j;
                 
                 for(i = 0; i < sel.length; i++)
                 {
@@ -416,12 +457,34 @@ var CSSC = (function()
                     }
                 }
                 
-                return ruleHandler(matches, sel);
+                ret = ruleHandler(matches, sel);
             }
             else
             {
                 cssc.import(sel);
+                
+                return;
             }
+            
+            //find Elements with hasProp
+            if(!!hasProp)
+            {
+                matches = [];
+                
+                for(i = 0; i < ret.e.length; i++)
+                {
+                    tmp = helper.findPropInCssText(ret.e[i].indexElem.cssText, hasProp);
+                    
+                    if(tmp !== "")
+                    {
+                        matches.push(ret.e[i]);
+                    }
+                }
+                
+                return ruleHandler(matches, sel);
+            }
+            
+            return ret;
         }; 
         cssc.import = function(importObj)
         {
@@ -444,33 +507,7 @@ var CSSC = (function()
             {
                 for(i = 0; i < index[indexElem].content.length; i++)
                 {
-                    if(type === cssc.export.type.ruleRow)
-                    {
-                        exportString += index[indexElem].content[i].indexElem.cssText + "\n";
-                    }
-                    else if(type === cssc.export.type.min)
-                    {
-                        exportString += index[indexElem].content[i].indexElem.cssText
-                                        .replace(/(;|:|\s*?{|}|,)\s+/gi,function(p)
-                                        {
-                                            return p.trim();
-                                        });
-                    }
-                    else //Normal
-                    {
-                        exportString += index[indexElem].content[i].indexElem.cssText
-                                        .replace(/({|}|;)\s*/gi, function(p)
-                                        { 
-                                            p = p.trim();
-                                            
-                                            if(p === "{")
-                                                return p + "\n    ";
-                                            else if(p === "}")
-                                                return p + "\n";
-                                            else if(p === ";")
-                                                return p + "\n    ";
-                                        }).replace(/\s+}/, "\n}");
-                    }
+                    exportString += helper.exportParser(index[indexElem].content[i].indexElem.cssText, type);
                 }
             }
             
