@@ -390,13 +390,23 @@ var CSSC = (function()
                     }
                     else if(Object.prototype.toString.call(prop) === "[object RegExp]")
                     {
+                        var m, j;
+                        
                         for(i = 0; i < this.e.length; i++)
                         {
-                            tmp = this.e[i].indexElem.cssText.match(prop);
-
-                            if(!!tmp)
+                            m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g)
+                            
+                            if(!!m)
                             {
-                                matches.push(this.e[i]);
+                                for(j = 0; j < m.length; j++)
+                                {
+                                    tmp = m[j].match(prop);
+
+                                    if(!!tmp)
+                                    {
+                                        matches.push(this.e[i]);
+                                    }
+                                }
                             }
                         }
                     }
