@@ -143,7 +143,25 @@ var CSSC = (function()
                 {
                     for(var key in property)
                     {
-                        ruleString += key+":"+property[key]+"; ";
+                        if(Object.prototype.toString.call(property[key]) === "[object Function]")
+                        {
+                            var prop = property[key]();
+                            
+                            ruleString += key+":"+prop+"; ";
+                        }
+                        else
+                        {
+                            ruleString += key+":"+property[key]+"; ";
+                        }
+                    }
+                }
+                else if(Object.prototype.toString.call(property) === "[object Function]")
+                {
+                    var prop = property();
+                    
+                    for(var key in prop)
+                    {
+                        ruleString += key+":"+prop[key]+"; ";
                     }
                 }
                 else
