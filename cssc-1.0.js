@@ -549,14 +549,42 @@ var CSSC = (function()
         cssc.import = function(importObj)
         {
             var importElem, rule, handlerObj;
+            
             for(var key in importObj)
             {
                 importElem = importObj[key];
                 
-                rule = createRule(key, null, null);
-                handlerObj = ruleHandler(rule.content, key);
-                
-                handlerObj.set(importElem);
+                if(Object.prototype.toString.call(importElem) === "[object Array]")
+                {
+                    for(var i = 0; i < importElem.length; i++)
+                    {
+                        if(key === "@font-face")
+                        {
+                            createRule(key, importElem[i], null);
+                        }
+                        else
+                        {
+                            rule = createRule(key, null, null);
+                            handlerObj = ruleHandler(rule.content, key);
+
+                            handlerObj.set(importElem[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    if(key === "@font-face")
+                    {
+                        createRule(key, null, null);
+                    }
+                    else
+                    {
+                        rule = createRule(key, importElem, null);
+                        handlerObj = ruleHandler(rule.content, key);
+
+                        handlerObj.set(importElem);
+                    }
+                }
             }
         },
         cssc.export = function(type)
