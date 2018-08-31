@@ -73,14 +73,21 @@ var CSSC = (function()
                 indexObjWrapper;
             
             //@todo: support all types
-            if(indexType !== cssc.ruleType.rule && indexType !== cssc.ruleType.fontFace)
+            if(indexType !== cssc.ruleType.rule 
+               && indexType !== cssc.ruleType.fontFace 
+               //&& indexType !== cssc.ruleType.media
+               )
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
                 return;
             }
             
+            
             toIndex._update = false;
-            toIndex.style._update = {};
+            if(indexType === cssc.ruleType.rule)
+            {
+                toIndex.style._update = {};
+            }
             
             indexObjWrapper = {
                 indexElem: toIndex,
@@ -141,11 +148,13 @@ var CSSC = (function()
             {
                 if(Object.prototype.toString.call(property) === "[object Object]")
                 {
+                    var prop;
+                    
                     for(var key in property)
                     {
                         if(Object.prototype.toString.call(property[key]) === "[object Function]")
                         {
-                            var prop = property[key]();
+                            prop = property[key]();
                             
                             ruleString += key+":"+prop+"; ";
                         }
@@ -638,11 +647,11 @@ var CSSC = (function()
             }
         },
         cssc.ruleType = {
-            rule:       1,
+            rule:       1, //check
             charset:    2,
             import:     3,
             media:      4,
-            fontFace:   5,
+            fontFace:   5, //check
             page:       6,
             keyframes:  7,
             keyframe:   8,
