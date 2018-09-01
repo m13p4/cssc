@@ -16,7 +16,7 @@ var CSSC = (function()
     
     var ownStyleElem;
     
-    var cntrl = function(styleSheetsDOM, parent, initOnRun, myType)
+    var cntrl = function(styleSheetsDOM, initOnRun)
     {
         var index   = {},
             isInit  = false,
@@ -36,8 +36,6 @@ var CSSC = (function()
         },
         initElements = function(toInit)
         {
-            if(_debug) console.log(toInit);
-            
             if("cssRules" in toInit)
             {
                 indexCssRules(toInit.cssRules);
@@ -77,6 +75,8 @@ var CSSC = (function()
             if(indexType !== cssc.ruleType.rule 
                && indexType !== cssc.ruleType.fontFace 
                && indexType !== cssc.ruleType.media
+               && indexType !== cssc.ruleType.keyframes
+               && indexType !== cssc.ruleType.keyframe
                )
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
@@ -120,7 +120,7 @@ var CSSC = (function()
             }
             
             //handle Media & KeyFrames Rules
-            if(indexType === cssc.ruleType.media)
+            if(indexType === cssc.ruleType.media || indexType === cssc.ruleType.keyframes)
             {
                 //@todo: weiter..
                 indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC].children, false);
@@ -708,5 +708,5 @@ var CSSC = (function()
     
     if(_debug) csscDebug.cntrl = cntrl;
     
-    return cntrl(document.styleSheets, null, true, null);
+    return cntrl(document.styleSheets, true);
 })();
