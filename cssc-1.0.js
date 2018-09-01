@@ -40,7 +40,7 @@ var CSSC = (function()
             
             if("cssRules" in toInit)
             {
-                indexCssRules(toInit.cssRules, toInit, false);
+                indexCssRules(toInit.cssRules);
             }
             else if("length" in toInit)
             {
@@ -50,32 +50,33 @@ var CSSC = (function()
                     {
                         continue;
                     }
-                    indexCssRules(toInit[i].cssRules, toInit[i], false);
+                    indexCssRules(toInit[i].cssRules);
                 }
             }
         },
-        indexCssRules = function(cssRules, parent, imported)
+        indexCssRules = function(cssRules, indexElem)
         {
             for(var i = 0; i < cssRules.length; i++)
             {
                 if(!helper.isElemInOwnNode(cssRules[i]))
                 {
-                    addToIndex(cssRules[i], parent, imported);
+                    addToIndex(cssRules[i], indexElem);
                 }
             }
         },
-        addToIndex = function(cssRule, parent, importedElem)
+        addToIndex = function(cssRule, indexElem)
         {
             
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = cssRule.type, 
                 toIndex   = cssRule,
-                indexObjWrapper;
+                _index    = (!!indexElem ? indexElem : index),
+                indexObjWrapper, indexC;
             
             //@todo: support all types
             if(indexType !== cssc.ruleType.rule 
                && indexType !== cssc.ruleType.fontFace 
-               //&& indexType !== cssc.ruleType.media
+               && indexType !== cssc.ruleType.media
                )
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
@@ -91,44 +92,41 @@ var CSSC = (function()
             
             indexObjWrapper = {
                 indexElem: toIndex,
+                children: {},
                 events: {},
-                imported: importedElem,
-                indexImportedElems: (indexType === cssc.ruleType.import ? true : null)
+                type: indexType
             };
             
-            if(indexType === cssc.ruleType.import)
+            if(!!_index[indexKey])
             {
-                try
-                {
-                    indexCssRules(toIndex.styleSheet.cssRules, parent, indexObjWrapper);
-                }
-                catch(e)
-                {
-                    indexObjWrapper.indexImportedElems = false;
-                }   
-            }
-            
-            if(!!index[indexKey])
-            {
-                if(index[indexKey].content[0].indexElem === toIndex)
+                if(_index[indexKey].content[0].indexElem === toIndex)
                 {
                     console.log("Dublicate \""+indexKey+"\": ");
                     var a = new Error();
                     console.log(a.stack+"\n\n");
                 }
                 
-                index[indexKey].content.push(indexObjWrapper);
+                indexC = (_index[indexKey].content.push(indexObjWrapper) - 1);
             }
             else
             {
-                index[indexKey] = {
+                _index[indexKey] = {
                     type: indexType,
                     content: [indexObjWrapper],
                     events: {}
                 };
+                
+                indexC = 0;
             }
             
-            return index[indexKey];
+            //handle Media & KeyFrames Rules
+            if(indexType === cssc.ruleType.media)
+            {
+                //@todo: weiter..
+                indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC].children, false);
+            }
+            
+            return _index[indexKey];
         },
         createRule = function(selector, property, value)
         {
@@ -293,15 +291,8 @@ var CSSC = (function()
         },
         ruleHandler = function(indexElemArr, sel)
         {
-            var elems = [], cPos; //indexElem.content;
-            
-            for(cPos = 0; cPos < indexElemArr.length; cPos++)
-            {
-                elems.push(indexElemArr[cPos]);
-            }
-            
             return {
-                'e': elems,
+                'e': indexElemArr,
                 'set': function(prop, val, pos)
                 {
                     if(typeof pos === "number") // single Set
@@ -650,11 +641,11 @@ var CSSC = (function()
             rule:       1, //check
             charset:    2,
             import:     3,
-            media:      4,
+            media:      4, //->next!
             fontFace:   5, //check
             page:       6,
-            keyframes:  7,
-            keyframe:   8,
+            keyframes:  7, //->next!
+            keyframe:   8, //->next!
             
             namespace:      10,
             counterStyle:   11,
