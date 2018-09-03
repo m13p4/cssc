@@ -20,7 +20,6 @@ var CSSC = (function()
     {
         var index   = {},
             isInit  = false,
-            _this   = this,
             cssc    = null;
     
         
