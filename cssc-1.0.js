@@ -92,7 +92,7 @@ var CSSC = (function()
             
             indexObjWrapper = {
                 indexElem: toIndex,
-                children: {},
+                children: false,
                 events: {},
                 type: indexType
             };
@@ -123,6 +123,7 @@ var CSSC = (function()
             if(indexType === cssc.ruleType.media || indexType === cssc.ruleType.keyframes)
             {
                 //@todo: weiter..
+                _index[indexKey].content[indexC].children = {};
                 indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC].children, false);
             }
             
@@ -190,7 +191,7 @@ var CSSC = (function()
                 appendToElem.addRule(selector, ruleString, rulePos);
             }
             
-            return addToIndex(appendToElem.cssRules[rulePos], parent);
+            return addToIndex(appendToElem.cssRules[rulePos]);
         },
         getFromIndex = function(sel)
         {
@@ -305,7 +306,22 @@ var CSSC = (function()
                             return this;
                         }
                         
-                        if(Object.prototype.toString.call(val) === "[object Function]")
+                        if(!!this.e[pos].children)
+                        {
+                            var children = [], handler, key, i;
+                            
+                            for(key in this.e[pos].children)
+                            {
+                                for(i = 0; i < this.e[pos].children[key].content.length; i++)
+                                {
+                                    children.push(this.e[pos].children[key].content[i]);
+                                }
+                            }
+                            
+                            handler = ruleHandler(children);
+                            handler.set(prop, val);
+                        }
+                        else if(Object.prototype.toString.call(val) === "[object Function]")
                         {
                             var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
                                 valToSet = val(oldVal);
@@ -422,7 +438,7 @@ var CSSC = (function()
                         
                         for(i = 0; i < this.e.length; i++)
                         {
-                            m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g)
+                            m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g);
                             
                             if(!!m)
                             {
@@ -638,20 +654,20 @@ var CSSC = (function()
             }
         },
         cssc.ruleType = {
-            rule:       1, //check
-            charset:    2,
-            import:     3,
-            media:      4, //->next!
-            fontFace:   5, //check
-            page:       6,
-            keyframes:  7, //->next!
-            keyframe:   8, //->next!
+            'rule':       1, //check
+            'charset':    2,
+            'import':     3,
+            'media':      4, //->next!
+            'fontFace':   5, //check
+            'page':       6,
+            'keyframes':  7, //->next!
+            'keyframe':   8, //->next!
             
-            namespace:      10,
-            counterStyle:   11,
-            supports:       12,
+            'namespace':      10,
+            'counterStyle':   11,
+            'supports':       12,
             
-            fontFeatureValues: 14,
+            'fontFeatureValues': 14,
             
             names: {
                 1:  "rule",
@@ -671,21 +687,21 @@ var CSSC = (function()
             }
         };
         cssc.events = {
-            beforeChange:   "beforechange",
-            change:         "change",
-            beforeSet:      "beforeset",
-            set:            "set",
-            beforeCreate:   "beforecreate",
-            create:         "create",
-            beforeDelete:   "beforedelete",
-            delete:         "delete",
-            beforeDestroy:  "beforedestroy",
-            destroy:        "destroy"
+            'beforeChange':   "beforechange",
+            'change':         "change",
+            'beforeSet':      "beforeset",
+            'set':            "set",
+            'beforeCreate':   "beforecreate",
+            'create':         "create",
+            'beforeDelete':   "beforedelete",
+            'delete':         "delete",
+            'beforeDestroy':  "beforedestroy",
+            'destroy':        "destroy"
         };
         cssc.export.type = {
-            normal:  'normal',
-            ruleRow: 'ruleRow',
-            min:     'min'
+            'normal':  'normal',
+            'ruleRow': 'ruleRow',
+            'min':     'min'
         };
         cssc.conf = {
             'styleId': "cssc-style"
