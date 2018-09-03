@@ -193,11 +193,13 @@ var CSSC = (function()
             
             return addToIndex(appendToElem.cssRules[rulePos]);
         },
-        getFromIndex = function(sel)
+        getFromIndex = function(sel, indexElem)
         {
             if(!isInit) init();
+            
+            var _index = !!indexElem ? indexElem : index;
 
-            return !!index[sel] ? index[sel] : null;
+            return !!_index[sel] ? _index[sel] : null;
         },
         delFromIndex = function(sel)
         {
@@ -287,6 +289,58 @@ var CSSC = (function()
                         else if(p === ";")
                             return p + "\n    ";
                     }).replace(/\s+}/, "\n}");
+                }
+            },
+            getHandler: function(sel, indexElem)
+            {
+                var _index = !!indexElem ? indexElem : index;
+                
+                if(Object.prototype.toString.call(sel) === "[object String]")
+                {
+                    var indexElem = getFromIndex(sel, _index);
+
+                    if(indexElem === null)
+                    {
+                        indexElem = createRule(sel, null, null);
+                    }
+
+                    return ruleHandler(indexElem.content, sel);
+                }
+                else if(Object.prototype.toString.call(sel) === "[object RegExp]")
+                {
+                    var matches = [], key;
+
+                    for(key in _index)
+                    {
+                        if(!!key.match(sel))
+                        {
+                            for(i = 0; i < _index[key].content.length; i++)
+                            {
+                                matches.push(_index[key].content[i]);
+                            }
+                        }
+                    }
+
+                    return ruleHandler(matches, sel);
+                }
+                else if(Object.prototype.toString.call(sel) === "[object Array]")
+                {
+                    var matches = [], i, j, tmp;
+
+                    for(i = 0; i < sel.length; i++)
+                    {
+                        tmp = getFromIndex(sel[i], _index);
+
+                        if(tmp !== null)
+                        {
+                            for(j = 0; j < tmp.content.length; j++)
+                            {
+                                matches.push(tmp.content[j]);
+                            }
+                        }
+                    }
+
+                    return ruleHandler(matches, sel);
                 }
             }
         },
@@ -518,52 +572,11 @@ var CSSC = (function()
         {
             var ret;
             
-            if(Object.prototype.toString.call(sel) === "[object String]")
+            if(Object.prototype.toString.call(sel) === "[object String]" 
+               || Object.prototype.toString.call(sel) === "[object RegExp]"
+               || Object.prototype.toString.call(sel) === "[object Array]")
             {
-                var indexElem = getFromIndex(sel);
-                
-                if(indexElem === null)
-                {
-                    indexElem = createRule(sel, null, null);
-                }
-
-                ret = ruleHandler(indexElem.content, sel);
-            }
-            else if(Object.prototype.toString.call(sel) === "[object RegExp]")
-            {
-                var matches = [], key;
-                
-                for(key in index)
-                {
-                    if(!!key.match(sel))
-                    {
-                        for(i = 0; i < index[key].content.length; i++)
-                        {
-                            matches.push(index[key].content[i]);
-                        }
-                    }
-                }
-                
-                ret = ruleHandler(matches, sel);
-            }
-            else if(Object.prototype.toString.call(sel) === "[object Array]")
-            {
-                var matches = [], i, j, tmp;
-                
-                for(i = 0; i < sel.length; i++)
-                {
-                    tmp = getFromIndex(sel[i]);
-                    
-                    if(tmp !== null)
-                    {
-                        for(j = 0; j < tmp.content.length; j++)
-                        {
-                            matches.push(tmp.content[j]);
-                        }
-                    }
-                }
-                
-                ret = ruleHandler(matches, sel);
+                ret = helper.getHandler(sel);
             }
             else
             {
