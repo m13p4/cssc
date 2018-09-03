@@ -293,7 +293,7 @@ var CSSC = (function()
                     }).replace(/\s+}/, "\n}");
                 }
             },
-            getHandler: function(sel, indexElem)
+            getHandler: function(sel, indexElem, getElements)
             {
                 var _index = !!indexElem ? indexElem : index; 
                 
@@ -306,6 +306,10 @@ var CSSC = (function()
                         indexElem = createRule(sel, null, null);
                     }
 
+                    if(!!getElements)
+                    {
+                        return indexElem.content;
+                    }
                     return ruleHandler(indexElem.content, sel, _index);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object RegExp]")
@@ -323,6 +327,11 @@ var CSSC = (function()
                         }
                     }
 
+                    if(!!getElements)
+                    {
+                        return matches;
+                    }
+                    
                     return ruleHandler(matches, sel, _index);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object Array]")
@@ -342,6 +351,11 @@ var CSSC = (function()
                         }
                     }
 
+                    if(!!getElements)
+                    {
+                        return matches;
+                    }
+
                     return ruleHandler(matches, sel, _index);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object Null]")
@@ -355,118 +369,182 @@ var CSSC = (function()
                             matches.push(_index[key].content[i]);
                         }
                     }
+                    
+                    if(!!getElements)
+                    {
+                        return matches;
+                    }
 
                     return ruleHandler(matches, sel, _index);
                 }
                 
                 return null;
+            },
+            handleSelection: function(sel, hasProp, indexElem, getElements)
+            {
+                var ret;
+            
+                if(Object.prototype.toString.call(sel) === "[object String]" 
+                   || Object.prototype.toString.call(sel) === "[object RegExp]"
+                   || Object.prototype.toString.call(sel) === "[object Array]")
+                {
+                    ret = helper.getHandler(sel, indexElem, getElements);
+                }
+                else
+                {
+                    cssc.import(sel);
+
+                    return;
+                }
+
+                //return Elements with hasProp
+                if(!!hasProp)
+                {
+                    return ret.has(hasProp);
+                }
+
+                return ret;
             }
         },
         ruleHandler = function(indexElemArr, sel, _index)
         {
-            return {
-                'e': indexElemArr,
-                'set': function(prop, val, pos)
+            var handler = function(sel, hasProp)
+            {
+                var i, j, elArr = [], tmp;
+                for(i = 0; i < handler.e.length; i++)
                 {
-                    if(typeof pos === "number") // single Set
+                    if(!!handler.e[i].children)
                     {
-                        //can not change font-face values on Firefox..
-                        if(this.e[pos].indexElem.type === cssc.ruleType.fontFace)
-                        {
-                            console.log("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
-                            
-                            return this;
-                        }
+                        tmp = helper.handleSelection(sel, hasProp, handler.e[i].children, true);
                         
-                        if(!!this.e[pos].children)
+                        for(j = 0; j < tmp.length; j++)
                         {
-                            var handler = helper.getHandler(null, this.e[pos].children);
-                            handler.set(prop, val);
+                            elArr.push(tmp[j]);
                         }
-                        else if(Object.prototype.toString.call(val) === "[object Function]")
+                    }
+                }
+                
+                return ruleHandler(elArr, sel);
+            };
+            
+            handler.e = indexElemArr;
+            handler.set = function(prop, val, pos)
+            {
+                if(typeof pos === "number") // single Set
+                {
+                    //can not change font-face values on Firefox..
+                    if(this.e[pos].indexElem.type === cssc.ruleType.fontFace)
+                    {
+                        console.log("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
+
+                        return this;
+                    }
+
+                    if(!!this.e[pos].children)
+                    {
+                        var childHandler = helper.getHandler(null, this.e[pos].children);
+                        childHandler.set(prop, val);
+                    }
+                    else if(Object.prototype.toString.call(val) === "[object Function]")
+                    {
+                        var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
+                            valToSet = val(oldVal);
+
+                        this.e[pos].indexElem.style[prop] = helper.parseValue(valToSet);
+
+                        //add to updatable
+                        this.e[pos].indexElem.style._update[prop] = val;
+                    }
+                    else
+                    {
+                        this.e[pos].indexElem.style[prop] = helper.parseValue(val);
+                    }
+                }
+                else // multi Set
+                {
+                    var i;
+
+                    if(Object.prototype.toString.call(prop) === "[object Object]" 
+                           && Object.keys(prop).length > 0) 
+                    {
+                        var key;
+                        for(i = 0; i < this.e.length; i++)
                         {
-                            var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
-                                valToSet = val(oldVal);
-                        
-                            this.e[pos].indexElem.style[prop] = helper.parseValue(valToSet);
-                            
+                            for(key in prop)
+                            {
+                                this.set(key,prop[key],i);
+                            }
+                        }
+                    }
+                    else if(Object.prototype.toString.call(prop) === "[object Function]")
+                    {
+                        var props = prop();
+
+                        for(var i = 0; i < this.e.length; i++)
+                        {
+                            for(var key in props)
+                            {
+                                this.set(key, props[key], i);
+                            }
+
                             //add to updatable
-                            this.e[pos].indexElem.style._update[prop] = val;
-                        }
-                        else
-                        {
-                            this.e[pos].indexElem.style[prop] = helper.parseValue(val);
+                            this.e[i].indexElem._update = prop;
                         }
                     }
-                    else // multi Set
+                    else
                     {
-                        var i;
-                        
-                        if(Object.prototype.toString.call(prop) === "[object Object]" 
-                               && Object.keys(prop).length > 0) 
+                        for(i = 0; i < this.e.length; i++)
                         {
-                            var key;
-                            for(i = 0; i < this.e.length; i++)
-                            {
-                                for(key in prop)
-                                {
-                                    this.set(key,prop[key],i);
-                                }
-                            }
-                        }
-                        else if(Object.prototype.toString.call(prop) === "[object Function]")
-                        {
-                            var props = prop();
-                                
-                            for(var i = 0; i < this.e.length; i++)
-                            {
-                                for(var key in props)
-                                {
-                                    this.set(key, props[key], i);
-                                }
-                                
-                                //add to updatable
-                                this.e[i].indexElem._update = prop;
-                            }
-                        }
-                        else
-                        {
-                            for(i = 0; i < this.e.length; i++)
-                            {
-                                this.set(prop, val, i);
-                            }
+                            this.set(prop, val, i);
                         }
                     }
-                    
-                    return this;
-                },
-                'get': function(prop, returnAllProps)
+                }
+
+                return this;
+            };
+            handler.get = function(prop, returnAllProps)
+            {
+                var arrToRet = [], propToRet = "", tmp, i;
+
+                returnAllProps = !!returnAllProps;
+
+                for(i = 0; i < this.e.length; i++)
                 {
-                    var arrToRet = [], propToRet = "", tmp, i;
-                    
-                    returnAllProps = !!returnAllProps;
-                    
+                    tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, prop);
+
+                    if(!!tmp)
+                    {
+                        propToRet = tmp;
+
+                        if(returnAllProps) arrToRet.push(propToRet);
+                    }
+                }
+                return returnAllProps ? arrToRet : propToRet;
+            };
+            handler.has = function(prop)
+            {
+                var matches = [], propVal, i, tmp;
+
+                if(Object.prototype.toString.call(prop) === "[object String]")
+                {
+                    propVal = prop.split(":");
+
                     for(i = 0; i < this.e.length; i++)
                     {
-                        tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, prop);
-                        
-                        if(!!tmp)
+                        tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
+
+                        if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
                         {
-                            propToRet = tmp;
-                            
-                            if(returnAllProps) arrToRet.push(propToRet);
+                            matches.push(this.e[i]);
                         }
                     }
-                    return returnAllProps ? arrToRet : propToRet;
-                }, 
-                'has': function(prop)
+                }
+                else if(Object.prototype.toString.call(prop) === "[object Array]")
                 {
-                    var matches = [], propVal, i, tmp;
-
-                    if(Object.prototype.toString.call(prop) === "[object String]")
+                    for(var j = 0; j < prop.length; j++)
                     {
-                        propVal = prop.split(":");
-                        
+                        propVal = prop[j].split(":");
+
                         for(i = 0; i < this.e.length; i++)
                         {
                             tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
@@ -477,149 +555,113 @@ var CSSC = (function()
                             }
                         }
                     }
-                    else if(Object.prototype.toString.call(prop) === "[object Array]")
-                    {
-                        for(var j = 0; j < prop.length; j++)
-                        {
-                            propVal = prop[j].split(":");
-                        
-                            for(i = 0; i < this.e.length; i++)
-                            {
-                                tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
+                }
+                else if(Object.prototype.toString.call(prop) === "[object RegExp]")
+                {
+                    var m, j;
 
-                                if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
+                    for(i = 0; i < this.e.length; i++)
+                    {
+                        m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g);
+
+                        if(!!m)
+                        {
+                            for(j = 0; j < m.length; j++)
+                            {
+                                tmp = m[j].match(prop);
+
+                                if(!!tmp)
                                 {
                                     matches.push(this.e[i]);
                                 }
                             }
                         }
                     }
-                    else if(Object.prototype.toString.call(prop) === "[object RegExp]")
-                    {
-                        var m, j;
-                        
-                        for(i = 0; i < this.e.length; i++)
-                        {
-                            m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g);
-                            
-                            if(!!m)
-                            {
-                                for(j = 0; j < m.length; j++)
-                                {
-                                    tmp = m[j].match(prop);
+                }
 
-                                    if(!!tmp)
-                                    {
-                                        matches.push(this.e[i]);
-                                    }
-                                }
-                            }
+                return ruleHandler(matches, sel);
+            };
+            handler.update = function()
+            {
+                var i, tmp, key;
+
+                for(i = 0; i < this.e.length; i++)
+                {
+                    if(this.e[i].indexElem._update !== false)
+                    {
+                        tmp = this.e[i].indexElem._update();
+
+                        for(key in tmp)
+                        {
+                            this.set(key, tmp[key], i);
                         }
                     }
 
-                    return ruleHandler(matches, sel);
-                },
-                'update': function()
-                {
-                    var i, tmp, key;
-                    
-                    for(i = 0; i < this.e.length; i++)
+                    if(!!this.e[i].children)
                     {
-                        if(this.e[i].indexElem._update !== false)
-                        {
-                            tmp = this.e[i].indexElem._update();
-                            
-                            for(key in tmp)
-                            {
-                                this.set(key, tmp[key], i);
-                            }
-                        }
-                        
-                        if(!!this.e[i].children)
-                        {
-                            var handler = helper.getHandler(null, this.e[i].children);
-                            handler.update();
-                        }
-                        else
-                        {
-                            for(key in this.e[i].indexElem.style._update)
-                            {
-                                tmp = this.e[i].indexElem.style._update[key]();
-                                this.set(key, tmp, i);
-                            }
-                        }
-                    }
-                    return this;
-                },
-                'delete': function(prop)
-                {
-                    var i;
-                    if(typeof prop === "undefined")
-                    {
-                        for(i = 0; i < this.e.length; i++)
-                        {
-                            this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
-                            delFromIndex(sel, _index);
-                            
-                            if(!!this.e[i].children)
-                            {
-                                var handler = helper.getHandler(null, this.e[i].children);
-                                handler.delete(prop);
-                            }
-                        }
+                        var childHandler = helper.getHandler(null, this.e[i].children);
+                        childHandler.update();
                     }
                     else
                     {
-                        for(i = 0; i < this.e.length; i++)
+                        for(key in this.e[i].indexElem.style._update)
                         {
-                            this.e[i].indexElem.style[prop] = "";
-                            
-                            if(!!this.e[i].children)
-                            {
-                                var handler = helper.getHandler(null, this.e[i].children);
-                                handler.delete(prop);
-                            }
+                            tmp = this.e[i].indexElem.style._update[key]();
+                            this.set(key, tmp, i);
                         }
                     }
-                    return this;
-                },
-                'export': function(type)
+                }
+                return this;
+            };
+            handler.delete = function(prop)
+            {
+                var i;
+                if(typeof prop === "undefined")
                 {
-                    var exportString = "", i;
-                    
                     for(i = 0; i < this.e.length; i++)
                     {
-                        exportString += helper.exportParser(this.e[i].indexElem.cssText, type);
+                        this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
+                        delFromIndex(sel, _index);
+
+                        if(!!this.e[i].children)
+                        {
+                            var childHandler = helper.getHandler(null, this.e[i].children);
+                            childHandler.delete(prop);
+                        }
                     }
-                    
-                    return exportString.trim();
                 }
+                else
+                {
+                    for(i = 0; i < this.e.length; i++)
+                    {
+                        this.e[i].indexElem.style[prop] = "";
+
+                        if(!!this.e[i].children)
+                        {
+                            var childHandler = helper.getHandler(null, this.e[i].children);
+                            childHandler.delete(prop);
+                        }
+                    }
+                }
+                return this;
             };
+            handler.export = function(type)
+            {
+                var exportString = "", i;
+
+                for(i = 0; i < this.e.length; i++)
+                {
+                    exportString += helper.exportParser(this.e[i].indexElem.cssText, type);
+                }
+
+                return exportString.trim();
+            };
+            
+            return handler;
         },
         cssc = function(sel, hasProp)
         {
-            var ret;
-            
-            if(Object.prototype.toString.call(sel) === "[object String]" 
-               || Object.prototype.toString.call(sel) === "[object RegExp]"
-               || Object.prototype.toString.call(sel) === "[object Array]")
-            {
-                ret = helper.getHandler(sel);
-            }
-            else
-            {
-                cssc.import(sel);
-                
-                return;
-            }
-            
-            //return Elements with hasProp
-            if(!!hasProp)
-            {
-                return ret.has(hasProp);
-            }
-            
-            return ret;
+            return helper.handleSelection(sel, hasProp);
         }; 
         cssc.import = function(importObj)
         {
