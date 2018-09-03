@@ -201,11 +201,13 @@ var CSSC = (function()
 
             return !!_index[sel] ? _index[sel] : null;
         },
-        delFromIndex = function(sel)
+        delFromIndex = function(sel, indexElem)
         {
-            if(!!index[sel])
+            var _index = !!indexElem ? indexElem : index;
+            
+            if(!!_index[sel])
             {
-                delete index[sel];
+                delete _index[sel];
             }
         },
         helper = {
@@ -293,7 +295,7 @@ var CSSC = (function()
             },
             getHandler: function(sel, indexElem)
             {
-                var _index = !!indexElem ? indexElem : index;
+                var _index = !!indexElem ? indexElem : index; 
                 
                 if(Object.prototype.toString.call(sel) === "[object String]")
                 {
@@ -304,7 +306,7 @@ var CSSC = (function()
                         indexElem = createRule(sel, null, null);
                     }
 
-                    return ruleHandler(indexElem.content, sel);
+                    return ruleHandler(indexElem.content, sel, _index);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object RegExp]")
                 {
@@ -321,7 +323,7 @@ var CSSC = (function()
                         }
                     }
 
-                    return ruleHandler(matches, sel);
+                    return ruleHandler(matches, sel, _index);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object Array]")
                 {
@@ -340,11 +342,27 @@ var CSSC = (function()
                         }
                     }
 
-                    return ruleHandler(matches, sel);
+                    return ruleHandler(matches, sel, _index);
                 }
+                else if(Object.prototype.toString.call(sel) === "[object Null]")
+                {
+                    var matches = [], key;
+                    
+                    for(key in _index)
+                    {
+                        for(i = 0; i < _index[key].content.length; i++)
+                        {
+                            matches.push(_index[key].content[i]);
+                        }
+                    }
+
+                    return ruleHandler(matches, sel, _index);
+                }
+                
+                return null;
             }
         },
-        ruleHandler = function(indexElemArr, sel)
+        ruleHandler = function(indexElemArr, sel, _index)
         {
             return {
                 'e': indexElemArr,
@@ -362,17 +380,7 @@ var CSSC = (function()
                         
                         if(!!this.e[pos].children)
                         {
-                            var children = [], handler, key, i;
-                            
-                            for(key in this.e[pos].children)
-                            {
-                                for(i = 0; i < this.e[pos].children[key].content.length; i++)
-                                {
-                                    children.push(this.e[pos].children[key].content[i]);
-                                }
-                            }
-                            
-                            handler = ruleHandler(children);
+                            var handler = helper.getHandler(null, this.e[pos].children);
                             handler.set(prop, val);
                         }
                         else if(Object.prototype.toString.call(val) === "[object Function]")
@@ -527,10 +535,18 @@ var CSSC = (function()
                             }
                         }
                         
-                        for(key in this.e[i].indexElem.style._update)
+                        if(!!this.e[i].children)
                         {
-                            tmp = this.e[i].indexElem.style._update[key]();
-                            this.set(key, tmp, i);
+                            var handler = helper.getHandler(null, this.e[i].children);
+                            handler.update();
+                        }
+                        else
+                        {
+                            for(key in this.e[i].indexElem.style._update)
+                            {
+                                tmp = this.e[i].indexElem.style._update[key]();
+                                this.set(key, tmp, i);
+                            }
                         }
                     }
                     return this;
@@ -543,7 +559,13 @@ var CSSC = (function()
                         for(i = 0; i < this.e.length; i++)
                         {
                             this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
-                            delFromIndex(sel);
+                            delFromIndex(sel, _index);
+                            
+                            if(!!this.e[i].children)
+                            {
+                                var handler = helper.getHandler(null, this.e[i].children);
+                                handler.delete(prop);
+                            }
                         }
                     }
                     else
@@ -551,6 +573,12 @@ var CSSC = (function()
                         for(i = 0; i < this.e.length; i++)
                         {
                             this.e[i].indexElem.style[prop] = "";
+                            
+                            if(!!this.e[i].children)
+                            {
+                                var handler = helper.getHandler(null, this.e[i].children);
+                                handler.delete(prop);
+                            }
                         }
                     }
                     return this;
