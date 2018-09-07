@@ -302,22 +302,23 @@ var CSSC = (function()
                 }
                 else //Normal
                 {
+                    var tab = "    ";
+                    
                     if(cssText.match(/^@(media|keyframes)/))
                     {
                         return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
                         {
-                            return s + "{\n    " + r.trim().replace(/({|}|;)\s*/g, function(p)
+                            return s + "{\n" + tab + r.trim().replace(/({|}|;)\s*/g, function(p)
                             {
                                 p = p.trim();
                                 
                                 if(p === "{")
-                                    return "{\n        ";
+                                    return "{\n" + tab + tab;
                                 else if(p === "}")
-                                    return "}\n    ";
+                                    return "}\n" + tab;
                                 else if(p === ";")
-                                    return ";\n        ";
-                        
-                            }).replace(/\s+}/g, "\n    }").trim() + "\n}\n";
+                                    return ";\n" + tab + tab;
+                            }).replace(/\s+}/g, "\n" + tab + "}").trim() + "\n}\n";
                         });
                     }
                     else return cssText.replace(/({|}|;)\s*/g, function(p)
@@ -325,12 +326,11 @@ var CSSC = (function()
                         p = p.trim();
 
                         if(p === "{")
-                            return p + "\n    ";
+                            return p + "\n" + tab;
                         else if(p === "}")
                             return p + "\n";
                         else if(p === ";")
-                            return p + "\n    ";
-                        
+                            return p + "\n" + tab;
                     }).replace(/\s+}/, "\n}");
                 }
             },
