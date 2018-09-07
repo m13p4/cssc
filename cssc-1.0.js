@@ -398,7 +398,7 @@ var CSSC = (function()
                 return ret;
             }
         },
-        ruleHandler = function(indexElemArr, sel)
+        ruleHandler = function(indexElemArr, sel, fromHas)
         {
             var handler = function(sel, hasProp)
             {
@@ -420,6 +420,8 @@ var CSSC = (function()
             };
             
             handler.e = indexElemArr;
+            handler.length = indexElemArr.length;
+            
             handler.set = function(prop, val, pos)
             {
                 if(typeof pos === "number") // single Set
@@ -454,27 +456,41 @@ var CSSC = (function()
                 }
                 else // multi Set
                 {
-                    var i;
+                    var i, propLen, key, props,
+                        propType = Object.prototype.toString.call(prop);
 
-                    if(Object.prototype.toString.call(prop) === "[object Object]" 
-                           && Object.keys(prop).length > 0) 
+                    if(propType === "[object Object]")
                     {
-                        var key;
-                        for(i = 0; i < this.e.length; i++)
+                        propLen = Object.keys(prop).length;
+                    }
+                    else if(propType === "[object Function]")
+                    {
+                        props = prop();
+                    }
+                    
+                    //create new Element
+                    if(this.e.length <= 0 && !fromHas 
+                       && Object.prototype.toString.call(sel) === "[object String]"
+                    )
+                    {
+                        var rule = createRule(sel, null, null);
+                        
+                        this.e = rule.content;
+                        this.length = 1;
+                    }
+                    
+                    for(i = 0; i < this.e.length; i++)
+                    {
+                        if(propType === "[object Object]" && propLen > 0) 
                         {
                             for(key in prop)
                             {
-                                this.set(key,prop[key],i);
+                                this.set(key, prop[key], i);
                             }
                         }
-                    }
-                    else if(Object.prototype.toString.call(prop) === "[object Function]")
-                    {
-                        var props = prop();
-
-                        for(var i = 0; i < this.e.length; i++)
+                        else if(propType === "[object Function]")
                         {
-                            for(var key in props)
+                            for(key in props)
                             {
                                 this.set(key, props[key], i);
                             }
@@ -482,10 +498,7 @@ var CSSC = (function()
                             //add to updatable
                             this.e[i].indexElem._update = prop;
                         }
-                    }
-                    else
-                    {
-                        for(i = 0; i < this.e.length; i++)
+                        else
                         {
                             this.set(prop, val, i);
                         }
@@ -571,7 +584,7 @@ var CSSC = (function()
                     }
                 }
 
-                return ruleHandler(matches, sel);
+                return ruleHandler(matches, sel, true);
             };
             handler.update = function()
             {
