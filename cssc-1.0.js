@@ -253,6 +253,29 @@ var CSSC = (function()
                     
                     return (Math.floor(value * 100) / 100) + "px";
                 }
+                else
+                {
+                    var v = value.split(" ");
+                    
+                    if(v.length > 0)
+                    {
+                        var tmp;
+                        
+                        for(var i = 0; i < v.length; i++)
+                        {
+                            if(isFinite(v[i]))
+                            {
+                                tmp = v[i];
+
+                                if(tmp%1 === 0) v[i] = tmp + "px";
+                                else            v[i] = (Math.floor(tmp * 100) / 100) + "px";
+                            }
+                        }
+                        
+                        return v.join(" ");
+                    }
+                }
+                
                 return value;
             },
             findPropInCssText: function(cssText, prop)
@@ -725,11 +748,11 @@ var CSSC = (function()
                 {
                     if(key === "@font-face")
                     {
-                        createRule(key, null, null);
+                        createRule(key, importElem, null);
                     }
                     else
                     {
-                        rule = createRule(key, importElem, null);
+                        rule = createRule(key, null, null);
                         handlerObj = ruleHandler(rule.content, key);
 
                         handlerObj.set(importElem);
