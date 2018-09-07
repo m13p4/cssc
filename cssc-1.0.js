@@ -92,6 +92,7 @@ var CSSC = (function()
             indexObjWrapper = {
                 indexElem: toIndex,
                 children: false,
+                parent: (!!indexElem ? indexElem : false),
                 events: {},
                 type: indexType
             };
@@ -298,18 +299,13 @@ var CSSC = (function()
                 
                 if(Object.prototype.toString.call(sel) === "[object String]")
                 {
-                    var indexElem = getFromIndex(sel, _index);
-
-                    if(indexElem === null)
-                    {
-                        indexElem = createRule(sel, null, null);
-                    }
+                    var iElem = getFromIndex(sel, _index);
 
                     if(!!getElements)
                     {
-                        return indexElem.content;
+                        return (!!iElem ? iElem.content : []);
                     }
-                    return ruleHandler(indexElem.content, sel, _index);
+                    return ruleHandler((!!iElem ? iElem.content : []), sel);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object RegExp]")
                 {
@@ -331,7 +327,7 @@ var CSSC = (function()
                         return matches;
                     }
                     
-                    return ruleHandler(matches, sel, _index);
+                    return ruleHandler(matches, sel);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object Array]")
                 {
@@ -355,7 +351,7 @@ var CSSC = (function()
                         return matches;
                     }
 
-                    return ruleHandler(matches, sel, _index);
+                    return ruleHandler(matches, sel);
                 }
                 else if(Object.prototype.toString.call(sel) === "[object Null]")
                 {
@@ -374,7 +370,7 @@ var CSSC = (function()
                         return matches;
                     }
 
-                    return ruleHandler(matches, sel, _index);
+                    return ruleHandler(matches, sel);
                 }
                 
                 return null;
@@ -405,7 +401,7 @@ var CSSC = (function()
                 return ret;
             }
         },
-        ruleHandler = function(indexElemArr, sel, _index)
+        ruleHandler = function(indexElemArr, sel)
         {
             var handler = function(sel, hasProp)
             {
@@ -620,7 +616,7 @@ var CSSC = (function()
                     for(i = 0; i < this.e.length; i++)
                     {
                         this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
-                        delFromIndex(sel, _index);
+                        delFromIndex(sel, (!!this.e[i].parent ? this.e[i].parent : null));
 
                         if(!!this.e[i].children)
                         {
