@@ -21,7 +21,6 @@ var CSSC = (function()
         var index   = {},
             isInit  = false,
             cssc    = null;
-    
         
         if(_debug) csscDebug.index = index;
     
@@ -63,7 +62,6 @@ var CSSC = (function()
         },
         addToIndex = function(cssRule, indexElem)
         {
-            
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = cssRule.type, 
                 toIndex   = cssRule,
@@ -122,7 +120,6 @@ var CSSC = (function()
             //handle Media & KeyFrames Rules
             if(indexType === cssc.ruleType.media || indexType === cssc.ruleType.keyframes)
             {
-                //@todo: weiter..
                 _index[indexKey].content[indexC].children = {};
                 indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC].children, false);
             }
@@ -615,7 +612,15 @@ var CSSC = (function()
                 {
                     for(i = 0; i < this.e.length; i++)
                     {
-                        this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
+                        if(!!this.e[i].indexElem.parentRule)
+                        {
+                            this.e[i].indexElem.parentRule.deleteRule(this.e[i]);
+                        }
+                        else
+                        {
+                            this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
+                        }
+                        
                         delFromIndex(sel, (!!this.e[i].parent ? this.e[i].parent : null));
 
                         if(!!this.e[i].children)
