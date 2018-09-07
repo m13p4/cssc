@@ -267,8 +267,10 @@ var CSSC = (function()
                             {
                                 tmp = v[i];
 
-                                if(tmp%1 === 0) v[i] = tmp + "px";
-                                else            v[i] = (Math.floor(tmp * 100) / 100) + "px";
+                                if(tmp%1 === 0) 
+                                    v[i] = tmp + "px";
+                                else            
+                                    v[i] = (Math.floor(tmp * 100) / 100) + "px";
                             }
                         }
                         
@@ -289,18 +291,36 @@ var CSSC = (function()
             {
                 if(type === cssc.export.type.ruleRow)
                 {
-                    return cssText+"\n";
+                    return cssText.replace(/\n/g, "")+"\n";
                 }
                 else if(type === cssc.export.type.min)
                 {
-                    return cssText.replace(/(;|:|\s*?{|}|,)\s+/gi,function(p)
+                    return cssText.replace(/(;|:|\s*?{|}|,)\s+/g,function(p)
                     {
                         return p.trim();
                     });
                 }
                 else //Normal
                 {
-                    return cssText.replace(/({|}|;)\s*/gi, function(p)
+                    if(cssText.match(/^@(media|keyframes)/))
+                    {
+                        return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
+                        {
+                            return s + "{\n    " + r.trim().replace(/({|}|;)\s*/g, function(p)
+                            {
+                                p = p.trim();
+                                
+                                if(p === "{")
+                                    return "{\n        ";
+                                else if(p === "}")
+                                    return "}\n    ";
+                                else if(p === ";")
+                                    return ";\n        ";
+                        
+                            }).replace(/\s+}/g, "\n    }").trim() + "\n}\n";
+                        });
+                    }
+                    else return cssText.replace(/({|}|;)\s*/g, function(p)
                     { 
                         p = p.trim();
 
@@ -310,6 +330,7 @@ var CSSC = (function()
                             return p + "\n";
                         else if(p === ";")
                             return p + "\n    ";
+                        
                     }).replace(/\s+}/, "\n}");
                 }
             },
