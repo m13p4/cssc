@@ -126,15 +126,15 @@ var CSSC = (function()
             
             return _index[indexKey];
         },
-        createRule = function(selector, property, value)
+        createRule = function(selector, property, value, appendTo, indexElem)
         {
             var appendToElem;
             
-            if(!ownStyleElem)
+            if(!appendTo && !ownStyleElem)
             {
                 helper.createNewStyleElem();
             }
-            appendToElem = ownStyleElem.sheet;
+            appendToElem = !!appendTo ? appendTo : ownStyleElem.sheet;
             
             
             var rulePos = appendToElem.cssRules.length,
@@ -188,7 +188,7 @@ var CSSC = (function()
                 appendToElem.addRule(selector, ruleString, rulePos);
             }
             
-            return addToIndex(appendToElem.cssRules[rulePos]);
+            return addToIndex(appendToElem.cssRules[rulePos], indexElem);
         },
         getFromIndex = function(sel, indexElem)
         {
@@ -398,7 +398,7 @@ var CSSC = (function()
                 return ret;
             }
         },
-        ruleHandler = function(indexElemArr, sel, fromHas)
+        ruleHandler = function(indexElemArr, sel, fromHas, parents)
         {
             var handler = function(sel, hasProp)
             {
@@ -416,11 +416,11 @@ var CSSC = (function()
                     }
                 }
                 
-                return ruleHandler(elArr, sel);
+                return ruleHandler(elArr, sel, null, handler.e);
             };
             
             handler.e = indexElemArr;
-            handler.length = indexElemArr.length;
+            handler.eLength = indexElemArr.length;
             
             handler.set = function(prop, val, pos)
             {
@@ -473,10 +473,30 @@ var CSSC = (function()
                        && Object.prototype.toString.call(sel) === "[object String]"
                     )
                     {
-                        var rule = createRule(sel, null, null);
+                        var rule, contentElems = [];
                         
-                        this.e = rule.content;
-                        this.length = 1;
+                        if(!parents)
+                        {
+                            rule = createRule(sel, null, null);
+                            contentElems = rule.content;
+                        }
+                        else
+                        {
+                            var contentElems = [];
+                            
+                            for(i = 0; i < parents.length; i++)
+                            {
+                                rule = createRule(sel, null, null, parents[i].indexElem, parents[i].children);
+                                
+                                for(key = 0; key < rule.content.length; key++)
+                                {
+                                    contentElems.push(rule.content[key]);
+                                }
+                            }
+                        }
+                        
+                        this.e = contentElems;
+                        this.eLength = contentElems.length;
                     }
                     
                     for(i = 0; i < this.e.length; i++)
