@@ -308,12 +308,12 @@ var CSSC = (function()
                     {
                         return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
                         {
-                            return s + "{\n" + tab + r.trim().replace(/({|}|;)\s*/g, function(p)
+                            return s + "\n{\n" + tab + r.trim().replace(/({|}|;)\s*/g, function(p)
                             {
                                 p = p.trim();
                                 
                                 if(p === "{")
-                                    return "{\n" + tab + tab;
+                                    return "\n" + tab + "{\n" + tab + tab;
                                 else if(p === "}")
                                     return "}\n" + tab;
                                 else if(p === ";")
@@ -326,7 +326,7 @@ var CSSC = (function()
                         p = p.trim();
 
                         if(p === "{")
-                            return p + "\n" + tab;
+                            return "\n" + p + "\n" + tab;
                         else if(p === "}")
                             return p + "\n";
                         else if(p === ";")
@@ -394,7 +394,7 @@ var CSSC = (function()
 
                     return ruleHandler(matches, sel);
                 }
-                else if(Object.prototype.toString.call(sel) === "[object Null]")
+                else if(Object.prototype.toString.call(sel) === "[object Null]" || Object.prototype.toString.call(sel) === "[object Undefined]")
                 {
                     var matches = [], key;
                     
@@ -422,7 +422,9 @@ var CSSC = (function()
             
                 if(Object.prototype.toString.call(sel) === "[object String]" 
                    || Object.prototype.toString.call(sel) === "[object RegExp]"
-                   || Object.prototype.toString.call(sel) === "[object Array]")
+                   || Object.prototype.toString.call(sel) === "[object Array]"
+                   || Object.prototype.toString.call(sel) === "[object Null]"
+                   || Object.prototype.toString.call(sel) === "[object Undefined]")
                 {
                     ret = helper.getHandler(sel, indexElem, getElements);
                 }
