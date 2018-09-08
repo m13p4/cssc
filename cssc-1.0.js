@@ -142,13 +142,13 @@ var CSSC = (function()
         
             if(!!property)
             {
-                if(Object.prototype.toString.call(property) === "[object Object]")
+                if(helper.elemType(property) === "Object")
                 {
                     var prop;
                     
                     for(var key in property)
                     {
-                        if(Object.prototype.toString.call(property[key]) === "[object Function]")
+                        if(helper.elemType(property[key]) === "Function")
                         {
                             prop = property[key]();
                             
@@ -160,7 +160,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(Object.prototype.toString.call(property) === "[object Function]")
+                else if(helper.elemType(property) === "Function")
                 {
                     var prop = property();
                     
@@ -208,6 +208,11 @@ var CSSC = (function()
             }
         },
         helper = {
+            elemType: function(elem, returnFullValue)
+            {
+                if(returnFullValue) return Object.prototype.toString.call(elem);
+                return Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
+            },
             createNewStyleElem: function()
             {
                 if(!!document.getElementById(cssc.conf.styleId))
@@ -338,7 +343,7 @@ var CSSC = (function()
             {
                 var _index = !!indexElem ? indexElem : index; 
                 
-                if(Object.prototype.toString.call(sel) === "[object String]")
+                if(helper.elemType(sel) === "String")
                 {
                     var iElem = getFromIndex(sel, _index);
 
@@ -348,7 +353,7 @@ var CSSC = (function()
                     }
                     return ruleHandler((!!iElem ? iElem.content : []), sel);
                 }
-                else if(Object.prototype.toString.call(sel) === "[object RegExp]")
+                else if(helper.elemType(sel) === "RegExp")
                 {
                     var matches = [], key;
 
@@ -370,7 +375,7 @@ var CSSC = (function()
                     
                     return ruleHandler(matches, sel);
                 }
-                else if(Object.prototype.toString.call(sel) === "[object Array]")
+                else if(helper.elemType(sel) === "Array")
                 {
                     var matches = [], i, j, tmp;
 
@@ -394,7 +399,7 @@ var CSSC = (function()
 
                     return ruleHandler(matches, sel);
                 }
-                else if(Object.prototype.toString.call(sel) === "[object Null]" || Object.prototype.toString.call(sel) === "[object Undefined]")
+                else if(helper.elemType(sel) === "Null" || helper.elemType(sel) === "Undefined")
                 {
                     var matches = [], key;
                     
@@ -420,11 +425,11 @@ var CSSC = (function()
             {
                 var ret;
             
-                if(Object.prototype.toString.call(sel) === "[object String]" 
-                   || Object.prototype.toString.call(sel) === "[object RegExp]"
-                   || Object.prototype.toString.call(sel) === "[object Array]"
-                   || Object.prototype.toString.call(sel) === "[object Null]"
-                   || Object.prototype.toString.call(sel) === "[object Undefined]")
+                if(helper.elemType(sel) === "String" 
+                   || helper.elemType(sel) === "RegExp"
+                   || helper.elemType(sel) === "Array"
+                   || helper.elemType(sel) === "Null"
+                   || helper.elemType(sel) === "Undefined")
                 {
                     ret = helper.getHandler(sel, indexElem, getElements);
                 }
@@ -485,7 +490,7 @@ var CSSC = (function()
                         var childHandler = helper.getHandler(null, this.e[pos].children);
                         childHandler.set(prop, val);
                     }
-                    else if(Object.prototype.toString.call(val) === "[object Function]")
+                    else if(helper.elemType(val) === "Function")
                     {
                         var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
                             valToSet = val(oldVal);
@@ -503,20 +508,20 @@ var CSSC = (function()
                 else // multi Set
                 {
                     var i, propLen, key, props,
-                        propType = Object.prototype.toString.call(prop);
+                        propType = helper.elemType(prop);
 
-                    if(propType === "[object Object]")
+                    if(propType === "Object")
                     {
                         propLen = Object.keys(prop).length;
                     }
-                    else if(propType === "[object Function]")
+                    else if(propType === "Function")
                     {
                         props = prop();
                     }
                     
                     //create new Element
                     if(this.e.length <= 0 && !fromHas 
-                       && Object.prototype.toString.call(sel) === "[object String]"
+                       && helper.elemType(sel) === "String"
                     )
                     {
                         var rule, contentElems = [];
@@ -547,14 +552,14 @@ var CSSC = (function()
                     
                     for(i = 0; i < this.e.length; i++)
                     {
-                        if(propType === "[object Object]" && propLen > 0) 
+                        if(propType === "Object" && propLen > 0) 
                         {
                             for(key in prop)
                             {
                                 this.set(key, prop[key], i);
                             }
                         }
-                        else if(propType === "[object Function]")
+                        else if(propType === "Function")
                         {
                             for(key in props)
                             {
@@ -596,7 +601,7 @@ var CSSC = (function()
             {
                 var matches = [], propVal, i, tmp;
 
-                if(Object.prototype.toString.call(prop) === "[object String]")
+                if(helper.elemType(prop) === "String")
                 {
                     propVal = prop.split(":");
 
@@ -610,7 +615,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(Object.prototype.toString.call(prop) === "[object Array]")
+                else if(helper.elemType(prop) === "Array")
                 {
                     for(var j = 0; j < prop.length; j++)
                     {
@@ -627,7 +632,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(Object.prototype.toString.call(prop) === "[object RegExp]")
+                else if(helper.elemType(prop) === "RegExp")
                 {
                     var m, j;
 
@@ -750,7 +755,7 @@ var CSSC = (function()
             {
                 importElem = importObj[key];
                 
-                if(Object.prototype.toString.call(importElem) === "[object Array]")
+                if(helper.elemType(importElem) === "Array")
                 {
                     for(var i = 0; i < importElem.length; i++)
                     {
