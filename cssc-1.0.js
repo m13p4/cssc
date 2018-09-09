@@ -762,41 +762,27 @@ var CSSC = (function()
             
             for(key in importObj)
             {
-                importElem = importObj[key];
-                
-                if(helper.elemType(importElem) === "Array")
-                {
-                    for(var i = 0; i < importElem.length; i++)
-                    {
-                        if(key === "@font-face")
-                        {
-                            createRule(key, importElem[i], null);
-                        }
-                        else
-                        {
-                            rule = createRule(key, null, null);
-                            handlerObj = ruleHandler(rule.content, key);
-
-                            handlerObj.set(importElem[i]);
-                        }
-                    }
-                }
+                if(helper.elemType(importObj[key]) === "Array")
+                    importElem = importObj[key];
                 else
+                    importElem = [importObj[key]];
+                
+                for(var i = 0; i < importElem.length; i++)
                 {
                     if(key === "@font-face")
                     {
-                        createRule(key, importElem, null);
+                        createRule(key, importElem[i], null);
                     }
                     else if(key.match(/^@(media|keyframes)/))
                     {
                         rule = createRule(key, null, null);
                         handlerObj = ruleHandler(rule.content, key);
-                        
-                        for(cKey in importElem)
+
+                        for(cKey in importElem[i])
                         {
                             cRule = createRule(cKey, null, null, rule.content[rule.content.length-1].indexElem, rule.content[rule.content.length-1].children);
                             cHandlerObj = ruleHandler(cRule.content, cKey);
-                            cHandlerObj.set(importElem[cKey]);
+                            cHandlerObj.set(importElem[i][cKey]);
                         }
                     }
                     else
@@ -804,7 +790,7 @@ var CSSC = (function()
                         rule = createRule(key, null, null);
                         handlerObj = ruleHandler(rule.content, key);
 
-                        handlerObj.set(importElem);
+                        handlerObj.set(importElem[i]);
                     }
                 }
             }
