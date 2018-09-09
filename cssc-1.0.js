@@ -19,7 +19,8 @@ var CSSC = (function()
     var cntrl = function(styleSheetsDOM, initOnRun)
     {
         var index   = {},
-            isInit  = false;
+            isInit  = false,
+            cssc    = null;
         
         if(_debug) csscDebug.index = index;
     
