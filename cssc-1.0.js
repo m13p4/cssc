@@ -142,7 +142,9 @@ var CSSC = (function()
         
             if(!!property)
             {
-                if(helper.elemType(property) === "Object")
+                var propType = helper.elemType(property);
+                
+                if(propType === "Object")
                 {
                     var prop;
                     
@@ -160,7 +162,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(helper.elemType(property) === "Function")
+                else if(propType === "Function")
                 {
                     var prop = property();
                     
@@ -341,9 +343,10 @@ var CSSC = (function()
             },
             getHandler: function(sel, indexElem, getElements)
             {
-                var _index = !!indexElem ? indexElem : index; 
+                var _index = !!indexElem ? indexElem : index,
+                    selType = helper.elemType(sel); 
                 
-                if(helper.elemType(sel) === "String")
+                if(selType === "String")
                 {
                     var iElem = getFromIndex(sel, _index);
 
@@ -353,7 +356,7 @@ var CSSC = (function()
                     }
                     return ruleHandler((!!iElem ? iElem.content : []), sel);
                 }
-                else if(helper.elemType(sel) === "RegExp")
+                else if(selType === "RegExp")
                 {
                     var matches = [], key;
 
@@ -375,7 +378,7 @@ var CSSC = (function()
                     
                     return ruleHandler(matches, sel);
                 }
-                else if(helper.elemType(sel) === "Array")
+                else if(selType === "Array")
                 {
                     var matches = [], i, j, tmp;
 
@@ -399,7 +402,7 @@ var CSSC = (function()
 
                     return ruleHandler(matches, sel);
                 }
-                else if(helper.elemType(sel) === "Null" || helper.elemType(sel) === "Undefined")
+                else if(selType === "Null" || selType === "Undefined")
                 {
                     var matches = [], key;
                     
@@ -423,13 +426,13 @@ var CSSC = (function()
             },
             handleSelection: function(sel, hasProp, indexElem, getElements)
             {
-                var ret;
+                var ret, selType = helper.elemType(sel);
             
-                if(helper.elemType(sel) === "String" 
-                   || helper.elemType(sel) === "RegExp"
-                   || helper.elemType(sel) === "Array"
-                   || helper.elemType(sel) === "Null"
-                   || helper.elemType(sel) === "Undefined")
+                if(selType === "String" 
+                || selType === "RegExp"
+                || selType === "Array"
+                || selType === "Null"
+                || selType === "Undefined")
                 {
                     ret = helper.getHandler(sel, indexElem, getElements);
                 }
@@ -599,9 +602,10 @@ var CSSC = (function()
             };
             handler.has = function(prop)
             {
-                var matches = [], propVal, i, tmp;
+                var matches = [], propVal, i, tmp,
+                    propType = helper.elemType(prop);
 
-                if(helper.elemType(prop) === "String")
+                if(propType === "String")
                 {
                     propVal = prop.split(":");
 
@@ -615,7 +619,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(helper.elemType(prop) === "Array")
+                else if(propType === "Array")
                 {
                     for(var j = 0; j < prop.length; j++)
                     {
@@ -632,7 +636,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(helper.elemType(prop) === "RegExp")
+                else if(propType === "RegExp")
                 {
                     var m, j;
 
