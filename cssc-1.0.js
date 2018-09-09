@@ -19,8 +19,7 @@ var CSSC = (function()
     var cntrl = function(styleSheetsDOM, initOnRun)
     {
         var index   = {},
-            isInit  = false,
-            cssc    = null;
+            isInit  = false;
         
         if(_debug) csscDebug.index = index;
     
@@ -209,248 +208,115 @@ var CSSC = (function()
                 delete _index[sel];
             }
         },
-        helper = {
-            elemType: function(elem, returnFullValue)
+        getHandler = function(sel, indexElem, getElements)
+        {
+            var _index = !!indexElem ? indexElem : index,
+                selType = helper.elemType(sel); 
+
+            if(selType === "String")
             {
-                if(returnFullValue) return Object.prototype.toString.call(elem);
-                return Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
-            },
-            createNewStyleElem: function()
+                var iElem = getFromIndex(sel, _index);
+
+                if(!!getElements)
+                {
+                    return (!!iElem ? iElem.content : []);
+                }
+                return ruleHandler((!!iElem ? iElem.content : []), sel);
+            }
+            else if(selType === "RegExp")
             {
-                if(!!document.getElementById(cssc.conf.styleId))
+                var matches = [], key;
+
+                for(key in _index)
                 {
-                    for(var i = 0; i < 10; i++)
-                    {
-                        if(!document.getElementById(cssc.conf.styleId+'-'+i))
-                        {
-                            cssc.conf.styleId = cssc.conf.styleId+'-'+i;
-                            break;
-                        }
-                    }
-
-                    if(!!document.getElementById(cssc.conf.styleId))
-                    {
-                        throw new Error("cann not create new element..");
-                    }
-                }
-
-                var styleElem = document.createElement("style");
-                styleElem.setAttribute("type", "text/css");
-                styleElem.setAttribute("id", cssc.conf.styleId);
-                styleElem.appendChild(document.createTextNode(""));
-
-                document.head.appendChild(styleElem);
-
-                ownStyleElem = styleElem;
-            },
-            isElemInOwnNode: function(elem)
-            {
-                return (elem && !!elem.parentStyleSheet 
-                        && !!elem.parentStyleSheet.ownerNode 
-                        && elem.parentStyleSheet.ownerNode.id === cssc.conf.styleId);
-            },
-            parseValue: function(value)
-            {
-                if(isFinite(value))
-                {
-                    if(value%1 === 0)
-                    {
-                        return value + "px";
-                    }
-                    
-                    return (Math.floor(value * 100) / 100) + "px";
-                }
-                else
-                {
-                    var v = value.split(" ");
-                    
-                    if(v.length > 0)
-                    {
-                        var tmp;
-                        
-                        for(var i = 0; i < v.length; i++)
-                        {
-                            if(isFinite(v[i]))
-                            {
-                                tmp = v[i];
-
-                                if(tmp%1 === 0) 
-                                    v[i] = tmp + "px";
-                                else            
-                                    v[i] = (Math.floor(tmp * 100) / 100) + "px";
-                            }
-                        }
-                        
-                        return v.join(" ");
-                    }
-                }
-                
-                return value;
-            },
-            findPropInCssText: function(cssText, prop)
-            {
-                var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
-                    find = cssText.match(regExp);
-                
-                return !!find ? find[1].trim() : "";
-            },
-            exportParser: function(cssText, type)
-            {
-                if(type === cssc.export.type.ruleRow)
-                {
-                    return cssText.replace(/\n/g, "")+"\n";
-                }
-                else if(type === cssc.export.type.min)
-                {
-                    return cssText.replace(/(;|:|\s*?{|}|,)\s+/g,function(p)
-                    {
-                        return p.trim();
-                    });
-                }
-                else //Normal
-                {
-                    var tab = "    ";
-                    
-                    if(cssText.match(/^@(media|keyframes)/))
-                    {
-                        return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
-                        {
-                            return s + "\n{\n" + tab + r.trim().replace(/({|}|;)\s*/g, function(p)
-                            {
-                                p = p.trim();
-                                
-                                if(p === "{")
-                                    return "\n" + tab + "{\n" + tab + tab;
-                                else if(p === "}")
-                                    return "}\n" + tab;
-                                else if(p === ";")
-                                    return ";\n" + tab + tab;
-                            }).replace(/\s+}/g, "\n" + tab + "}").trim() + "\n}\n";
-                        });
-                    }
-                    else return cssText.replace(/({|}|;)\s*/g, function(p)
-                    { 
-                        p = p.trim();
-
-                        if(p === "{")
-                            return "\n" + p + "\n" + tab;
-                        else if(p === "}")
-                            return p + "\n";
-                        else if(p === ";")
-                            return p + "\n" + tab;
-                    }).replace(/\s+}/, "\n}");
-                }
-            },
-            getHandler: function(sel, indexElem, getElements)
-            {
-                var _index = !!indexElem ? indexElem : index,
-                    selType = helper.elemType(sel); 
-                
-                if(selType === "String")
-                {
-                    var iElem = getFromIndex(sel, _index);
-
-                    if(!!getElements)
-                    {
-                        return (!!iElem ? iElem.content : []);
-                    }
-                    return ruleHandler((!!iElem ? iElem.content : []), sel);
-                }
-                else if(selType === "RegExp")
-                {
-                    var matches = [], key;
-
-                    for(key in _index)
-                    {
-                        if(!!key.match(sel))
-                        {
-                            for(i = 0; i < _index[key].content.length; i++)
-                            {
-                                matches.push(_index[key].content[i]);
-                            }
-                        }
-                    }
-
-                    if(!!getElements)
-                    {
-                        return matches;
-                    }
-                    
-                    return ruleHandler(matches, sel);
-                }
-                else if(selType === "Array")
-                {
-                    var matches = [], i, j, tmp;
-
-                    for(i = 0; i < sel.length; i++)
-                    {
-                        tmp = getFromIndex(sel[i], _index);
-
-                        if(tmp !== null)
-                        {
-                            for(j = 0; j < tmp.content.length; j++)
-                            {
-                                matches.push(tmp.content[j]);
-                            }
-                        }
-                    }
-
-                    if(!!getElements)
-                    {
-                        return matches;
-                    }
-
-                    return ruleHandler(matches, sel);
-                }
-                else if(selType === "Null" || selType === "Undefined")
-                {
-                    var matches = [], key;
-                    
-                    for(key in _index)
+                    if(!!key.match(sel))
                     {
                         for(i = 0; i < _index[key].content.length; i++)
                         {
                             matches.push(_index[key].content[i]);
                         }
                     }
-                    
-                    if(!!getElements)
-                    {
-                        return matches;
-                    }
-
-                    return ruleHandler(matches, sel);
                 }
-                
-                return null;
-            },
-            handleSelection: function(sel, hasProp, indexElem, getElements)
-            {
-                var ret, selType = helper.elemType(sel);
-            
-                if(selType === "String" 
-                || selType === "RegExp"
-                || selType === "Array"
-                || selType === "Null"
-                || selType === "Undefined")
+
+                if(!!getElements)
                 {
-                    ret = helper.getHandler(sel, indexElem, getElements);
-                }
-                else
-                {
-                    cssc.import(sel);
-
-                    return;
+                    return matches;
                 }
 
-                //return Elements with hasProp
-                if(!!hasProp)
-                {
-                    return ret.has(hasProp);
-                }
-
-                return ret;
+                return ruleHandler(matches, sel);
             }
+            else if(selType === "Array")
+            {
+                var matches = [], i, j, tmp;
+
+                for(i = 0; i < sel.length; i++)
+                {
+                    tmp = getFromIndex(sel[i], _index);
+
+                    if(tmp !== null)
+                    {
+                        for(j = 0; j < tmp.content.length; j++)
+                        {
+                            matches.push(tmp.content[j]);
+                        }
+                    }
+                }
+
+                if(!!getElements)
+                {
+                    return matches;
+                }
+
+                return ruleHandler(matches, sel);
+            }
+            else if(selType === "Null" || selType === "Undefined")
+            {
+                var matches = [], key;
+
+                for(key in _index)
+                {
+                    for(i = 0; i < _index[key].content.length; i++)
+                    {
+                        matches.push(_index[key].content[i]);
+                    }
+                }
+
+                if(!!getElements)
+                {
+                    return matches;
+                }
+
+                return ruleHandler(matches, sel);
+            }
+
+            return null;
+        },
+        handleSelection = function(sel, hasProp, indexElem, getElements)
+        {
+            var ret, selType = helper.elemType(sel);
+
+            if(selType === "String" 
+            || selType === "RegExp"
+            || selType === "Array"
+            || selType === "Null"
+            || selType === "Undefined")
+            {
+                ret = getHandler(sel, indexElem, getElements);
+            }
+            else
+            {
+                cssc.import(sel);
+
+                return;
+            }
+
+            //return Elements with hasProp
+            if(!!hasProp)
+            {
+                return ret.has(hasProp);
+            }
+
+            return ret;
         },
         ruleHandler = function(indexElemArr, sel, fromHas, parents)
         {
@@ -461,7 +327,7 @@ var CSSC = (function()
                 {
                     if(!!handler.e[i].children)
                     {
-                        tmp = helper.handleSelection(sel, hasProp, handler.e[i].children, true);
+                        tmp = handleSelection(sel, hasProp, handler.e[i].children, true);
                         
                         for(j = 0; j < tmp.length; j++)
                         {
@@ -490,7 +356,7 @@ var CSSC = (function()
 
                     if(!!this.e[pos].children)
                     {
-                        var childHandler = helper.getHandler(null, this.e[pos].children);
+                        var childHandler = getHandler(null, this.e[pos].children);
                         childHandler.set(prop, val);
                     }
                     else if(helper.elemType(val) === "Function")
@@ -679,7 +545,7 @@ var CSSC = (function()
 
                     if(!!this.e[i].children)
                     {
-                        var childHandler = helper.getHandler(null, this.e[i].children);
+                        var childHandler = getHandler(null, this.e[i].children);
                         childHandler.update();
                     }
                     else
@@ -713,7 +579,7 @@ var CSSC = (function()
 
                         if(!!this.e[i].children)
                         {
-                            var childHandler = helper.getHandler(null, this.e[i].children);
+                            var childHandler = getHandler(null, this.e[i].children);
                             childHandler.delete(prop);
                         }
                     }
@@ -726,7 +592,7 @@ var CSSC = (function()
 
                         if(!!this.e[i].children)
                         {
-                            var childHandler = helper.getHandler(null, this.e[i].children);
+                            var childHandler = getHandler(null, this.e[i].children);
                             childHandler.delete(prop);
                         }
                     }
@@ -747,9 +613,142 @@ var CSSC = (function()
             
             return handler;
         },
+        helper = {
+            elemType: function(elem, returnFullValue)
+            {
+                if(returnFullValue) return Object.prototype.toString.call(elem);
+                return Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
+            },
+            createNewStyleElem: function()
+            {
+                if(!!document.getElementById(cssc.conf.styleId))
+                {
+                    for(var i = 0; i < 10; i++)
+                    {
+                        if(!document.getElementById(cssc.conf.styleId+'-'+i))
+                        {
+                            cssc.conf.styleId = cssc.conf.styleId+'-'+i;
+                            break;
+                        }
+                    }
+
+                    if(!!document.getElementById(cssc.conf.styleId))
+                    {
+                        throw new Error("cann not create new element..");
+                    }
+                }
+
+                var styleElem = document.createElement("style");
+                styleElem.setAttribute("type", "text/css");
+                styleElem.setAttribute("id", cssc.conf.styleId);
+                styleElem.appendChild(document.createTextNode(""));
+
+                document.head.appendChild(styleElem);
+
+                ownStyleElem = styleElem;
+            },
+            isElemInOwnNode: function(elem)
+            {
+                return (elem && !!elem.parentStyleSheet 
+                        && !!elem.parentStyleSheet.ownerNode 
+                        && elem.parentStyleSheet.ownerNode.id === cssc.conf.styleId);
+            },
+            parseValue: function(value)
+            {
+                if(isFinite(value))
+                {
+                    if(value%1 === 0)
+                    {
+                        return value + "px";
+                    }
+                    
+                    return (Math.floor(value * 100) / 100) + "px";
+                }
+                else
+                {
+                    var v = value.split(" ");
+                    
+                    if(v.length > 0)
+                    {
+                        var tmp;
+                        
+                        for(var i = 0; i < v.length; i++)
+                        {
+                            if(isFinite(v[i]))
+                            {
+                                tmp = v[i];
+
+                                if(tmp%1 === 0) 
+                                    v[i] = tmp + "px";
+                                else            
+                                    v[i] = (Math.floor(tmp * 100) / 100) + "px";
+                            }
+                        }
+                        
+                        return v.join(" ");
+                    }
+                }
+                
+                return value;
+            },
+            findPropInCssText: function(cssText, prop)
+            {
+                var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
+                    find = cssText.match(regExp);
+                
+                return !!find ? find[1].trim() : "";
+            },
+            exportParser: function(cssText, type)
+            {
+                if(type === cssc.export.type.ruleRow)
+                {
+                    return cssText.replace(/\n/g, "")+"\n";
+                }
+                else if(type === cssc.export.type.min)
+                {
+                    return cssText.replace(/(;|:|\s*?{|}|,)\s+/g,function(p)
+                    {
+                        return p.trim();
+                    });
+                }
+                else //Normal
+                {
+                    var tab = "    ";
+                    
+                    if(cssText.match(/^@(media|keyframes)/))
+                    {
+                        return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
+                        {
+                            return s + "\n{\n" + tab + r.trim().replace(/({|}|;)\s*/g, function(p)
+                            {
+                                p = p.trim();
+                                
+                                if(p === "{")
+                                    return "\n" + tab + "{\n" + tab + tab;
+                                else if(p === "}")
+                                    return "}\n" + tab;
+                                else if(p === ";")
+                                    return ";\n" + tab + tab;
+                            }).replace(/\s+}/g, "\n" + tab + "}").trim() + "\n}\n";
+                        });
+                    }
+                    else return cssText.replace(/({|}|;)\s*/g, function(p)
+                    { 
+                        p = p.trim();
+
+                        if(p === "{")
+                            return "\n" + p + "\n" + tab;
+                        else if(p === "}")
+                            return p + "\n";
+                        else if(p === ";")
+                            return p + "\n" + tab;
+                    }).replace(/\s+}/, "\n}");
+                }
+            }
+        },
         cssc = function(sel, hasProp)
         {
-            return helper.handleSelection(sel, hasProp);
+            return handleSelection(sel, hasProp);
         }; 
         cssc.import = function(importObj)
         {
