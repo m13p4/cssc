@@ -70,11 +70,10 @@ var CSSC = (function()
             
             //@todo: support all types
             if(indexType !== cssc.ruleType.rule 
-               && indexType !== cssc.ruleType.fontFace 
-               && indexType !== cssc.ruleType.media
-               && indexType !== cssc.ruleType.keyframes
-               && indexType !== cssc.ruleType.keyframe
-               )
+            && indexType !== cssc.ruleType.fontFace 
+            && indexType !== cssc.ruleType.media
+            && indexType !== cssc.ruleType.keyframes
+            && indexType !== cssc.ruleType.keyframe)
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
                 return;
@@ -456,7 +455,13 @@ var CSSC = (function()
 
                 for(i = 0; i < this.e.length; i++)
                 {
-                    tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, prop);
+                    tmp = this.e[i].indexElem.style[prop];
+                    
+                    //use helper, if property value not found in style object (margin, padding, border, etc..)
+                    if(!tmp || tmp === "")
+                    { 
+                        tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, prop);
+                    }
 
                     if(!!tmp)
                     {
