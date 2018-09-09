@@ -758,9 +758,9 @@ var CSSC = (function()
         }; 
         cssc.import = function(importObj)
         {
-            var importElem, rule, handlerObj;
+            var importElem, rule, handlerObj, key, cHandlerObj, cKey, cRule;
             
-            for(var key in importObj)
+            for(key in importObj)
             {
                 importElem = importObj[key];
                 
@@ -786,6 +786,18 @@ var CSSC = (function()
                     if(key === "@font-face")
                     {
                         createRule(key, importElem, null);
+                    }
+                    else if(key.match(/^@(media|keyframes)/))
+                    {
+                        rule = createRule(key, null, null);
+                        handlerObj = ruleHandler(rule.content, key);
+                        
+                        for(cKey in importElem)
+                        {
+                            cRule = createRule(cKey, null, null, rule.content[rule.content.length-1].indexElem, rule.content[rule.content.length-1].children);
+                            cHandlerObj = ruleHandler(cRule.content, cKey);
+                            cHandlerObj.set(importElem[cKey]);
+                        }
                     }
                     else
                     {
@@ -833,11 +845,11 @@ var CSSC = (function()
             'rule':       1, //check
             'charset':    2,
             'import':     3,
-            'media':      4, //->next!
+            'media':      4, //check
             'fontFace':   5, //check
             'page':       6,
-            'keyframes':  7, //->next!
-            'keyframe':   8, //->next!
+            'keyframes':  7, //check
+            'keyframe':   8, //check
             
             'namespace':      10,
             'counterStyle':   11,
