@@ -76,7 +76,8 @@ var CSSC = (function()
             && indexType !== cssc.ruleType.media
             && indexType !== cssc.ruleType.keyframes
             && indexType !== cssc.ruleType.keyframe
-            && indexType !== cssc.ruleType.page)
+            && indexType !== cssc.ruleType.page
+            && indexType !== cssc.ruleType.supports)
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
                 return;
@@ -791,7 +792,7 @@ var CSSC = (function()
                     {
                         createRule(key, importElem[i], null);
                     }
-                    else if(key.match(/^@(media|keyframes)/))
+                    else if(key.match(/^@(media|keyframes|supports)/))
                     {
                         rule = createRule(key, null, null);
                         
@@ -880,7 +881,7 @@ var CSSC = (function()
             
             'namespace':      10,
             'counterStyle':   11,
-            'supports':       12,
+            'supports':       12, //check
             
             'fontFeatureValues': 14,
             
