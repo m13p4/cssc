@@ -758,7 +758,8 @@ var CSSC = (function()
         }; 
         cssc.import = function(importObj)
         {
-            var importElem, rule, handlerObj, key, cHandlerObj, cKey, cRule;
+            var importElem, rule, handlerObj, key, i, j,
+                cImportElem, cRule, cHandlerObj, cKey, cPos;
             
             for(key in importObj)
             {
@@ -767,7 +768,7 @@ var CSSC = (function()
                 else
                     importElem = [importObj[key]];
                 
-                for(var i = 0; i < importElem.length; i++)
+                for(i = 0; i < importElem.length; i++)
                 {
                     if(key === "@font-face")
                     {
@@ -778,11 +779,22 @@ var CSSC = (function()
                         rule = createRule(key, null, null);
                         handlerObj = ruleHandler(rule.content, key);
 
+                        cPos = rule.content.length - 1;
+                        
                         for(cKey in importElem[i])
                         {
-                            cRule = createRule(cKey, null, null, rule.content[rule.content.length-1].indexElem, rule.content[rule.content.length-1].children);
-                            cHandlerObj = ruleHandler(cRule.content, cKey);
-                            cHandlerObj.set(importElem[i][cKey]);
+                            if(helper.elemType(importElem[i][cKey]) === "Array")
+                                cImportElem = importElem[i][cKey];
+                            else
+                                cImportElem = [importElem[i][cKey]];
+                            
+                            for(j = 0; j < cImportElem.length; j++)
+                            {
+                                cRule = createRule(cKey, null, null, rule.content[cPos].indexElem, rule.content[cPos].children);
+                                cHandlerObj = ruleHandler(cRule.content, cKey);
+                                
+                                cHandlerObj.set(cImportElem[j]);
+                            }
                         }
                     }
                     else
