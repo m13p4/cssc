@@ -16,6 +16,8 @@ var CSSC = (function()
     
     var ownStyleElem;
     
+    if(_debug) csscDebug.ownElem = ownStyleElem;
+    
     var cntrl = function(styleSheetsDOM, initOnRun)
     {
         var index   = {},
@@ -73,7 +75,8 @@ var CSSC = (function()
             && indexType !== cssc.ruleType.fontFace 
             && indexType !== cssc.ruleType.media
             && indexType !== cssc.ruleType.keyframes
-            && indexType !== cssc.ruleType.keyframe)
+            && indexType !== cssc.ruleType.keyframe
+            && indexType !== cssc.ruleType.page)
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
                 return;
@@ -176,20 +179,29 @@ var CSSC = (function()
                 }
             }
 
-            if("insertRule" in appendToElem)
+            try
             {
-                appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
+                if("insertRule" in appendToElem)
+                {
+                    appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
+                }
+                else if("appendRule" in appendToElem)
+                {
+                    appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
+                }
+                else if("addRule" in appendToElem)
+                {
+                    appendToElem.addRule(selector, ruleString, rulePos);
+                }
+                
+                return addToIndex(appendToElem.cssRules[rulePos], indexElem);
             }
-            else if("appendRule" in appendToElem)
+            catch(err)
             {
-                appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
-            }
-            else if("addRule" in appendToElem)
-            {
-                appendToElem.addRule(selector, ruleString, rulePos);
+                console.log("\""+selector+"\" -> "+err);
             }
             
-            return addToIndex(appendToElem.cssRules[rulePos], indexElem);
+            return false;
         },
         getFromIndex = function(sel, indexElem)
         {
@@ -398,7 +410,8 @@ var CSSC = (function()
                         if(!parents)
                         {
                             rule = createRule(sel, null, null);
-                            contentElems = rule.content;
+                            
+                            if(rule) contentElems = rule.content;
                         }
                         else
                         {
@@ -408,9 +421,12 @@ var CSSC = (function()
                             {
                                 rule = createRule(sel, null, null, parents[i].indexElem, parents[i].children);
                                 
-                                for(key = 0; key < rule.content.length; key++)
+                                if(rule)
                                 {
-                                    contentElems.push(rule.content[key]);
+                                    for(key = 0; key < rule.content.length; key++)
+                                    {
+                                        contentElems.push(rule.content[key]);
+                                    }
                                 }
                             }
                         }
@@ -652,6 +668,7 @@ var CSSC = (function()
                 document.head.appendChild(styleElem);
 
                 ownStyleElem = styleElem;
+                if(_debug) csscDebug.ownElem = ownStyleElem;
             },
             isElemInOwnNode: function(elem)
             {
@@ -777,32 +794,44 @@ var CSSC = (function()
                     else if(key.match(/^@(media|keyframes)/))
                     {
                         rule = createRule(key, null, null);
-                        handlerObj = ruleHandler(rule.content, key);
-
-                        cPos = rule.content.length - 1;
                         
-                        for(cKey in importElem[i])
+                        if(rule)
                         {
-                            if(helper.elemType(importElem[i][cKey]) === "Array")
-                                cImportElem = importElem[i][cKey];
-                            else
-                                cImportElem = [importElem[i][cKey]];
-                            
-                            for(j = 0; j < cImportElem.length; j++)
+                            handlerObj = ruleHandler(rule.content, key);
+
+                            cPos = rule.content.length - 1;
+
+                            for(cKey in importElem[i])
                             {
-                                cRule = createRule(cKey, null, null, rule.content[cPos].indexElem, rule.content[cPos].children);
-                                cHandlerObj = ruleHandler(cRule.content, cKey);
-                                
-                                cHandlerObj.set(cImportElem[j]);
+                                if(helper.elemType(importElem[i][cKey]) === "Array")
+                                    cImportElem = importElem[i][cKey];
+                                else
+                                    cImportElem = [importElem[i][cKey]];
+
+                                for(j = 0; j < cImportElem.length; j++)
+                                {
+                                    cRule = createRule(cKey, null, null, rule.content[cPos].indexElem, rule.content[cPos].children);
+                                    
+                                    if(cRule)
+                                    {
+                                        cHandlerObj = ruleHandler(cRule.content, cKey);
+
+                                        cHandlerObj.set(cImportElem[j]);
+                                    }
+                                }
                             }
                         }
                     }
                     else
                     {
                         rule = createRule(key, null, null);
-                        handlerObj = ruleHandler(rule.content, key);
+                        
+                        if(rule)
+                        {
+                            handlerObj = ruleHandler(rule.content, key);
 
-                        handlerObj.set(importElem[i]);
+                            handlerObj.set(importElem[i]);
+                        }
                     }
                 }
             }
@@ -845,7 +874,7 @@ var CSSC = (function()
             'import':     3,
             'media':      4, //check
             'fontFace':   5, //check
-            'page':       6,
+            'page':       6, //check
             'keyframes':  7, //check
             'keyframe':   8, //check
             
