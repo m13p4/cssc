@@ -52,22 +52,22 @@ var CSSC = (function()
                 }
             }
         },
-        indexCssRules = function(cssRules, indexElem)
+        indexCssRules = function(cssRules, parent)
         {
             for(var i = 0; i < cssRules.length; i++)
             {
                 if(!helper.isElemInOwnNode(cssRules[i]))
                 {
-                    addToIndex(cssRules[i], indexElem);
+                    addToIndex(cssRules[i], parent);
                 }
             }
         },
-        addToIndex = function(cssRule, indexElem, parent)
+        addToIndex = function(cssRule, parent)
         {
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = cssRule.type, 
                 toIndex   = cssRule,
-                _index    = (!!indexElem ? indexElem : index),
+                _index    = (!!parent ? parent.children : index),
                 indexObjWrapper, indexC;
             
             //@todo: support all types
@@ -93,7 +93,7 @@ var CSSC = (function()
             indexObjWrapper = {
                 indexElem: toIndex,
                 children: false,
-                parent: (!!indexElem ? parent : false),
+                parent: (!!parent ? parent : false),
                 events: {},
                 type: indexType
             };
@@ -126,20 +126,21 @@ var CSSC = (function()
             || indexType === cssc.ruleType.supports)
             {
                 _index[indexKey].content[indexC].children = {};
-                indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC].children, false);
+                
+                indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC]);
             }
             
             return _index[indexKey];
         },
-        createRule = function(selector, property, value, appendTo, indexElem, parent)
+        createRule = function(selector, property, value, parent)
         {
             var appendToElem;
             
-            if(!appendTo && !ownStyleElem)
+            if(!parent && !ownStyleElem)
             {
                 helper.createNewStyleElem();
             }
-            appendToElem = !!appendTo ? appendTo : ownStyleElem.sheet;
+            appendToElem = !!parent ? parent.indexElem : ownStyleElem.sheet;
             
             
             var rulePos = appendToElem.cssRules.length,
@@ -198,7 +199,7 @@ var CSSC = (function()
                 }
                 
                 
-                return addToIndex(appendToElem.cssRules[rulePos], indexElem, parent);
+                return addToIndex(appendToElem.cssRules[rulePos], parent);
             }
             catch(err)
             {
@@ -334,7 +335,7 @@ var CSSC = (function()
 
             return ret;
         },
-        handleImport = function(importObj, appendTo, indexElem, parent)
+        handleImport = function(importObj, parent)
         {
             var importElem, rule, handlerObj, key, i, cPos;
             
@@ -349,23 +350,22 @@ var CSSC = (function()
                 {
                     if(key === "@font-face")
                     {
-                        createRule(key, importElem[i], null, appendTo, indexElem, parent);
+                        createRule(key, importElem[i], null, parent);
                     }
                     else if(key.match(/^@(media|keyframes|supports)/))
                     {
-                        rule = createRule(key, null, null, appendTo, indexElem, parent);
+                        rule = createRule(key, null, null, parent);
                         
                         if(rule)
                         {
                             cPos = rule.content.length - 1;
                             
-                            handleImport(importElem[i], rule.content[cPos].indexElem, 
-                                         rule.content[cPos].children, rule.content[cPos]);
+                            handleImport(importElem[i], rule.content[cPos]);
                         }
                     }
                     else
                     {
-                        rule = createRule(key, null, null, appendTo, indexElem, parent);
+                        rule = createRule(key, null, null, parent);
                         
                         if(rule)
                         {
