@@ -50,7 +50,8 @@ var CSSC = (function()
                     }
                     catch(err)
                     {
-                        console.log("Cannot init CSS from \""+toInit.href+"\"");
+                        if(cssc.conf.viewErr) console.log("Cannot init CSS from \""+toInit.href+"\"");
+                        cssc.messages.push("Cannot init CSS from \""+toInit.href+"\"");
                     }
                 }
             }
@@ -71,7 +72,8 @@ var CSSC = (function()
                     }
                     catch(err)
                     {
-                        console.log("Cannot init CSS from \""+toInit[i].href+"\"");
+                        if(cssc.conf.viewErr) console.log("Cannot init CSS from \""+toInit[i].href+"\"");
+                        cssc.messages.push("Cannot init CSS from \""+toInit[i].href+"\"");
                     }
                 }
             }
@@ -227,7 +229,8 @@ var CSSC = (function()
             }
             catch(err)
             {
-                console.log("\""+selector+"\" -> "+err);
+                if(cssc.conf.viewErr) console.log("\""+selector+"\" -> "+err);
+                cssc.messages.push("\""+selector+"\" -> "+err);
             }
             
             return false;
@@ -931,8 +934,10 @@ var CSSC = (function()
             'min':     'min'
         };
         cssc.conf = {
-            'styleId': "cssc-style"
+            'styleId': "cssc-style",
+            'viewErr': true
         };
+        cssc.messages = [];
         
         if(!!initOnRun)
         {
