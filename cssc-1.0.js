@@ -62,7 +62,7 @@ var CSSC = (function()
                 }
             }
         },
-        addToIndex = function(cssRule, indexElem)
+        addToIndex = function(cssRule, indexElem, parent)
         {
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = cssRule.type, 
@@ -93,7 +93,7 @@ var CSSC = (function()
             indexObjWrapper = {
                 indexElem: toIndex,
                 children: false,
-                parent: (!!indexElem ? indexElem : false),
+                parent: (!!indexElem ? parent : false),
                 events: {},
                 type: indexType
             };
@@ -121,7 +121,9 @@ var CSSC = (function()
             }
             
             //handle Media & KeyFrames Rules
-            if(indexType === cssc.ruleType.media || indexType === cssc.ruleType.keyframes)
+            if(indexType === cssc.ruleType.media 
+            || indexType === cssc.ruleType.keyframes 
+            || indexType === cssc.ruleType.supports)
             {
                 _index[indexKey].content[indexC].children = {};
                 indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC].children, false);
@@ -129,7 +131,7 @@ var CSSC = (function()
             
             return _index[indexKey];
         },
-        createRule = function(selector, property, value, appendTo, indexElem)
+        createRule = function(selector, property, value, appendTo, indexElem, parent)
         {
             var appendToElem;
             
@@ -195,7 +197,8 @@ var CSSC = (function()
                     appendToElem.addRule(selector, ruleString, rulePos);
                 }
                 
-                return addToIndex(appendToElem.cssRules[rulePos], indexElem);
+                
+                return addToIndex(appendToElem.cssRules[rulePos], indexElem, parent);
             }
             catch(err)
             {
@@ -318,7 +321,7 @@ var CSSC = (function()
             }
             else
             {
-                cssc.import(sel);
+                handleImport(sel, null, indexElem);
 
                 return;
             }
@@ -330,6 +333,49 @@ var CSSC = (function()
             }
 
             return ret;
+        },
+        handleImport = function(importObj, appendTo, indexElem, parent)
+        {
+            var importElem, rule, handlerObj, key, i, cPos;
+            
+            for(key in importObj)
+            {
+                if(helper.elemType(importObj[key]) === "Array")
+                    importElem = importObj[key];
+                else
+                    importElem = [importObj[key]];
+                
+                for(i = 0; i < importElem.length; i++)
+                {
+                    if(key === "@font-face")
+                    {
+                        createRule(key, importElem[i], null, appendTo, indexElem, parent);
+                    }
+                    else if(key.match(/^@(media|keyframes|supports)/))
+                    {
+                        rule = createRule(key, null, null, appendTo, indexElem, parent);
+                        
+                        if(rule)
+                        {
+                            cPos = rule.content.length - 1;
+                            
+                            handleImport(importElem[i], rule.content[cPos].indexElem, 
+                                         rule.content[cPos].children, rule.content[cPos]);
+                        }
+                    }
+                    else
+                    {
+                        rule = createRule(key, null, null, appendTo, indexElem, parent);
+                        
+                        if(rule)
+                        {
+                            handlerObj = ruleHandler(rule.content, key);
+
+                            handlerObj.set(importElem[i]);
+                        }
+                    }
+                }
+            }
         },
         ruleHandler = function(indexElemArr, sel, fromHas, parents)
         {
@@ -739,7 +785,7 @@ var CSSC = (function()
                 {
                     var tab = "    ";
                     
-                    if(cssText.match(/^@(media|keyframes)/))
+                    if(cssText.match(/^@(media|keyframes|supports)/))
                     {
                         return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
                         {
@@ -776,66 +822,7 @@ var CSSC = (function()
         }; 
         cssc.import = function(importObj)
         {
-            var importElem, rule, handlerObj, key, i, j,
-                cImportElem, cRule, cHandlerObj, cKey, cPos;
-            
-            for(key in importObj)
-            {
-                if(helper.elemType(importObj[key]) === "Array")
-                    importElem = importObj[key];
-                else
-                    importElem = [importObj[key]];
-                
-                for(i = 0; i < importElem.length; i++)
-                {
-                    if(key === "@font-face")
-                    {
-                        createRule(key, importElem[i], null);
-                    }
-                    else if(key.match(/^@(media|keyframes|supports)/))
-                    {
-                        rule = createRule(key, null, null);
-                        
-                        if(rule)
-                        {
-                            handlerObj = ruleHandler(rule.content, key);
-
-                            cPos = rule.content.length - 1;
-
-                            for(cKey in importElem[i])
-                            {
-                                if(helper.elemType(importElem[i][cKey]) === "Array")
-                                    cImportElem = importElem[i][cKey];
-                                else
-                                    cImportElem = [importElem[i][cKey]];
-
-                                for(j = 0; j < cImportElem.length; j++)
-                                {
-                                    cRule = createRule(cKey, null, null, rule.content[cPos].indexElem, rule.content[cPos].children);
-                                    
-                                    if(cRule)
-                                    {
-                                        cHandlerObj = ruleHandler(cRule.content, cKey);
-
-                                        cHandlerObj.set(cImportElem[j]);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        rule = createRule(key, null, null);
-                        
-                        if(rule)
-                        {
-                            handlerObj = ruleHandler(rule.content, key);
-
-                            handlerObj.set(importElem[i]);
-                        }
-                    }
-                }
-            }
+            return handleImport(importObj);
         },
         cssc.export = function(type)
         {
