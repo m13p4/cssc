@@ -435,8 +435,11 @@ var CSSC = (function()
                     //can not change font-face values on Firefox..
                     if(this.e[pos].indexElem.type === cssc.ruleType.fontFace)
                     {
-                        console.log("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
-
+                        if(cssc.conf.viewErr)
+                            console.log("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
+                        
+                        cssc.messages.push("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
+                        
                         return this;
                     }
 
