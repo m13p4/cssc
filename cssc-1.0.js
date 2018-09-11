@@ -36,22 +36,31 @@ var CSSC = (function()
         },
         initElements = function(toInit)
         {
+            var ignVal;
+            
             if("cssRules" in toInit)
             {
-                try
+                ignVal = (toInit.ownerNode.getAttribute('data-cssc-ignore') || "").toLowerCase();
+                
+                if(ignVal !== "true" && ignVal !== "1")
                 {
-                    indexCssRules(toInit.cssRules, null);
-                }
-                catch(err)
-                {
-                    console.log("Cannot init CSS from \""+toInit.href+"\"");
+                    try
+                    {
+                        indexCssRules(toInit.cssRules, null);
+                    }
+                    catch(err)
+                    {
+                        console.log("Cannot init CSS from \""+toInit.href+"\"");
+                    }
                 }
             }
             else if("length" in toInit)
             {
                 for(var i = 0; i < toInit.length; i++)
                 {
-                    if(toInit[i].ownerNode.getAttribute('data-cssc-ignore') === "true")
+                    ignVal = (toInit[i].ownerNode.getAttribute('data-cssc-ignore') || "").toLowerCase();
+                    
+                    if(ignVal === "true" || ignVal === "1")
                     {
                         continue;
                     }
