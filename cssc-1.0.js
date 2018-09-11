@@ -38,7 +38,14 @@ var CSSC = (function()
         {
             if("cssRules" in toInit)
             {
-                indexCssRules(toInit.cssRules);
+                try
+                {
+                    indexCssRules(toInit.cssRules, null);
+                }
+                catch(err)
+                {
+                    console.log("Cannot init CSS from \""+toInit.href+"\"");
+                }
             }
             else if("length" in toInit)
             {
@@ -48,7 +55,15 @@ var CSSC = (function()
                     {
                         continue;
                     }
-                    indexCssRules(toInit[i].cssRules);
+                    
+                    try
+                    {
+                        indexCssRules(toInit[i].cssRules, null);
+                    }
+                    catch(err)
+                    {
+                        console.log("Cannot init CSS from \""+toInit[i].href+"\"");
+                    }
                 }
             }
         },
