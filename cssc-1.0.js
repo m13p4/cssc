@@ -459,19 +459,25 @@ var CSSC = (function()
                     }
                     else 
                     {
-                        var prsVal;
+                        var prsVal, valType = helper.elemType(val);
                         
-                        if(prop.match(/^:.+/))
+                        if(valType === "Object")
                         {
-                            var rule = createRule(this.e[pos].selector + prop, null, null, this.e[pos].parent);
+                            var newSel = this.e[pos].selector + " " + prop, rule;
+                            if(prop.match(/^(\[|:)/))
+                                newSel = this.e[pos].selector + prop;
+                            
+                            rule = createRule(newSel, null, null, this.e[pos].parent);
                         
                             if(rule)
                             {
-                                var handlerObj = ruleHandler(rule.content, key);
+                                var handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
                                 handlerObj.set(val);
+                                
+                                this.e[pos].obj[prop] = rule.content[rule.content.length-1];
                             }
                         }
-                        else if(helper.elemType(val) === "Function")
+                        else if(valType === "Function")
                         {
                             var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop), valToSet;
                             
@@ -747,14 +753,35 @@ var CSSC = (function()
             };
             handler.export = function(type)
             {
-                var exportString = "", i;
-
+                var exportObj, i;
+                
+                if(type === cssc.export.type.obj || type === cssc.export.type.object)
+                {
+                    type = cssc.export.type.object;
+                    exportObj = {};
+                }
+                else
+                    exportObj = "";
+                
                 for(i = 0; i < this.e.length; i++)
                 {
-                    exportString += helper.exportParser(this.e[i].indexElem.cssText, type);
+                    if(type === cssc.export.type.object)
+                    {
+                        if(exportObj[this.e[i].selector])
+                        {
+                            if(!("length" in exportObj[this.e[i].selector]))
+                            {
+                                exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
+                            }
+                            
+                            exportObj[this.e[i].selector].push(this.e[i].obj);
+                        }
+                        else exportObj[this.e[i].selector] = this.e[i].obj;
+                    }
+                    else exportObj += helper.exportParser(this.e[i].indexElem.cssText, type);
                 }
 
-                return exportString.trim();
+                return type === cssc.export.type.object ? exportObj : exportObj.trim();
             };
             
             return handler;
@@ -939,17 +966,7 @@ var CSSC = (function()
         },
         cssc.export = function(type)
         {
-            var exportString = '', indexElem, i;
-            
-            for(indexElem in index)
-            {
-                for(i = 0; i < index[indexElem].content.length; i++)
-                {
-                    exportString += helper.exportParser(index[indexElem].content[i].indexElem.cssText, type);
-                }
-            }
-            
-            return exportString.trim();
+            return handleSelection().export(type);
         },
         cssc.update = function(sel)
         {
@@ -1017,7 +1034,10 @@ var CSSC = (function()
         cssc.export.type = {
             'normal':  'normal',
             'ruleRow': 'ruleRow',
-            'min':     'min'
+            'min':     'min',
+            
+            'obj':     'obj',
+            'object':  'object'
         };
         cssc.conf = {
             'styleId': "cssc-style",
