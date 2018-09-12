@@ -586,8 +586,17 @@ var CSSC = (function()
 
                 for(i = 0; i < this.e.length; i++)
                 {
-                    tmp = this.e[i].indexElem.style[prop];
+                    tmp = "";
                     
+                    if(!!this.e[i].obj[prop])
+                    {
+                        tmp = this.e[i].obj[prop];
+                    }
+                    
+                    if(!tmp || tmp === "")
+                    {
+                        tmp = this.e[i].indexElem.style[prop];
+                    }
                     //use helper, if property value not found in style object (margin, padding, border, etc..)
                     if(!tmp || tmp === "")
                     { 
