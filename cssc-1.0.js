@@ -753,7 +753,7 @@ var CSSC = (function()
             };
             handler.export = function(type)
             {
-                var exportObj, i;
+                var exportObj, i, childHandler;
                 
                 if(type === cssc.export.type.obj || type === cssc.export.type.object)
                 {
@@ -767,7 +767,12 @@ var CSSC = (function()
                 {
                     if(type === cssc.export.type.object)
                     {
-                        if(exportObj[this.e[i].selector])
+                        if(!!this.e[i].children)
+                        {
+                            childHandler = getHandler(null, this.e[i].children);
+                            exportObj[this.e[i].selector] = childHandler.export(type);
+                        }
+                        else if(exportObj[this.e[i].selector])
                         {
                             if(!("length" in exportObj[this.e[i].selector]))
                             {
@@ -783,6 +788,7 @@ var CSSC = (function()
 
                 return type === cssc.export.type.object ? exportObj : exportObj.trim();
             };
+            
             
             return handler;
         },
