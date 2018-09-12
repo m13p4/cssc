@@ -118,9 +118,11 @@ var CSSC = (function()
             
             indexObjWrapper = {
                 indexElem: toIndex,
+                selector: indexKey,
                 children: false,
                 parent: (!!parent ? parent : false),
                 events: {},
+                obj: {},
                 type: indexType
             };
             
@@ -154,6 +156,10 @@ var CSSC = (function()
                 _index[indexKey].content[indexC].children = {};
                 
                 indexCssRules(cssRule.cssRules, _index[indexKey].content[indexC]);
+            }
+            else
+            {
+                _index[indexKey].content[indexC].obj = helper.objFromCssText(cssRule.cssText);
             }
             
             return _index[indexKey];
@@ -394,9 +400,12 @@ var CSSC = (function()
                     {
                         rule = createRule(key, null, null, parent);
                         
+//                        console.log(key);
+//                        console.log(importElem[i]);
+                        
                         if(rule)
                         {
-                            handlerObj = ruleHandler(rule.content, key);
+                            handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
 
                             handlerObj.set(importElem[i]);
                         }
@@ -448,19 +457,48 @@ var CSSC = (function()
                         var childHandler = getHandler(null, this.e[pos].children);
                         childHandler.set(prop, val);
                     }
-                    else if(helper.elemType(val) === "Function")
+                    else 
                     {
-                        var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop),
-                            valToSet = val(oldVal);
+                        var prsVal;
+                        
+                        if(prop.match(/^:.+/))
+                        {
+                            var rule = createRule(this.e[pos].selector + prop, null, null, this.e[pos].parent);
+                        
+                            if(rule)
+                            {
+                                var handlerObj = ruleHandler(rule.content, key);
+                                handlerObj.set(val);
+                            }
+                        }
+                        else if(helper.elemType(val) === "Function")
+                        {
+                            var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop), valToSet;
+                            
+                            try
+                            {
+                                valToSet = val(oldVal);
+                                prsVal = helper.parseValue(valToSet);
+                                
+                                this.e[pos].indexElem.style[prop] = prsVal;
+                                this.e[pos].obj[prop] = prsVal;
 
-                        this.e[pos].indexElem.style[prop] = helper.parseValue(valToSet);
-
-                        //add to updatable
-                        this.e[pos].indexElem.style._update[prop] = val;
-                    }
-                    else
-                    {
-                        this.e[pos].indexElem.style[prop] = helper.parseValue(val);
+                                //add to updatable
+                                this.e[pos].indexElem.style._update[prop] = val;
+                            }
+                            catch(err)
+                            {
+                                if(cssc.conf.viewErr) console.log(err);
+                                cssc.messages.push(err);
+                            }
+                        }
+                        else
+                        {
+                            prsVal = helper.parseValue(val);
+                            
+                            this.e[pos].indexElem.style[prop] = prsVal;
+                            this.e[pos].obj[prop] = prsVal;
+                        }
                     }
                 }
                 else // multi Set
@@ -791,6 +829,26 @@ var CSSC = (function()
                 
                 return value;
             },
+            objFromCssText: function(cssText)
+            {
+                var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
+                    split = str.split(';'), i, kv, k, obj = {};
+            
+                if(str !== "")
+                {
+                    for(i = 0; i < split.length; i++)
+                    {
+                        if(split[i] === "") continue;
+                        
+                        kv = split[i].split(':');
+                        k = kv[0].trim();
+                        
+                        obj[kv[0].trim()] = kv.slice(1).join(':').trim();
+                    }
+                }
+                
+                return obj;
+            },
             findPropInCssText: function(cssText, prop)
             {
                 var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
@@ -848,11 +906,27 @@ var CSSC = (function()
         },
         cssc = function(sel, hasProp)
         {
-            return handleSelection(sel, hasProp);
+            try
+            {
+                return handleSelection(sel, hasProp);
+            }
+            catch (err)
+            {
+                if(cssc.conf.viewErr) console.log(err);
+                cssc.messages.push(err);
+            }
         }; 
         cssc.import = function(importObj)
         {
-            return handleImport(importObj);
+            try
+            {
+                return handleImport(importObj);
+            }
+            catch (err)
+            {
+                if(cssc.conf.viewErr) console.log(err);
+                cssc.messages.push(err);
+            }
         },
         cssc.export = function(type)
         {
