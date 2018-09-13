@@ -400,9 +400,6 @@ var CSSC = (function()
                     {
                         rule = createRule(key, null, null, parent);
                         
-//                        console.log(key);
-//                        console.log(importElem[i]);
-                        
                         if(rule)
                         {
                             handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
@@ -560,7 +557,6 @@ var CSSC = (function()
                     
                     if(propType === "array")
                     {
-                        //@todo: weiter
                         for(i = 0; i < prop.length; i++)
                         {
                             this.set(prop[i], val, i);
