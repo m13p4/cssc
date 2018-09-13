@@ -522,8 +522,7 @@ var CSSC = (function()
                     
                     //create new Element
                     if(this.e.length <= 0 && !fromHas 
-                       && helper.elemType(sel) === "String"
-                    )
+                       && helper.elemType(sel) === "String")
                     {
                         var rule, contentElems = [];
                         
@@ -555,11 +554,18 @@ var CSSC = (function()
                         this.eLength = contentElems.length;
                     }
                     
-                    if(propType === "array")
+                    if(propType === "Array" 
+                    || (propType === "Function" && helper.elemType(props) === "Array"))
                     {
-                        for(i = 0; i < prop.length; i++)
+                        var elH, prp = (propType === "Array" ? prop : props);
+                        for(i = 0; i < prp.length; i++)
                         {
-                            this.set(prop[i], val, i);
+                            elH = this.pos(i);
+                            
+                            if(elH.e.length === 1)
+                                elH.set(prp[i]);
+                            else 
+                                break;
                         }
                     }
                     else
@@ -884,7 +890,7 @@ var CSSC = (function()
                     
                     return (Math.floor(value * 100) / 100) + "px";
                 }
-                else
+                else if(helper.elemType(value) === "String")
                 {
                     var v = value.split(" ");
                     
