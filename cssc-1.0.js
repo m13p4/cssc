@@ -464,8 +464,10 @@ var CSSC = (function()
                         if(valType === "Object")
                         {
                             var newSel = this.e[pos].selector + " " + prop, rule;
-                            if(prop.match(/^(\[|:)/))
-                                newSel = this.e[pos].selector + prop;
+                            if(prop.match(/^(\[|:|\/)/))
+                            {
+                                newSel = this.e[pos].selector + prop.replace(/^\//, "");
+                            }
                             
                             rule = createRule(newSel, null, null, this.e[pos].parent);
                         
@@ -556,28 +558,39 @@ var CSSC = (function()
                         this.eLength = contentElems.length;
                     }
                     
-                    for(i = 0; i < this.e.length; i++)
+                    if(propType === "array")
                     {
-                        if(propType === "Object" && propLen > 0) 
+                        //@todo: weiter
+                        for(i = 0; i < prop.length; i++)
                         {
-                            for(key in prop)
-                            {
-                                this.set(key, prop[key], i);
-                            }
+                            this.set(prop[i], val, i);
                         }
-                        else if(propType === "Function")
+                    }
+                    else
+                    {
+                        for(i = 0; i < this.e.length; i++)
                         {
-                            for(key in props)
+                            if(propType === "Object" && propLen > 0) 
                             {
-                                this.set(key, props[key], i);
+                                for(key in prop)
+                                {
+                                    this.set(key, prop[key], i);
+                                }
                             }
+                            else if(propType === "Function")
+                            {
+                                for(key in props)
+                                {
+                                    this.set(key, props[key], i);
+                                }
 
-                            //add to updatable
-                            this.e[i].indexElem._update = prop;
-                        }
-                        else
-                        {
-                            this.set(prop, val, i);
+                                //add to updatable
+                                this.e[i].indexElem._update = prop;
+                            }
+                            else
+                            {
+                                this.set(prop, val, i);
+                            }
                         }
                     }
                 }
@@ -586,6 +599,8 @@ var CSSC = (function()
             };
             handler.get = function(prop, returnAllProps)
             {
+                if(!prop) return this.export(cssc.export.type.object);
+                
                 var arrToRet = [], propToRet = "", tmp, i;
 
                 returnAllProps = !!returnAllProps;
@@ -594,7 +609,7 @@ var CSSC = (function()
                 {
                     tmp = "";
                     
-                    if(!!this.e[i].obj[prop])
+                    if(!!this.e[i].obj[prop] && !this.e[i].obj[prop].selector)
                     {
                         tmp = this.e[i].obj[prop];
                     }
@@ -804,6 +819,18 @@ var CSSC = (function()
                 }
 
                 return type === cssc.export.type.object ? exportObj : exportObj.trim();
+            };
+            handler.pos = function(p)
+            {
+                return this.e[p] ? ruleHandler([this.e[p]]) : null;
+            };
+            handler.first = function()
+            {
+                return this.pos(0);
+            };
+            handler.last = function()
+            {
+                return this.pos(this.e.length-1);
             };
             
             
