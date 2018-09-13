@@ -751,9 +751,9 @@ var CSSC = (function()
                 }
                 return this;
             };
-            handler.export = function(type)
+            handler.export = function(type, ignore)
             {
-                var exportObj, i, childHandler;
+                var exportObj, obj, childHandler, i, key, tmp;
                 
                 if(type === cssc.export.type.obj || type === cssc.export.type.object)
                 {
@@ -763,14 +763,31 @@ var CSSC = (function()
                 else
                     exportObj = "";
                 
+                if(!ignore) ignore = [];
+                
                 for(i = 0; i < this.e.length; i++)
                 {
+                    if(ignore.indexOf(this.e[i]) >= 0) continue; 
+                    
                     if(type === cssc.export.type.object)
                     {
+                        obj = Object.assign({}, this.e[i].obj);
+                        
+                        for(key in this.e[i].obj)
+                        {
+                            if(!!this.e[i].obj[key].selector)
+                            {
+                                tmp = ruleHandler([this.e[i].obj[key]]);
+                                obj[key] = tmp.export(type, ignore)[this.e[i].obj[key].selector];
+                                
+                                ignore.push(this.e[i].obj[key]);
+                            }
+                        }
+                        
                         if(!!this.e[i].children)
                         {
                             childHandler = getHandler(null, this.e[i].children);
-                            exportObj[this.e[i].selector] = childHandler.export(type);
+                            exportObj[this.e[i].selector] = childHandler.export(type, ignore);
                         }
                         else if(exportObj[this.e[i].selector])
                         {
@@ -779,9 +796,9 @@ var CSSC = (function()
                                 exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
                             }
                             
-                            exportObj[this.e[i].selector].push(this.e[i].obj);
+                            exportObj[this.e[i].selector].push(obj);
                         }
-                        else exportObj[this.e[i].selector] = this.e[i].obj;
+                        else exportObj[this.e[i].selector] = obj;
                     }
                     else exportObj += helper.exportParser(this.e[i].indexElem.cssText, type);
                 }
@@ -809,7 +826,7 @@ var CSSC = (function()
                             cssc.conf.styleId = cssc.conf.styleId+'-'+i;
                             break;
                         }
-                    }
+                    } 
 
                     if(!!document.getElementById(cssc.conf.styleId))
                     {
@@ -874,7 +891,7 @@ var CSSC = (function()
             objFromCssText: function(cssText)
             {
                 var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
-                    split = str.split(';'), i, kv, k, obj = {};
+                    split = str.split(';'), i, kv, obj = {};
             
                 if(str !== "")
                 {
@@ -883,7 +900,6 @@ var CSSC = (function()
                         if(split[i] === "") continue;
                         
                         kv = split[i].split(':');
-                        k = kv[0].trim();
                         
                         obj[kv[0].trim()] = kv.slice(1).join(':').trim();
                     }
