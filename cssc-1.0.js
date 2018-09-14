@@ -452,13 +452,10 @@ var CSSC = (function()
                         
                         if(valType === "Object" || valType === "Array")
                         {
-                            var newSel = this.e[pos].selector + " " + prop, rule,
-                                valArr = valType === 'Object' ? [val] : val, i;
-                            
-                            if(prop.match(/^(\[|:|\/)/))
-                            {
-                                newSel = this.e[pos].selector + prop.replace(/^\//, "");
-                            }
+                            var newSel = this.e[pos].selector + 
+                                         (prop.charAt(0) === "/" ? "" : " ") + 
+                                         prop.replace(/^\//,""),
+                                valArr = valType === 'Object' ? [val] : val, rule, i;
                             
                             for(i = 0; i < valArr.length; i++)
                             {
@@ -823,7 +820,7 @@ var CSSC = (function()
                                     continue;
                                 }
                                 
-                                obj[key] = Object.assign({}, this.e[i].obj[key]);
+                                obj[key] = [];
                                 
                                 for(j = 0; j < this.e[i].obj[key].length; j++)
                                 {
