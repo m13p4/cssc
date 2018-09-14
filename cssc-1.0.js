@@ -774,9 +774,12 @@ var CSSC = (function()
             {
                 var exportObj, obj, childHandler, i, j, key, tmp;
                 
-                if(type === cssc.export.type.obj || type === cssc.export.type.object)
+                if(type === cssc.export.type.obj 
+                || type === cssc.export.type.object 
+                || type === cssc.export.type.notMDObject)
                 {
-                    type = cssc.export.type.object;
+                    if(type === cssc.export.type.obj)
+                        type = cssc.export.type.object;
                     exportObj = {};
                 }
                 else
@@ -788,7 +791,7 @@ var CSSC = (function()
                 {
                     if(ignore.indexOf(this.e[i]) >= 0) continue; 
                     
-                    if(type === cssc.export.type.object)
+                    if(type === cssc.export.type.object || type === cssc.export.type.notMDObject)
                     {
                         obj = Object.assign({}, this.e[i].obj);
                         
@@ -796,14 +799,30 @@ var CSSC = (function()
                         {
                             if(!!this.e[i].obj[key].selector)
                             {
+                                if(type === cssc.export.type.notMDObject)
+                                {
+                                    obj[key] = null;
+                                    delete obj[key];
+                                    
+                                    continue;
+                                }
+                                
                                 tmp = ruleHandler([this.e[i].obj[key]]);
-                                obj[key] = tmp.export(type, ignore)[this.e[i].obj[key].selector];
 
+                                obj[key] = tmp.export(type, ignore)[this.e[i].obj[key].selector];
                                 ignore.push(this.e[i].obj[key]);
                             }
                             else if(typeof this.e[i].obj[key] === "object" 
                                     && "length" in this.e[i].obj[key])
                             {
+                                if(type === cssc.export.type.notMDObject)
+                                {
+                                    obj[key] = null;
+                                    delete obj[key];
+                                    
+                                    continue;
+                                }
+                                
                                 obj[key] = Object.assign({}, this.e[i].obj[key]);
                                 
                                 for(j = 0; j < this.e[i].obj[key].length; j++)
@@ -840,7 +859,7 @@ var CSSC = (function()
                     }
                 }
                 
-                return type === cssc.export.type.object ? exportObj : exportObj.trim();
+                return type === cssc.export.type.object || type === cssc.export.type.notMDObject ? exportObj : exportObj.trim();
             };
             handler.pos = function(p)
             {
@@ -1106,8 +1125,9 @@ var CSSC = (function()
             'ruleRow': 'ruleRow',
             'min':     'min',
             
-            'obj':     'obj',
-            'object':  'object'
+            'obj':          'obj',
+            'object':       'object',
+            'notMDObject':  'nMDO' //not MultiDimensional Object
         };
         cssc.conf = {
             'styleId': "cssc-style",
