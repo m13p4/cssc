@@ -482,23 +482,15 @@ var CSSC = (function()
                                 }
                             }
                         }
-                        else if(valType === "Array")
-                        {
-                            
-                        }
                         else if(valType === "Function")
                         {
-                            var oldVal = helper.findPropInCssText(this.e[pos].indexElem.cssText, prop), valToSet;
+                            var oldVal = this.pos(pos).get(prop), valToSet;
                             
                             try
                             {
                                 valToSet = val(oldVal);
-                                prsVal = helper.parseValue(valToSet);
                                 
-                                this.e[pos].indexElem.style[prop] = prsVal;
-                                this.e[pos].obj[prop] = prsVal;
-
-                                //add to updatable
+                                this.set(prop, valToSet, pos);
                                 this.e[pos].indexElem.style._update[prop] = val;
                             }
                             catch(err)
