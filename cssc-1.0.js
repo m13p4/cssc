@@ -7,24 +7,16 @@
  * @author m13p4
  * @copyright Meliantchenkov Pavel
  */
-
-var _debug = true, 
-    csscDebug = {};
-
 var CSSC = (function()
 { 'use strict';
     
     var ownStyleElem;
-    
-    if(_debug) csscDebug.ownElem = ownStyleElem;
     
     var cntrl = function(styleSheetsDOM, initOnRun)
     {
         var index   = {},
             isInit  = false,
             cssc    = null;
-        
-        if(_debug) csscDebug.index = index;
     
         var init = function()
         {
@@ -458,23 +450,41 @@ var CSSC = (function()
                     {
                         var prsVal, valType = helper.elemType(val);
                         
-                        if(valType === "Object")
+                        if(valType === "Object" || valType === "Array")
                         {
-                            var newSel = this.e[pos].selector + " " + prop, rule;
+                            var newSel = this.e[pos].selector + " " + prop, rule,
+                                valArr = valType === 'Object' ? [val] : val, i;
+                            
                             if(prop.match(/^(\[|:|\/)/))
                             {
                                 newSel = this.e[pos].selector + prop.replace(/^\//, "");
                             }
                             
-                            rule = createRule(newSel, null, null, this.e[pos].parent);
-                        
-                            if(rule)
+                            for(i = 0; i < valArr.length; i++)
                             {
-                                var handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
-                                handlerObj.set(val);
-                                
-                                this.e[pos].obj[prop] = rule.content[rule.content.length-1];
+                                rule = createRule(newSel, null, null, this.e[pos].parent);
+
+                                if(rule)
+                                {
+                                    var handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
+                                    handlerObj.set(valArr[i]);
+
+                                    if(this.e[pos].obj[prop] && this.e[pos].obj[prop].indexElem)
+                                    {
+                                        this.e[pos].obj[prop] = [this.e[pos].obj[prop], 
+                                                                 rule.content[rule.content.length-1]];
+                                    }
+                                    else if(this.e[pos].obj[prop] && "push" in this.e[pos].obj[prop])
+                                    {
+                                        this.e[pos].obj[prop].push(rule.content[rule.content.length-1]);
+                                    }
+                                    else this.e[pos].obj[prop] = rule.content[rule.content.length-1];
+                                }
                             }
+                        }
+                        else if(valType === "Array")
+                        {
+                            
                         }
                         else if(valType === "Function")
                         {
@@ -770,7 +780,7 @@ var CSSC = (function()
             };
             handler.export = function(type, ignore)
             {
-                var exportObj, obj, childHandler, i, key, tmp;
+                var exportObj, obj, childHandler, i, j, key, tmp;
                 
                 if(type === cssc.export.type.obj || type === cssc.export.type.object)
                 {
@@ -796,8 +806,21 @@ var CSSC = (function()
                             {
                                 tmp = ruleHandler([this.e[i].obj[key]]);
                                 obj[key] = tmp.export(type, ignore)[this.e[i].obj[key].selector];
-                                
+
                                 ignore.push(this.e[i].obj[key]);
+                            }
+                            else if(typeof this.e[i].obj[key] === "object" 
+                                    && "length" in this.e[i].obj[key])
+                            {
+                                obj[key] = Object.assign({}, this.e[i].obj[key]);
+                                
+                                for(j = 0; j < this.e[i].obj[key].length; j++)
+                                {
+                                    tmp = ruleHandler([this.e[i].obj[key][j]]);
+                                    obj[key][j] = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
+
+                                    ignore.push(this.e[i].obj[key][j]);
+                                }
                             }
                         }
                         
@@ -817,14 +840,19 @@ var CSSC = (function()
                         }
                         else exportObj[this.e[i].selector] = obj;
                     }
-                    else exportObj += helper.exportParser(this.e[i].indexElem.cssText, type);
+                    else
+                    {
+                        if (this.e[i].indexElem.cssText.match(/^[\s\S]+?\{\s*?\}\s*?$/))
+                            continue;
+                        exportObj += helper.exportParser(this.e[i].indexElem.cssText, type);
+                    }
                 }
-
+                
                 return type === cssc.export.type.object ? exportObj : exportObj.trim();
             };
             handler.pos = function(p)
             {
-                return this.e[p] ? ruleHandler([this.e[p]]) : null;
+                return ruleHandler(this.e[p] ? [this.e[p]] : []);
             };
             handler.first = function()
             {
@@ -871,7 +899,6 @@ var CSSC = (function()
                 document.head.appendChild(styleElem);
 
                 ownStyleElem = styleElem;
-                if(_debug) csscDebug.ownElem = ownStyleElem;
             },
             isElemInOwnNode: function(elem)
             {
@@ -1110,8 +1137,6 @@ var CSSC = (function()
         
         return cssc;
     };
-    
-    if(_debug) csscDebug.cntrl = cntrl;
     
     return cntrl(document.styleSheets, true);
 })();
