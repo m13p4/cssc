@@ -983,6 +983,23 @@ var CSSC = (function()
                 
                 return obj;
             },
+            cssTextFromObj: function(obj)
+            {
+                var cssText = "{\n", tab = "    ", key, elType;
+                
+                for(key in obj)
+                {
+                    elType = helper.elemType(obj[key]);
+                    
+                    if(elType === "Object")
+                        cssText += key+": "+helper.cssTextFromObj(obj[key]);
+                    
+                    else cssText += tab + key+": "+obj[key]+";\n";
+                }
+                cssText += "}";
+                
+                return cssText;
+            },
             findPropInCssText: function(cssText, prop)
             {
                 var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
