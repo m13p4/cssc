@@ -6,7 +6,7 @@
  *
  * @author m13p4
  * @copyright Meliantchenkov Pavel
- */ var bla;
+ */
 var CSSC = (function()
 { 'use strict';
     
@@ -1021,7 +1021,6 @@ var CSSC = (function()
                 cssc.messages.push(err);
             }
         }; 
-        bla = helper;
         cssc.import = function(importObj)
         {
             try
