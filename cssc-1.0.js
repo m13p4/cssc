@@ -6,7 +6,7 @@
  *
  * @author m13p4
  * @copyright Meliantchenkov Pavel
- */
+ */ var bla;
 var CSSC = (function()
 { 'use strict';
     
@@ -466,16 +466,12 @@ var CSSC = (function()
                                     var handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
                                     handlerObj.set(valArr[i]);
 
-                                    if(this.e[pos].obj[prop] && this.e[pos].obj[prop].indexElem)
+                                    if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
                                     {
-                                        this.e[pos].obj[prop] = [this.e[pos].obj[prop], 
-                                                                 rule.content[rule.content.length-1]];
+                                        this.e[pos].obj[prop] = [];
                                     }
-                                    else if(this.e[pos].obj[prop] && "push" in this.e[pos].obj[prop])
-                                    {
-                                        this.e[pos].obj[prop].push(rule.content[rule.content.length-1]);
-                                    }
-                                    else this.e[pos].obj[prop] = rule.content[rule.content.length-1];
+                                    
+                                    this.e[pos].obj[prop].push(rule.content[rule.content.length-1]);
                                 }
                             }
                         }
@@ -769,18 +765,13 @@ var CSSC = (function()
             };
             handler.export = function(type, ignore)
             {
-                var exportObj, obj, childHandler, i, j, key, tmp;
+                var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
                 
-                if(type === cssc.export.type.obj 
-                || type === cssc.export.type.object 
-                || type === cssc.export.type.notMDObject)
-                {
-                    if(type === cssc.export.type.obj)
-                        type = cssc.export.type.object;
-                    exportObj = {};
-                }
-                else
-                    exportObj = "";
+                if(type === cssc.export.type.obj)
+                    type = cssc.export.type.object;
+                
+                if(type === cssc.export.type.normal || type === cssc.export.type.min)
+                    type = cssc.export.type.notMDObject;
                 
                 if(!ignore) ignore = [];
                 
@@ -788,87 +779,68 @@ var CSSC = (function()
                 {
                     if(ignore.indexOf(this.e[i]) >= 0) continue; 
                     
-                    if(type === cssc.export.type.object || type === cssc.export.type.notMDObject)
+                    obj = Object.assign({}, this.e[i].obj);
+
+                    for(key in this.e[i].obj)
                     {
-                        obj = Object.assign({}, this.e[i].obj);
-                        
-                        for(key in this.e[i].obj)
+                        if(typeof this.e[i].obj[key] === "object" 
+                        && "length" in this.e[i].obj[key])
                         {
-                            if(!!this.e[i].obj[key].selector)
+                            if(type === cssc.export.type.notMDObject)
                             {
-                                if(type === cssc.export.type.notMDObject)
-                                {
-                                    obj[key] = null;
-                                    delete obj[key];
-                                    
-                                    continue;
-                                }
-                                
-                                tmp = ruleHandler([this.e[i].obj[key]]);
+                                obj[key] = null;
+                                delete obj[key];
 
-                                obj[key] = tmp.export(type, ignore)[this.e[i].obj[key].selector];
-                                ignore.push(this.e[i].obj[key]);
+                                continue;
                             }
-                            else if(typeof this.e[i].obj[key] === "object" 
-                                    && "length" in this.e[i].obj[key])
-                            {
-                                if(type === cssc.export.type.notMDObject)
-                                {
-                                    obj[key] = null;
-                                    delete obj[key];
-                                    
-                                    continue;
-                                }
-                                
-                                obj[key] = [];
-                                
-                                for(j = 0; j < this.e[i].obj[key].length; j++)
-                                {
-                                    tmp = ruleHandler([this.e[i].obj[key][j]]);
-                                    obj[key][j] = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
 
-                                    ignore.push(this.e[i].obj[key][j]);
-                                }
-                            }
-                        }
-                        
-                        if(!!this.e[i].children)
-                        {
-                            childHandler = getHandler(null, this.e[i].children);
-                            
-                            if(exportObj[this.e[i].selector])
+                            obj[key] = [];
+
+                            for(j = 0; j < this.e[i].obj[key].length; j++)
                             {
-                                if(!("length" in exportObj[this.e[i].selector]))
-                                    exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
-                                
-                                exportObj[this.e[i].selector].push(childHandler.export(type, ignore));
+                                tmp = ruleHandler([this.e[i].obj[key][j]]);
+                                obj[key][j] = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
+
+                                ignore.push(this.e[i].obj[key][j]);
                             }
-                            else
-                                exportObj[this.e[i].selector] = childHandler.export(type, ignore);
+
+                            if(obj[key].length === 1) obj[key] = obj[key][0];
                         }
-                        else if(exportObj[this.e[i].selector])
+                    }
+
+                    if(!!this.e[i].children)
+                    {
+                        childHandler = getHandler(null, this.e[i].children);
+
+                        if(exportObj[this.e[i].selector])
                         {
                             if(!("length" in exportObj[this.e[i].selector]))
-                            {
                                 exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
-                            }
-                            
-                            exportObj[this.e[i].selector].push(obj);
+
+                            exportObj[this.e[i].selector].push(childHandler.export(type, ignore));
                         }
                         else
+                            exportObj[this.e[i].selector] = childHandler.export(type, ignore);
+                    }
+                    else if(exportObj[this.e[i].selector])
+                    {
+                        if(!("length" in exportObj[this.e[i].selector]))
                         {
-                            exportObj[this.e[i].selector] = obj;
+                            exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
                         }
+
+                        exportObj[this.e[i].selector].push(obj);
                     }
                     else
                     {
-                        if (this.e[i].indexElem.cssText.match(/^[\s\S]+?\{\s*?\}\s*?$/))
-                            continue;
-                        exportObj += helper.exportParser(this.e[i].indexElem.cssText, type);
+                        exportObj[this.e[i].selector] = obj;
                     }
                 }
                 
-                return type === cssc.export.type.object || type === cssc.export.type.notMDObject ? exportObj : exportObj.trim();
+                if(_type === cssc.export.type.normal || _type === cssc.export.type.min)
+                    return helper.cssTextFromObj(exportObj, null, _type);
+                
+                return exportObj;
             };
             handler.pos = function(p)
             {
@@ -983,20 +955,49 @@ var CSSC = (function()
                 
                 return obj;
             },
-            cssTextFromObj: function(obj)
+            cssTextFromObj: function(obj, addTab, type)
             {
-                var cssText = "{\n", tab = "    ", key, elType;
+                var cssText = "", tab = "    ", key, elType, i, tmp;
+                
+                addTab = addTab || "";
                 
                 for(key in obj)
                 {
                     elType = helper.elemType(obj[key]);
                     
                     if(elType === "Object")
-                        cssText += key+": "+helper.cssTextFromObj(obj[key]);
-                    
-                    else cssText += tab + key+": "+obj[key]+";\n";
+                    {
+                        tmp = helper.cssTextFromObj(obj[key], addTab+tab, type);
+                        if(tmp !== "")
+                        {
+                            if(type === cssc.export.type.min)
+                                cssText += key+"{"+tmp+"}";
+                            else
+                                cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
+                        }
+                    }
+                    else if(elType === "Array")
+                    {
+                        for(i = 0; i < obj[key].length; i++)
+                        {
+                            tmp = helper.cssTextFromObj(obj[key][i], addTab+tab, type);
+                            if(tmp !== "")
+                            {
+                                if(type === cssc.export.type.min)
+                                    cssText += key+"{"+tmp+"}";
+                                else 
+                                    cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(type === cssc.export.type.min)
+                            cssText += key+":"+obj[key]+";";
+                        else cssText += (addTab.length < tab.length ? tab : addTab)
+                                     + key+": "+obj[key]+";\n";
+                    }
                 }
-                cssText += "}";
                 
                 return cssText;
             },
@@ -1006,53 +1007,6 @@ var CSSC = (function()
                     find = cssText.match(regExp);
                 
                 return !!find ? find[1].trim() : "";
-            },
-            exportParser: function(cssText, type)
-            {
-                if(type === cssc.export.type.ruleRow)
-                {
-                    return cssText.replace(/\n/g, "")+"\n";
-                }
-                else if(type === cssc.export.type.min)
-                {
-                    return cssText.replace(/(;|:|\s*?{|}|,)\s+/g,function(p)
-                    {
-                        return p.trim();
-                    });
-                }
-                else //Normal
-                {
-                    var tab = "    ";
-                    
-                    if(cssText.match(/^@(media|keyframes|supports)/))
-                    {
-                        return cssText.replace(/^(.*){([\s\S]*)}$/, function(m, s, r)
-                        {
-                            return s + "\n{\n" + tab + r.trim().replace(/({|}|;)\s*/g, function(p)
-                            {
-                                p = p.trim();
-                                
-                                if(p === "{")
-                                    return "\n" + tab + "{\n" + tab + tab;
-                                else if(p === "}")
-                                    return "}\n" + tab;
-                                else if(p === ";")
-                                    return ";\n" + tab + tab;
-                            }).replace(/\s+}/g, "\n" + tab + "}").trim() + "\n}\n";
-                        });
-                    }
-                    else return cssText.replace(/({|}|;)\s*/g, function(p)
-                    { 
-                        p = p.trim();
-
-                        if(p === "{")
-                            return "\n" + p + "\n" + tab;
-                        else if(p === "}")
-                            return p + "\n";
-                        else if(p === ";")
-                            return p + "\n" + tab;
-                    }).replace(/\s+}/, "\n}");
-                }
             }
         },
         cssc = function(sel, hasProp)
@@ -1067,6 +1021,7 @@ var CSSC = (function()
                 cssc.messages.push(err);
             }
         }; 
+        bla = helper;
         cssc.import = function(importObj)
         {
             try
@@ -1147,13 +1102,12 @@ var CSSC = (function()
             'destroy':        "destroy"
         };
         cssc.export.type = {
-            'normal':  'normal',
-            'ruleRow': 'ruleRow',
-            'min':     'min',
+            'normal':  'css',
+            'min':     'minCss',
             
             'obj':          'obj',
             'object':       'object',
-            'notMDObject':  'nMDO' //not MultiDimensional Object
+            'notMDObject':  'objNMDO' //not MultiDimensional Object
         };
         cssc.conf = {
             'styleId': "cssc-style",
