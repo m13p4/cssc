@@ -80,7 +80,7 @@ var CSSC = (function()
                 }
             }
         },
-        addToIndex = function(cssRule, parent)
+        addToIndex = function(cssRule, parent, csscSelector)
         {
             var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
                 indexType = cssRule.type, 
@@ -111,6 +111,7 @@ var CSSC = (function()
             indexObjWrapper = {
                 indexElem: toIndex,
                 selector: indexKey,
+                csscSelector: csscSelector ? csscSelector : indexKey,
                 children: false,
                 parent: (!!parent ? parent : false),
                 events: {},
@@ -223,7 +224,7 @@ var CSSC = (function()
                 }
                 
                 
-                return addToIndex(appendToElem.cssRules[rulePos], parent);
+                return addToIndex(appendToElem.cssRules[rulePos], parent, selector);
             }
             catch(err)
             {
@@ -362,7 +363,7 @@ var CSSC = (function()
         },
         handleImport = function(importObj, parent)
         {
-            var importElem, rule, handlerObj, key, i, cPos;
+            var importElem, rule, handlerObj, key, i, cPos, tmp;
             
             for(key in importObj)
             {
@@ -373,19 +374,58 @@ var CSSC = (function()
                 
                 for(i = 0; i < importElem.length; i++)
                 {
-                    if(key === "@font-face")
+                    if(key.charAt(0) === "@")
                     {
-                        createRule(key, importElem[i], null, parent);
-                    }
-                    else if(key.match(/^@(media|keyframes|supports)/))
-                    {
-                        rule = createRule(key, null, null, parent);
-                        
-                        if(rule)
+                        if(key === "@font-face")
                         {
-                            cPos = rule.content.length - 1;
+                            createRule(key, importElem[i], null, parent);
+                        }
+                        else if(key.match(/^@(media|keyframes|supports)/))
+                        {
+                            if(key.match(/^@(media|keyframes|supports)$/))
+                            {
+                                rule = false;
+                            }
+                            else rule = createRule(key, null, null, parent);
                             
-                            handleImport(importElem[i], rule.content[cPos]);
+                            if(rule)
+                            {
+                                cPos = rule.content.length - 1;
+
+                                handleImport(importElem[i], rule.content[cPos]);
+                            }
+                            else
+                            {
+                                tmp = {
+                                    csscSelector: key,
+                                    parent: parent,
+                                    type: null
+                                };
+                                
+                                if(key.match(/^@media/))
+                                    tmp.type = cssc.ruleType.media;
+                                else if(key.match(/^@keyframes/))
+                                    tmp.type = cssc.ruleType.keyframes;
+                                else if(key.match(/^@suports/))
+                                    tmp.type = cssc.ruleType.supports;
+                                
+                                handleImport(importElem[i], tmp);
+                            }
+                        }
+                        else if(parent 
+                        &&(parent.type === cssc.ruleType.media
+                        || parent.type === cssc.ruleType.keyframes
+                        || parent.type === cssc.ruleType.supports))
+                        {
+                            tmp  = parent.csscSelector + " " + key.substr(1);
+                            rule = createRule(tmp, null, null, parent.parent);
+
+                            if(rule)
+                            {
+                                cPos = rule.content.length - 1;
+
+                                handleImport(importElem[i], rule.content[cPos]);
+                            }
                         }
                     }
                     else
@@ -739,6 +779,7 @@ var CSSC = (function()
                             this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
                         }
                         
+                        //@todo: fix bug -> delete not full index
                         delFromIndex(sel, (!!this.e[i].parent ? this.e[i].parent : null));
 
                         if(!!this.e[i].children)
@@ -1101,9 +1142,11 @@ var CSSC = (function()
             'destroy':        "destroy"
         };
         cssc.export.type = {
+             // Text output
             'normal':  'css',
             'min':     'minCss',
             
+             // Object output
             'obj':          'obj',
             'object':       'object',
             'notMDObject':  'objNMDO' //not MultiDimensional Object
