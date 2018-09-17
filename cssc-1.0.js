@@ -89,21 +89,21 @@ var CSSC = (function()
                 indexObjWrapper, indexC;
             
             //@todo: support all types
-            if(indexType !== cssc.ruleType.rule 
-            && indexType !== cssc.ruleType.fontFace 
-            && indexType !== cssc.ruleType.media
-            && indexType !== cssc.ruleType.keyframes
-            && indexType !== cssc.ruleType.keyframe
-            && indexType !== cssc.ruleType.page
-            && indexType !== cssc.ruleType.supports)
+            if(indexType !== cssc.type.rule 
+            && indexType !== cssc.type.fontFace 
+            && indexType !== cssc.type.media
+            && indexType !== cssc.type.keyframes
+            && indexType !== cssc.type.keyframe
+            && indexType !== cssc.type.page
+            && indexType !== cssc.type.supports)
             {
-                console.log("unsuported type: [" + indexType + "] - " + cssc.ruleType.names[indexType]);
+                console.log("unsuported type: [" + indexType + "] - " + cssc.type.names[indexType]);
                 return;
             }
             
             
             toIndex._update = false;
-            if(indexType === cssc.ruleType.rule)
+            if(indexType === cssc.type.rule)
             {
                 toIndex.style._update = {};
             }
@@ -142,9 +142,9 @@ var CSSC = (function()
             }
             
             //handle Media & KeyFrames Rules
-            if(indexType === cssc.ruleType.media 
-            || indexType === cssc.ruleType.keyframes 
-            || indexType === cssc.ruleType.supports)
+            if(indexType === cssc.type.media 
+            || indexType === cssc.type.keyframes 
+            || indexType === cssc.type.supports)
             {
                 _index[indexKey].content[indexC].children = {};
                 
@@ -382,7 +382,7 @@ var CSSC = (function()
                         }
                         else if(key.match(/^@(media|keyframes|supports)/))
                         {
-                            if(key.match(/^@(media|keyframes|supports)$/))
+                            if(key.match(/^@(media|keyframes|supports)\s*$/))
                             {
                                 rule = false;
                             }
@@ -403,19 +403,19 @@ var CSSC = (function()
                                 };
                                 
                                 if(key.match(/^@media/))
-                                    tmp.type = cssc.ruleType.media;
+                                    tmp.type = cssc.type.media;
                                 else if(key.match(/^@keyframes/))
-                                    tmp.type = cssc.ruleType.keyframes;
-                                else if(key.match(/^@suports/))
-                                    tmp.type = cssc.ruleType.supports;
+                                    tmp.type = cssc.type.keyframes;
+                                else if(key.match(/^@supports/))
+                                    tmp.type = cssc.type.supports;
                                 
                                 handleImport(importElem[i], tmp);
                             }
                         }
                         else if(parent 
-                        &&(parent.type === cssc.ruleType.media
-                        || parent.type === cssc.ruleType.keyframes
-                        || parent.type === cssc.ruleType.supports))
+                        &&(parent.type === cssc.type.media
+                        || parent.type === cssc.type.keyframes
+                        || parent.type === cssc.type.supports))
                         {
                             tmp  = parent.csscSelector + " " + key.substr(1);
                             rule = createRule(tmp, null, null, parent.parent);
@@ -471,12 +471,12 @@ var CSSC = (function()
                 if(typeof pos === "number") // single Set
                 {
                     //can not change font-face values on Firefox..
-                    if(this.e[pos].indexElem.type === cssc.ruleType.fontFace)
+                    if(this.e[pos].indexElem.type === cssc.type.fontFace)
                     {
                         if(cssc.conf.viewErr)
-                            console.log("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
+                            console.log("Element of Type \""+cssc.type.names[this.e[pos].indexElem.type]+"\" is readonly.");
                         
-                        cssc.messages.push("Element of Type \""+cssc.ruleType.names[this.e[pos].indexElem.type]+"\" is readonly.");
+                        cssc.messages.push("Element of Type \""+cssc.type.names[this.e[pos].indexElem.type]+"\" is readonly.");
                         
                         return this;
                     }
@@ -636,7 +636,18 @@ var CSSC = (function()
             };
             handler.get = function(prop, returnAllProps)
             {
-                if(!prop) return this.export(cssc.export.type.object);
+                if(!prop)
+                {
+                    var exp = this.export(cssc.export.type.object), key, expKey;
+                    
+                    for(key in exp)
+                    {
+                        if(!!expKey) return exp;
+                        expKey = key;
+                    }
+                    
+                    return exp[expKey];
+                }
                 
                 var arrToRet = [], propToRet = "", tmp, i;
 
@@ -1096,7 +1107,7 @@ var CSSC = (function()
                 }
             }
         },
-        cssc.ruleType = {
+        cssc.type = {
             'rule':       1, //check
             'charset':    2,
             'import':     3,
