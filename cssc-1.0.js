@@ -210,6 +210,8 @@ var CSSC = (function()
 
             try
             {
+                //console.log(appendToElem);
+                
                 if("insertRule" in appendToElem)
                 {
                     appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
@@ -1059,6 +1061,19 @@ var CSSC = (function()
                     find = cssText.match(regExp);
                 
                 return !!find ? find[1].trim() : "";
+            },
+            validateSelector: function(sel)
+            {
+                sel = sel.trim();
+                
+                if(sel.length <= 0) return false;
+                
+                if(sel.charAt(0) === "@")
+                {
+                    return sel.match(/(and|or|not|only|[<|>,:\-#'+~`´}\[{\\!"§%&/(=?@])$/);
+                }
+                
+                return !!sel.match(/[<|>,:\-#'+~`´}\]\[{\\!"§%&/()=?@]$/);
             }
         },
         cssc = function(sel, hasProp)
