@@ -382,51 +382,42 @@ var CSSC = (function()
                         {
                             createRule(key, importElem[i], null, parent);
                         }
-                        else if(key.match(/^@(media|keyframes|supports)/))
+                        else if(key.match(/^@(media|keyframes|supports)/) 
+                                || (parent && (parent.type === cssc.type.media
+                                            || parent.type === cssc.type.keyframes
+                                            || parent.type === cssc.type.supports)
+                                   )
+                        )
                         {
-                            if(key.match(/^@(media|keyframes|supports)\s*$/))
+                            /**
+                             * @todo: make pseudo children elements
+                             */
+                            tmp = parent;
+                            
+                            if(parent && helper.selectorType(key) === -1)
+                            {
+                                key = parent.csscSelector + " " + key.substr(1);
+                                
+                                tmp = parent.parent;
+                            }
+                                
+                            if(!helper.validateSelector(key))
                             {
                                 rule = false;
                             }
-                            else rule = createRule(key, null, null, parent);
+                            else rule = createRule(key, null, null, tmp);
                             
                             if(rule)
                             {
-                                cPos = rule.content.length - 1;
-
-                                handleImport(importElem[i], rule.content[cPos]);
+                                handleImport(importElem[i], rule.content[rule.content.length - 1]);
                             }
                             else
                             {
-                                tmp = {
+                                handleImport(importElem[i], {
                                     csscSelector: key,
-                                    parent: parent,
-                                    type: null
-                                };
-                                
-                                if(key.match(/^@media/))
-                                    tmp.type = cssc.type.media;
-                                else if(key.match(/^@keyframes/))
-                                    tmp.type = cssc.type.keyframes;
-                                else if(key.match(/^@supports/))
-                                    tmp.type = cssc.type.supports;
-                                
-                                handleImport(importElem[i], tmp);
-                            }
-                        }
-                        else if(parent 
-                        &&(parent.type === cssc.type.media
-                        || parent.type === cssc.type.keyframes
-                        || parent.type === cssc.type.supports))
-                        {
-                            tmp  = parent.csscSelector + " " + key.substr(1);
-                            rule = createRule(tmp, null, null, parent.parent);
-
-                            if(rule)
-                            {
-                                cPos = rule.content.length - 1;
-
-                                handleImport(importElem[i], rule.content[cPos]);
+                                    parent: tmp,
+                                    type: helper.selectorType(key)
+                                });
                             }
                         }
                     }
@@ -1070,10 +1061,38 @@ var CSSC = (function()
                 
                 if(sel.charAt(0) === "@")
                 {
-                    return sel.match(/(and|or|not|only|[<|>,:\-#'+~`´}\[{\\!"§%&/(=?@])$/);
+                    return !sel.match(/(^@(media|keyframes|supports)|and|or|not|only|[<|>,:\-#'+~`´}\[{\\!"§%&/(=?@])\s*$/);
                 }
                 
-                return !!sel.match(/[<|>,:\-#'+~`´}\]\[{\\!"§%&/()=?@]$/);
+                return !sel.match(/[<|>,:\-#'+~`´}\]\[{\\!"§%&/()=?@]\s*$/);
+            },
+            selectorType: function(sel)
+            {
+                sel = sel.trim();
+                
+                if(sel.charAt(0) !== "@")
+                    return cssc.type.rule;
+                
+                sel = sel.substr(1);
+                
+                var selIO = sel.indexOf(" "), key;
+                
+                if(selIO >= 0)
+                    sel = sel.substr(0, selIO);
+                
+                key = sel;
+                
+                if(sel.indexOf("-") >= 0)
+                {
+                    var splSel = sel.split("-"), i;
+                    
+                    key = splSel[0];
+                    
+                    for(i = 1; i < splSel.length; i++)
+                        key += splSel[i].charAt(0).toUpperCase()+splSel[i].substr(1);
+                }
+                
+                return (key in cssc.type) ? cssc.type[key] : -1;
             }
         },
         cssc = function(sel, hasProp)
@@ -1143,16 +1162,16 @@ var CSSC = (function()
                 2:  "charset",
                 3:  "import",
                 4:  "media",
-                5:  "fontFace",
+                5:  "font-face",
                 6:  "page",
                 7:  "keyframes",
                 8:  "keyframe",
                 
                 10: "namespace",
-                11: "counterStyle",
+                11: "counter-style",
                 12: "supports",
                 
-                14: "fontFeatureValues"
+                14: "font-feature-values"
             }
         };
         cssc.events = {
