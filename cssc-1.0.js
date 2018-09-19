@@ -18,6 +18,227 @@ var CSSC = (function()
             isInit  = false,
             cssc    = null;
     
+        var //helper
+        helperElemType = function(elem, returnFullValue)
+        {
+            if(returnFullValue) return Object.prototype.toString.call(elem);
+            return Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
+        },
+        helperCreateNewStyleElem = function()
+        {
+            if(!!document.getElementById(cssc.conf.styleId))
+            {
+                for(var i = 0; i < 10; i++)
+                {
+                    if(!document.getElementById(cssc.conf.styleId+'-'+i))
+                    {
+                        cssc.conf.styleId = cssc.conf.styleId+'-'+i;
+                        break;
+                    }
+                } 
+
+                if(!!document.getElementById(cssc.conf.styleId))
+                {
+                    throw new Error("cann not create new element..");
+                }
+            }
+
+            var styleElem = document.createElement("style");
+            styleElem.setAttribute("type", "text/css");
+            styleElem.setAttribute("id", cssc.conf.styleId);
+            styleElem.appendChild(document.createTextNode(""));
+
+            document.head.appendChild(styleElem);
+
+            ownStyleElem = styleElem;
+        },
+        helperIsElemInOwnNode = function(elem)
+        {
+            return (elem && !!elem.parentStyleSheet 
+                    && !!elem.parentStyleSheet.ownerNode 
+                    && elem.parentStyleSheet.ownerNode.id === cssc.conf.styleId);
+        },
+        helperParseValue = function(value)
+        {
+            if(isFinite(value))
+            {
+                if(value%1 === 0)
+                {
+                    return value + "px";
+                }
+
+                return (Math.floor(value * 100) / 100) + "px";
+            }
+            else if(helperElemType(value) === "String")
+            {
+                var v = value.split(" ");
+
+                if(v.length > 0)
+                {
+                    var tmp;
+
+                    for(var i = 0; i < v.length; i++)
+                    {
+                        if(isFinite(v[i]))
+                        {
+                            tmp = v[i];
+
+                            if(tmp%1 === 0) 
+                                v[i] = tmp + "px";
+                            else            
+                                v[i] = (Math.floor(tmp * 100) / 100) + "px";
+                        }
+                    }
+
+                    return v.join(" ");
+                }
+            }
+
+            return value;
+        },
+        helperObjFromCssText = function(cssText)
+        {
+            var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
+                split = str.split(';'), i, kv, obj = {};
+
+            if(str !== "")
+            {
+                for(i = 0; i < split.length; i++)
+                {
+                    if(split[i] === "") continue;
+
+                    kv = split[i].split(':');
+
+                    obj[kv[0].trim()] = kv.slice(1).join(':').trim();
+                }
+            }
+
+            return obj;
+        },
+        helperCssTextFromObj = function(obj, addTab, type)
+        {
+            var cssText = "", tab = "    ", key, elType, i, tmp;
+
+            addTab = addTab || "";
+
+            for(key in obj)
+            {
+                elType = helperElemType(obj[key]);
+
+                if(elType === "Object")
+                {
+                    tmp = helperCssTextFromObj(obj[key], addTab+tab, type);
+                    if(tmp !== "")
+                    {
+                        if(type === cssc.export.type.min)
+                            cssText += key+"{"+tmp+"}";
+                        else
+                            cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
+                    }
+                }
+                else if(elType === "Array")
+                {
+                    for(i = 0; i < obj[key].length; i++)
+                    {
+                        tmp = helperCssTextFromObj(obj[key][i], addTab+tab, type);
+                        if(tmp !== "")
+                        {
+                            if(type === cssc.export.type.min)
+                                cssText += key+"{"+tmp+"}";
+                            else 
+                                cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
+                        }
+                    }
+                }
+                else
+                {
+                    if(type === cssc.export.type.min)
+                        cssText += key+":"+obj[key]+";";
+                    else cssText += (addTab.length < tab.length ? tab : addTab)
+                                 + key+": "+obj[key]+";\n";
+                }
+            }
+
+            return cssText;
+        },
+        helperFindPropInCssText = function(cssText, prop)
+        {
+            var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
+                find = cssText.match(regExp);
+
+            return !!find ? find[1].trim() : "";
+        },
+        helperValidateSelector = function(sel)
+        {
+            sel = sel.trim();
+
+            if(sel.length <= 0) return false;
+
+            if(sel.charAt(0) === "@")
+            {
+                return !sel.match(/(^@(media|keyframes|supports)|and|or|not|only|[<|>,:\-#'+~`´}\[{\\!"§%&/(=?@])\s*$/);
+            }
+
+            return !sel.match(/[<|>,:\-#'+~`´}\]\[{\\!"§%&/()=?@]\s*$/);
+        },
+        helperSelectorType = function(sel)
+        {
+            sel = sel.trim();
+
+            if(sel.charAt(0) !== "@")
+                return cssc.type.rule;
+
+            sel = sel.substr(1);
+
+            var selIO = sel.indexOf(" "), key;
+
+            if(selIO >= 0)
+                sel = sel.substr(0, selIO);
+
+            key = sel;
+
+            if(sel.indexOf("-") >= 0)
+            {
+                var splSel = sel.split("-"), i;
+
+                key = splSel[0];
+
+                for(i = 1; i < splSel.length; i++)
+                    key += splSel[i].charAt(0).toUpperCase()+splSel[i].substr(1);
+            }
+
+            return (key in cssc.type) ? cssc.type[key] : -1;
+        },
+        helperGenSelector = function(pSel, sel)
+        {
+            if(sel.charAt(0) === "@" && pSel.charAt(0) === "@")
+            {
+                sel = sel.substr(1);
+            }
+
+            if(sel.charAt(0) === "/")
+                sel = sel.substr(1);
+            else if(sel.charAt(0) === ",")
+                sel = ", "+sel.substr(1).trim();
+            else
+                sel = " " + sel;
+
+            if(sel.charAt(0) !== "," 
+               && (pSel.indexOf(",") >= 0 || sel.indexOf(",") > 0))
+            {
+                var pSelSplit = pSel.split(","), i, newStr = "",
+                    selSplit = sel.split(","), j;
+
+                for(i = 0; i < pSelSplit.length; i++)
+                    for(j = 0; j < selSplit.length; j++)
+                        newStr += pSelSplit[i] + selSplit[j] + ", ";
+
+                return newStr.replace(/,+\s*$/,"");
+            }
+
+            return pSel+sel;
+        };
+    
         var init = function()
         {
             if(isInit) return;
@@ -74,7 +295,7 @@ var CSSC = (function()
         {
             for(var i = 0; i < cssRules.length; i++)
             {
-                if(!helper.isElemInOwnNode(cssRules[i]))
+                if(!helperIsElemInOwnNode(cssRules[i]))
                 {
                     addToIndex(cssRules[i], parent);
                 }
@@ -152,7 +373,7 @@ var CSSC = (function()
             }
             else
             {
-                _index[indexKey].content[indexC].obj = helper.objFromCssText(cssRule.cssText);
+                _index[indexKey].content[indexC].obj = helperObjFromCssText(cssRule.cssText);
             }
             
             return _index[indexKey];
@@ -163,7 +384,7 @@ var CSSC = (function()
             
             if(!parent && !ownStyleElem)
             {
-                helper.createNewStyleElem();
+                helperCreateNewStyleElem();
             }
             appendToElem = !!parent ? parent.indexElem : ownStyleElem.sheet;
             
@@ -173,7 +394,7 @@ var CSSC = (function()
         
             if(!!property)
             {
-                var propType = helper.elemType(property);
+                var propType = helperElemType(property);
                 
                 if(propType === "Object")
                 {
@@ -181,7 +402,7 @@ var CSSC = (function()
                     
                     for(var key in property)
                     {
-                        if(helper.elemType(property[key]) === "Function")
+                        if(helperElemType(property[key]) === "Function")
                         {
                             prop = property[key]();
                             
@@ -254,7 +475,7 @@ var CSSC = (function()
         getHandler = function(sel, indexElem, getElements)
         {
             var _index = !!indexElem ? indexElem : index,
-                selType = helper.elemType(sel); 
+                selType = helperElemType(sel); 
 
             if(selType === "String")
             {
@@ -336,7 +557,7 @@ var CSSC = (function()
         },
         handleSelection = function(sel, hasProp, indexElem, getElements)
         {
-            var ret, selType = helper.elemType(sel);
+            var ret, selType = helperElemType(sel);
 
             if(selType === "String" 
             || selType === "RegExp"
@@ -367,7 +588,7 @@ var CSSC = (function()
             
             for(key in importObj)
             {
-                if(helper.elemType(importObj[key]) === "Array")
+                if(helperElemType(importObj[key]) === "Array")
                     importElem = importObj[key];
                 else
                     importElem = [importObj[key]];
@@ -390,14 +611,14 @@ var CSSC = (function()
                             tmp = parent;
                             handlerObj = key; //use handlerObj var to save old key
                             
-                            if(parent && helper.selectorType(key) === -1)
+                            if(parent && helperSelectorType(key) === -1)
                             {
-                                key = helper.genSelector(parent.csscSelector, key);
+                                key = helperGenSelector(parent.csscSelector, key);
                                 
                                 tmp = parent.parent;
                             }
                                 
-                            if(!helper.validateSelector(key))
+                            if(!helperValidateSelector(key))
                             {
                                 rule = false;
                             }
@@ -413,7 +634,7 @@ var CSSC = (function()
                                     csscSelector: key,
                                     cssText: key + " {}",
                                     parent: tmp || false,
-                                    type: helper.selectorType(key),
+                                    type: helperSelectorType(key),
                                     cssRules: {}
                                 };
                                 
@@ -491,11 +712,11 @@ var CSSC = (function()
                     }
                     else 
                     {
-                        var prsVal, valType = helper.elemType(val);
+                        var prsVal, valType = helperElemType(val);
                         
                         if(valType === "Object" || valType === "Array")
                         {
-                            var newSel = helper.genSelector(this.e[pos].selector, prop),
+                            var newSel = helperGenSelector(this.e[pos].selector, prop),
                                 valArr = valType === 'Object' ? [val] : val, rule, i;
                             
                             for(i = 0; i < valArr.length; i++)
@@ -535,7 +756,7 @@ var CSSC = (function()
                         }
                         else
                         {
-                            prsVal = helper.parseValue(val);
+                            prsVal = helperParseValue(val);
                             
                             this.e[pos].indexElem.style[prop] = prsVal;
                             this.e[pos].obj[prop] = prsVal;
@@ -545,7 +766,7 @@ var CSSC = (function()
                 else // multi Set
                 {
                     var i, propLen, key, props,
-                        propType = helper.elemType(prop);
+                        propType = helperElemType(prop);
 
                     if(propType === "Object")
                     {
@@ -558,7 +779,7 @@ var CSSC = (function()
                     
                     //create new Element
                     if(this.e.length <= 0 && !fromHas 
-                       && helper.elemType(sel) === "String")
+                       && helperElemType(sel) === "String")
                     {
                         var rule, contentElems = [];
                         
@@ -591,7 +812,7 @@ var CSSC = (function()
                     }
                     
                     if(propType === "Array" 
-                    || (propType === "Function" && helper.elemType(props) === "Array"))
+                    || (propType === "Function" && helperElemType(props) === "Array"))
                     {
                         var elH, prp = (propType === "Array" ? prop : props);
                         for(i = 0; i < prp.length; i++)
@@ -670,7 +891,7 @@ var CSSC = (function()
                     //use helper, if property value not found in style object (margin, padding, border, etc..)
                     if(!tmp || tmp === "")
                     { 
-                        tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, prop);
+                        tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, prop);
                     }
 
                     if(!!tmp)
@@ -685,7 +906,7 @@ var CSSC = (function()
             handler.has = function(prop)
             {
                 var matches = [], propVal, i, tmp,
-                    propType = helper.elemType(prop);
+                    propType = helperElemType(prop);
 
                 if(propType === "String")
                 {
@@ -693,7 +914,7 @@ var CSSC = (function()
 
                     for(i = 0; i < this.e.length; i++)
                     {
-                        tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
+                        tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
 
                         if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
                         {
@@ -709,7 +930,7 @@ var CSSC = (function()
 
                         for(i = 0; i < this.e.length; i++)
                         {
-                            tmp = helper.findPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
+                            tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
 
                             if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
                             {
@@ -892,7 +1113,7 @@ var CSSC = (function()
                 }
                 
                 if(_type === cssc.export.type.normal || _type === cssc.export.type.min)
-                    return helper.cssTextFromObj(exportObj, null, _type);
+                    return helperCssTextFromObj(exportObj, null, _type);
                 
                 return exportObj;
             };
@@ -911,227 +1132,6 @@ var CSSC = (function()
             
             
             return handler;
-        },
-        helper = {
-            elemType: function(elem, returnFullValue)
-            {
-                if(returnFullValue) return Object.prototype.toString.call(elem);
-                return Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
-            },
-            createNewStyleElem: function()
-            {
-                if(!!document.getElementById(cssc.conf.styleId))
-                {
-                    for(var i = 0; i < 10; i++)
-                    {
-                        if(!document.getElementById(cssc.conf.styleId+'-'+i))
-                        {
-                            cssc.conf.styleId = cssc.conf.styleId+'-'+i;
-                            break;
-                        }
-                    } 
-
-                    if(!!document.getElementById(cssc.conf.styleId))
-                    {
-                        throw new Error("cann not create new element..");
-                    }
-                }
-
-                var styleElem = document.createElement("style");
-                styleElem.setAttribute("type", "text/css");
-                styleElem.setAttribute("id", cssc.conf.styleId);
-                styleElem.appendChild(document.createTextNode(""));
-
-                document.head.appendChild(styleElem);
-
-                ownStyleElem = styleElem;
-            },
-            isElemInOwnNode: function(elem)
-            {
-                return (elem && !!elem.parentStyleSheet 
-                        && !!elem.parentStyleSheet.ownerNode 
-                        && elem.parentStyleSheet.ownerNode.id === cssc.conf.styleId);
-            },
-            parseValue: function(value)
-            {
-                if(isFinite(value))
-                {
-                    if(value%1 === 0)
-                    {
-                        return value + "px";
-                    }
-                    
-                    return (Math.floor(value * 100) / 100) + "px";
-                }
-                else if(helper.elemType(value) === "String")
-                {
-                    var v = value.split(" ");
-                    
-                    if(v.length > 0)
-                    {
-                        var tmp;
-                        
-                        for(var i = 0; i < v.length; i++)
-                        {
-                            if(isFinite(v[i]))
-                            {
-                                tmp = v[i];
-
-                                if(tmp%1 === 0) 
-                                    v[i] = tmp + "px";
-                                else            
-                                    v[i] = (Math.floor(tmp * 100) / 100) + "px";
-                            }
-                        }
-                        
-                        return v.join(" ");
-                    }
-                }
-                
-                return value;
-            },
-            objFromCssText: function(cssText)
-            {
-                var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
-                    split = str.split(';'), i, kv, obj = {};
-            
-                if(str !== "")
-                {
-                    for(i = 0; i < split.length; i++)
-                    {
-                        if(split[i] === "") continue;
-                        
-                        kv = split[i].split(':');
-                        
-                        obj[kv[0].trim()] = kv.slice(1).join(':').trim();
-                    }
-                }
-                
-                return obj;
-            },
-            cssTextFromObj: function(obj, addTab, type)
-            {
-                var cssText = "", tab = "    ", key, elType, i, tmp;
-                
-                addTab = addTab || "";
-                
-                for(key in obj)
-                {
-                    elType = helper.elemType(obj[key]);
-                    
-                    if(elType === "Object")
-                    {
-                        tmp = helper.cssTextFromObj(obj[key], addTab+tab, type);
-                        if(tmp !== "")
-                        {
-                            if(type === cssc.export.type.min)
-                                cssText += key+"{"+tmp+"}";
-                            else
-                                cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
-                        }
-                    }
-                    else if(elType === "Array")
-                    {
-                        for(i = 0; i < obj[key].length; i++)
-                        {
-                            tmp = helper.cssTextFromObj(obj[key][i], addTab+tab, type);
-                            if(tmp !== "")
-                            {
-                                if(type === cssc.export.type.min)
-                                    cssText += key+"{"+tmp+"}";
-                                else 
-                                    cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(type === cssc.export.type.min)
-                            cssText += key+":"+obj[key]+";";
-                        else cssText += (addTab.length < tab.length ? tab : addTab)
-                                     + key+": "+obj[key]+";\n";
-                    }
-                }
-                
-                return cssText;
-            },
-            findPropInCssText: function(cssText, prop)
-            {
-                var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
-                    find = cssText.match(regExp);
-                
-                return !!find ? find[1].trim() : "";
-            },
-            validateSelector: function(sel)
-            {
-                sel = sel.trim();
-                
-                if(sel.length <= 0) return false;
-                
-                if(sel.charAt(0) === "@")
-                {
-                    return !sel.match(/(^@(media|keyframes|supports)|and|or|not|only|[<|>,:\-#'+~`´}\[{\\!"§%&/(=?@])\s*$/);
-                }
-                
-                return !sel.match(/[<|>,:\-#'+~`´}\]\[{\\!"§%&/()=?@]\s*$/);
-            },
-            selectorType: function(sel)
-            {
-                sel = sel.trim();
-                
-                if(sel.charAt(0) !== "@")
-                    return cssc.type.rule;
-                
-                sel = sel.substr(1);
-                
-                var selIO = sel.indexOf(" "), key;
-                
-                if(selIO >= 0)
-                    sel = sel.substr(0, selIO);
-                
-                key = sel;
-                
-                if(sel.indexOf("-") >= 0)
-                {
-                    var splSel = sel.split("-"), i;
-                    
-                    key = splSel[0];
-                    
-                    for(i = 1; i < splSel.length; i++)
-                        key += splSel[i].charAt(0).toUpperCase()+splSel[i].substr(1);
-                }
-                
-                return (key in cssc.type) ? cssc.type[key] : -1;
-            },
-            genSelector: function(pSel, sel)
-            {
-                if(sel.charAt(0) === "@" && pSel.charAt(0) === "@")
-                {
-                    sel = sel.substr(1);
-                }
-                
-                if(sel.charAt(0) === "/")
-                    sel = sel.substr(1);
-                else if(sel.charAt(0) === ",")
-                    sel = ", "+sel.substr(1).trim();
-                else
-                    sel = " " + sel;
-                
-                if(sel.charAt(0) !== "," 
-                   && (pSel.indexOf(",") >= 0 || sel.indexOf(",") > 0))
-                {
-                    var pSelSplit = pSel.split(","), i, newStr = "",
-                        selSplit = sel.split(","), j;
-                    
-                    for(i = 0; i < pSelSplit.length; i++)
-                        for(j = 0; j < selSplit.length; j++)
-                            newStr += pSelSplit[i] + selSplit[j] + ", ";
-                    
-                    return newStr.replace(/,+\s*$/,"");
-                }
-                
-                return pSel+sel;
-            }
         },
         cssc = function(sel, hasProp)
         {
