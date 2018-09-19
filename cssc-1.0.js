@@ -63,9 +63,7 @@ var CSSC = (function()
             if(isFinite(value))
             {
                 if(value%1 === 0)
-                {
                     return value + "px";
-                }
 
                 return (Math.floor(value * 100) / 100) + "px";
             }
@@ -117,45 +115,39 @@ var CSSC = (function()
         },
         helperCssTextFromObj = function(obj, addTab, type)
         {
-            var cssText = "", tab = "    ", key, elType, i, tmp;
+            var cssText = "", tab = "  ", key, obKey, elType, i, tmp;
 
             addTab = addTab || "";
 
             for(key in obj)
             {
+                obKey = obj[key];
                 elType = helperElemType(obj[key]);
 
-                if(elType === "Object")
+                if(elType === "Object" || elType === "Array")
                 {
-                    tmp = helperCssTextFromObj(obj[key], addTab+tab, type);
-                    if(tmp !== "")
+                    if(elType === "Object")
+                        obKey = [obj[key]];
+                        
+                    for(i = 0; i < obKey.length; i++)
                     {
-                        if(type === cssc.export.type.min)
-                            cssText += key+"{"+tmp+"}";
-                        else
-                            cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
-                    }
-                }
-                else if(elType === "Array")
-                {
-                    for(i = 0; i < obj[key].length; i++)
-                    {
-                        tmp = helperCssTextFromObj(obj[key][i], addTab+tab, type);
+                        tmp = helperCssTextFromObj(obKey[i], addTab+tab, type);
+                        
                         if(tmp !== "")
                         {
                             if(type === cssc.export.type.min)
                                 cssText += key+"{"+tmp+"}";
                             else 
-                                cssText += addTab+key+" {\n"+tmp+addTab+"}\n";
+                                cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                         }
                     }
                 }
                 else
                 {
                     if(type === cssc.export.type.min)
-                        cssText += key+":"+obj[key]+";";
+                        cssText += key+":"+obKey+";";
                     else cssText += (addTab.length < tab.length ? tab : addTab)
-                                 + key+": "+obj[key]+";\n";
+                                 + key+": "+obKey+";\n";
                 }
             }
 
@@ -223,20 +215,27 @@ var CSSC = (function()
             else
                 sel = " " + sel;
 
-            if(sel.charAt(0) !== "," 
-               && (pSel.indexOf(",") >= 0 || sel.indexOf(",") > 0))
+            if(pSel.indexOf(",") >= 0 || sel.indexOf(",") > 0)
             {
-                var pSelSplit = pSel.split(","), i, newStr = "",
+                var pSelSplit = pSel.split(","), i, newSel = "",
                     selSplit = sel.split(","), j;
 
-                for(i = 0; i < pSelSplit.length; i++)
-                    for(j = 0; j < selSplit.length; j++)
-                        newStr += pSelSplit[i] + selSplit[j] + ", ";
+                if(sel.charAt(0) !== ",")
+                {    
+                    for(i = 0; i < pSelSplit.length; i++)
+                        for(j = 0; j < selSplit.length; j++)
+                            newSel += pSelSplit[i] + selSplit[j] + ", ";
+                }
+                else
+                {
+                    for(i = 0; i < pSelSplit.length; i++)
+                        newSel += pSelSplit[i] + sel + ", ";
+                }
 
-                return newStr.replace(/,+\s*$/,"");
+                return newSel.replace(/,+\s*$/,"");
             }
 
-            return pSel+sel;
+            return pSel + sel;
         };
     
         var init = function()
@@ -274,10 +273,7 @@ var CSSC = (function()
                 {
                     ignVal = (toInit[i].ownerNode.getAttribute('data-cssc-ignore') || "").toLowerCase();
                     
-                    if(ignVal === "true" || ignVal === "1")
-                    {
-                        continue;
-                    }
+                    if(ignVal === "true" || ignVal === "1") continue;
                     
                     try
                     {
