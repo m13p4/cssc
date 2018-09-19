@@ -392,7 +392,7 @@ var CSSC = (function()
                             
                             if(parent && helper.selectorType(key) === -1)
                             {
-                                key = parent.csscSelector + " " + key.substr(1);
+                                key = helper.genSelector(parent.csscSelector, key);
                                 
                                 tmp = parent.parent;
                             }
@@ -412,10 +412,9 @@ var CSSC = (function()
                                 tmp = {
                                     csscSelector: key,
                                     cssText: key + " {}",
-                                    parent: tmp,
+                                    parent: tmp || false,
                                     type: helper.selectorType(key),
-                                    cssRules: {},
-                                    obj: {}
+                                    cssRules: {}
                                 };
                                 
                                 rule = addToIndex(tmp, tmp.parent, key);
@@ -496,9 +495,7 @@ var CSSC = (function()
                         
                         if(valType === "Object" || valType === "Array")
                         {
-                            var newSel = this.e[pos].selector + 
-                                         (prop.charAt(0) === "/" ? "" : " ") + 
-                                         prop.replace(/^\//,""),
+                            var newSel = helper.genSelector(this.e[pos].selector, prop),
                                 valArr = valType === 'Object' ? [val] : val, rule, i;
                             
                             for(i = 0; i < valArr.length; i++)
@@ -1105,6 +1102,35 @@ var CSSC = (function()
                 }
                 
                 return (key in cssc.type) ? cssc.type[key] : -1;
+            },
+            genSelector: function(pSel, sel)
+            {
+                if(sel.charAt(0) === "@" && pSel.charAt(0) === "@")
+                {
+                    sel = sel.substr(1);
+                }
+                
+                if(sel.charAt(0) === "/")
+                    sel = sel.substr(1);
+                else if(sel.charAt(0) === ",")
+                    sel = ", "+sel.substr(1).trim();
+                else
+                    sel = " " + sel;
+                
+                if(sel.charAt(0) !== "," 
+                   && (pSel.indexOf(",") >= 0 || sel.indexOf(",") > 0))
+                {
+                    var pSelSplit = pSel.split(","), i, newStr = "",
+                        selSplit = sel.split(","), j;
+                    
+                    for(i = 0; i < pSelSplit.length; i++)
+                        for(j = 0; j < selSplit.length; j++)
+                            newStr += pSelSplit[i] + selSplit[j] + ", ";
+                    
+                    return newStr.replace(/,+\s*$/,"");
+                }
+                
+                return pSel+sel;
             }
         },
         cssc = function(sel, hasProp)
@@ -1118,7 +1144,7 @@ var CSSC = (function()
                 if(cssc.conf.viewErr) console.log(err);
                 cssc.messages.push(err);
             }
-        }; 
+        };
         cssc.import = function(importObj)
         {
             try
