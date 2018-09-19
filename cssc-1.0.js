@@ -210,8 +210,6 @@ var CSSC = (function()
 
             try
             {
-                //console.log(appendToElem);
-                
                 if("insertRule" in appendToElem)
                 {
                     appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
@@ -365,7 +363,7 @@ var CSSC = (function()
         },
         handleImport = function(importObj, parent)
         {
-            var importElem, rule, handlerObj, key, i, cPos, tmp;
+            var importElem, rule, handlerObj, key, i, tmp;
             
             for(key in importObj)
             {
@@ -389,10 +387,8 @@ var CSSC = (function()
                                    )
                         )
                         {
-                            /**
-                             * @todo: make pseudo children elements
-                             */
                             tmp = parent;
+                            handlerObj = key; //use handlerObj var to save old key
                             
                             if(parent && helper.selectorType(key) === -1)
                             {
@@ -413,11 +409,26 @@ var CSSC = (function()
                             }
                             else
                             {
-                                handleImport(importElem[i], {
+                                tmp = {
                                     csscSelector: key,
+                                    cssText: key + " {}",
                                     parent: tmp,
-                                    type: helper.selectorType(key)
-                                });
+                                    type: helper.selectorType(key),
+                                    cssRules: {},
+                                    obj: {}
+                                };
+                                
+                                rule = addToIndex(tmp, tmp.parent, key);
+                                
+                                handleImport(importElem[i], rule.content[rule.content.length - 1]);
+                            }
+                            
+                            if(!!parent)
+                            {
+                                if(!parent.obj[handlerObj])
+                                    parent.obj[handlerObj] = [];
+
+                                parent.obj[handlerObj].push(rule.content[rule.content.length - 1]);
                             }
                         }
                     }
@@ -862,11 +873,12 @@ var CSSC = (function()
                             if(!("length" in exportObj[this.e[i].selector]))
                                 exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
 
-                            exportObj[this.e[i].selector].push(childHandler.export(type, ignore));
+                            exportObj[this.e[i].selector].push(Object.assign(obj, childHandler.export(type, ignore)));
                         }
                         else
-                            exportObj[this.e[i].selector] = childHandler.export(type, ignore);
+                            exportObj[this.e[i].selector] = Object.assign(obj, childHandler.export(type, ignore));
                     }
+                    
                     else if(exportObj[this.e[i].selector])
                     {
                         if(!("length" in exportObj[this.e[i].selector]))
