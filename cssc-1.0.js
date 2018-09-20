@@ -160,19 +160,6 @@ var CSSC = (function()
 
             return !!find ? find[1].trim() : "";
         },
-        helperValidateSelector = function(sel)
-        {
-            sel = sel.trim();
-
-            if(sel.length <= 0) return false;
-
-            if(sel.charAt(0) === "@")
-            {
-                return !sel.match(/(^@(media|keyframes|supports)|and|or|not|only|[<|>,:\-#'+~`´}\[{\\!"§%&/(=?@])\s*$/);
-            }
-
-            return !sel.match(/[<|>,:\-#'+~`´}\]\[{\\!"§%&/()=?@]\s*$/);
-        },
         helperSelectorType = function(sel)
         {
             sel = sel.trim();
@@ -221,21 +208,25 @@ var CSSC = (function()
                     selSplit = sel.split(","), j;
 
                 if(sel.charAt(0) !== ",")
-                {    
                     for(i = 0; i < pSelSplit.length; i++)
                         for(j = 0; j < selSplit.length; j++)
                             newSel += pSelSplit[i] + selSplit[j] + ", ";
-                }
                 else
-                {
                     for(i = 0; i < pSelSplit.length; i++)
                         newSel += pSelSplit[i] + sel + ", ";
-                }
 
                 return newSel.replace(/,+\s*$/,"");
             }
 
             return pSel + sel;
+        },
+        helperDeleteCSSRule = function(cssRule)
+        {
+            var parent = !!cssRule.parentRule ? cssRule.parentRule : cssRule.parentStyleSheet, i;
+            
+            for(i = 0; i < parent.cssRules.length; i++)
+                if(parent.cssRules[i] === cssRule)
+                    parent.deleteRule(i);
         };
     
         var init = function()
@@ -459,13 +450,23 @@ var CSSC = (function()
 
             return !!_index[sel] ? _index[sel] : null;
         },
-        delFromIndex = function(sel, indexElem)
+        delFromIndex = function(sel, indexElem, toDel)
         {
-            var _index = !!indexElem ? indexElem : index;
+            var _index = !!indexElem ? indexElem : index, tmp;
             
             if(!!_index[sel])
             {
-                delete _index[sel];
+                tmp = (toDel ? _index[sel].content.indexOf(toDel) : -1);
+                
+                if(!toDel) delete _index[sel];
+                else if(tmp >= 0)
+                {
+                    
+                    _index[sel].content.splice(tmp, 1);
+                    
+                    if(_index[sel].content.length <= 0)
+                        delete _index[sel];
+                }
             }
         },
         getHandler = function(sel, indexElem, getElements)
@@ -580,7 +581,7 @@ var CSSC = (function()
         },
         handleImport = function(importObj, parent)
         {
-            var importElem, rule, handlerObj, key, i, tmp;
+            var importElem, rule, handlerObj, key, i, tmp, tmp2, rcl;
             
             for(key in importObj)
             {
@@ -607,25 +608,32 @@ var CSSC = (function()
                             tmp = parent;
                             handlerObj = key; //use handlerObj var to save old key
                             
-                            if(parent && helperSelectorType(key) === -1)
+                            if(parent && !handlerObj.match(/^@(media|keyframes|supports)/))
                             {
                                 key = helperGenSelector(parent.csscSelector, key);
                                 
                                 tmp = parent.parent;
                             }
-                                
-                            if(!helperValidateSelector(key))
-                            {
-                                rule = false;
-                            }
-                            else rule = createRule(key, null, null, tmp);
                             
-                            if(rule)
+                            rule = createRule(key, null, null, tmp);
+                            
+                            if(rule && rule.content[rule.content.length - 1].selector === rule.content[rule.content.length - 1].csscSelector)
                             {
                                 handleImport(importElem[i], rule.content[rule.content.length - 1]);
                             }
                             else
                             {
+                                if(rule)
+                                {
+                                    rcl = rule.content.length - 1;
+                                    
+                                    helperDeleteCSSRule(rule.content[rcl].indexElem);
+                                    
+                                    delFromIndex(rule.content[rcl].selector, 
+                                                 rule.content[rcl].parent, 
+                                                 rule.content[rcl]);
+                                }
+                                
                                 tmp = {
                                     csscSelector: key,
                                     cssText: key + " {}",
@@ -999,17 +1007,9 @@ var CSSC = (function()
                 {
                     for(i = 0; i < this.e.length; i++)
                     {
-                        if(!!this.e[i].indexElem.parentRule)
-                        {
-                            this.e[i].indexElem.parentRule.deleteRule(this.e[i]);
-                        }
-                        else
-                        {
-                            this.e[i].indexElem.parentStyleSheet.deleteRule(this.e[i]);
-                        }
+                        helperDeleteCSSRule(this.e[i].indexElem);
                         
-                        //@todo: fix bug -> delete not full index
-                        delFromIndex(sel, (!!this.e[i].parent ? this.e[i].parent : null));
+                        delFromIndex(this.e[i].selector, (!!this.e[i].parent ? this.e[i].parent : null), this.e[i]);
 
                         if(!!this.e[i].children)
                         {
