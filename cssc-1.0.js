@@ -1134,10 +1134,28 @@ var CSSC = (function()
                     }
                 }
                 
-                if(_type === cssc.export.type.normal || _type === cssc.export.type.min)
-                    return helperCssTextFromObj(exportObj, null, _type);
+                var sortExpObj = {};
                 
-                return exportObj;
+                if(!!exportObj['@charset'])
+                    sortExpObj['@charset'] = exportObj['@charset'];
+                if(!!exportObj['@import'])
+                    sortExpObj['@import'] = exportObj['@import'];
+                if(!!exportObj['@namespace'])
+                    sortExpObj['@namespace'] = exportObj['@namespace'];
+                if(!!exportObj['@font-face'])
+                    sortExpObj['@font-face'] = exportObj['@font-face'];
+                
+                tmp = Object.keys(sortExpObj).length > 0;
+                
+                if(tmp)
+                    for(i in exportObj)
+                        if(!sortExpObj[i])
+                            sortExpObj[i] = exportObj[i];
+                
+                if(_type === cssc.export.type.normal || _type === cssc.export.type.min)
+                    return helperCssTextFromObj(tmp ? sortExpObj : exportObj, null, _type);
+                
+                return tmp ? sortExpObj : exportObj;
             };
             handler.pos = function(p)
             {
