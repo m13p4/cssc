@@ -96,8 +96,8 @@ var CSSC = (function()
         },
         helperObjFromCssText = function(cssText)
         {
-            if(cssText.match(/^@(namespace|import)/))
-                return cssText.replace(/(^@(namespace|import)\s*|\s*;\s*$)/g, "");
+            if(cssText.match(/^@(namespace|import|charset)/))
+                return cssText.replace(/(^@(namespace|import|charset)\s*|\s*;\s*$)/g, "");
             
             var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
                 split = str.split(';'), i, kv, obj = {};
@@ -137,7 +137,7 @@ var CSSC = (function()
                         
                     for(i = 0; i < obKey.length; i++)
                     {
-                        if(key === "@namespace" || key === "@import")
+                        if(key === "@namespace" || key === "@import" || key === "@charset")
                         {
                             cssText += key+" "+obKey[i]+";"+(type === cssc.export.type.min?'':"\n");
                             continue;
@@ -156,7 +156,7 @@ var CSSC = (function()
                 }
                 else
                 {
-                    if(key === "@namespace" || key === "@import")
+                    if(key === "@namespace" || key === "@import" || key === "@charset")
                         cssText += key+" "+obKey+";"+(type === cssc.export.type.min?'':"\n");
                     else if(type === cssc.export.type.min)
                         cssText += key+":"+obKey+";";
@@ -315,7 +315,8 @@ var CSSC = (function()
             && indexType !== cssc.type.page
             && indexType !== cssc.type.supports
             && indexType !== cssc.type.namespace
-            && indexType !== cssc.type.import)
+            && indexType !== cssc.type.import
+            && indexType !== cssc.type.charset)
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.type.names[indexType]);
                 return;
@@ -325,6 +326,8 @@ var CSSC = (function()
                 indexKey = "@namespace";
             if(indexType === cssc.type.import)
                 indexKey = "@import";
+            if(indexType === cssc.type.charset)
+                indexKey = "@charset";
             
             toIndex._update = false;
             if(indexType === cssc.type.rule)
@@ -427,18 +430,28 @@ var CSSC = (function()
             {
                 var insRuleString = selector+"{"+ruleString+"}";
                 
-                if(selector === "@namespace" || selector === "@import")
+                if(selector === "@namespace" || selector === "@import" || selector === "@charset")
                     insRuleString = selector+" "+property;
                 
-                if("insertRule" in appendToElem)
-                    appendToElem.insertRule(insRuleString, rulePos);
-                else if("appendRule" in appendToElem)
-                    appendToElem.appendRule(insRuleString, rulePos);
-                else if("addRule" in appendToElem)
-                    appendToElem.addRule(selector, ruleString, rulePos);
-                
-                
-                return addToIndex(appendToElem.cssRules[rulePos], parent, selector);
+                if(selector !== "@charset")
+                {
+                    if("insertRule" in appendToElem)
+                        appendToElem.insertRule(insRuleString, rulePos);
+                    else if("appendRule" in appendToElem)
+                        appendToElem.appendRule(insRuleString, rulePos);
+                    else if("addRule" in appendToElem)
+                        appendToElem.addRule(selector, ruleString, rulePos);
+
+
+                    return addToIndex(appendToElem.cssRules[rulePos], parent, selector);
+                }
+                else return addToIndex({
+                                    csscSelector: selector,
+                                    cssText: insRuleString,
+                                    parent: false,
+                                    type: cssc.type.charset,
+                                    cssRules: {}
+                                }, parent, key);
             }
             catch(err)
             {
@@ -603,7 +616,7 @@ var CSSC = (function()
                 {
                     if(key.charAt(0) === "@")
                     {
-                        if(key === "@font-face" || key === "@namespace" || key === "@import")
+                        if(key === "@font-face" || key === "@namespace" || key === "@import" || key === "@charset")
                         {
                             createRule(key, importElem[i], null, parent);
                         }
@@ -1058,7 +1071,9 @@ var CSSC = (function()
                 {
                     if(ignore.indexOf(this.e[i]) >= 0) continue; 
                     
-                    if(this.e[i].type === cssc.type.namespace || this.e[i].type === cssc.type.import)
+                    if(this.e[i].type === cssc.type.namespace 
+                    || this.e[i].type === cssc.type.import 
+                    || this.e[i].type === cssc.type.charset)
                         obj = this.e[i].obj;
                     else
                     {
