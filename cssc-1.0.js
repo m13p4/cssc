@@ -603,7 +603,7 @@ var CSSC = (function()
         },
         handleImport = function(importObj, parent)
         {
-            var importElem, rule, handlerObj, key, i, tmp, tmp2, rcl;
+            var importElem, rule, handlerObj, key, i, tmp, rcl;
             
             for(key in importObj)
             {
@@ -709,7 +709,6 @@ var CSSC = (function()
                         }
                     }
                 }
-                
                 return ruleHandler(elArr, sel, null, handler.e);
             };
             
@@ -879,7 +878,6 @@ var CSSC = (function()
                         }
                     }
                 }
-
                 return this;
             };
             handler.get = function(prop, returnAllProps)
@@ -1138,19 +1136,20 @@ var CSSC = (function()
                 
                 if(!!exportObj['@charset'])
                     sortExpObj['@charset'] = exportObj['@charset'];
+                
                 if(!!exportObj['@import'])
                     sortExpObj['@import'] = exportObj['@import'];
+                
                 if(!!exportObj['@namespace'])
                     sortExpObj['@namespace'] = exportObj['@namespace'];
+                
                 if(!!exportObj['@font-face'])
                     sortExpObj['@font-face'] = exportObj['@font-face'];
                 
                 tmp = Object.keys(sortExpObj).length > 0;
                 
-                if(tmp)
-                    for(i in exportObj)
-                        if(!sortExpObj[i])
-                            sortExpObj[i] = exportObj[i];
+                if(tmp) for(i in exportObj) if(!sortExpObj[i])
+                    sortExpObj[i] = exportObj[i];
                 
                 if(_type === cssc.export.type.normal || _type === cssc.export.type.min)
                     return helperCssTextFromObj(tmp ? sortExpObj : exportObj, null, _type);
@@ -1234,6 +1233,7 @@ var CSSC = (function()
             'supports':       12, //check
             
             'fontFeatureValues': 14,
+            'viewport':          15,
             
             names: {
                 1:  "rule",
@@ -1249,7 +1249,8 @@ var CSSC = (function()
                 11: "counter-style",
                 12: "supports",
                 
-                14: "font-feature-values"
+                14: "font-feature-values",
+                15: "viewport"
             }
         };
         cssc.events = {
