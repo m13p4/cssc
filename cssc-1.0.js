@@ -1203,7 +1203,7 @@ var CSSC = (function()
         },
         cssc.type = {
             'rule':       1, //check
-            'charset':    2,
+            'charset':    2, //check
             'import':     3, //check
             'media':      4, //check
             'fontFace':   5, //check
@@ -1212,7 +1212,7 @@ var CSSC = (function()
             'keyframe':   8, //check
             
             'namespace':      10, //check
-            'counterStyle':   11,
+            'counterStyle':   11, 
             'supports':       12, //check
             
             'fontFeatureValues': 14,
