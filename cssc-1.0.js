@@ -96,9 +96,12 @@ var CSSC = (function()
         },
         helperObjFromCssText = function(cssText)
         {
+            if(cssText.match(/^@(namespace|import)/))
+                return cssText.replace(/(^@(namespace|import)\s*|\s*;\s*$)/g, "");
+            
             var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
                 split = str.split(';'), i, kv, obj = {};
-
+            
             if(str !== "")
             {
                 for(i = 0; i < split.length; i++)
@@ -110,7 +113,7 @@ var CSSC = (function()
                     obj[kv[0].trim()] = kv.slice(1).join(':').trim();
                 }
             }
-
+            
             return obj;
         },
         helperCssTextFromObj = function(obj, addTab, type)
@@ -118,12 +121,15 @@ var CSSC = (function()
             var cssText = "", tab = "  ", key, obKey, elType, i, tmp;
 
             addTab = addTab || "";
-
+            
+            if(helperElemType(obj) === "String")
+                return obj;
+            
             for(key in obj)
             {
                 obKey = obj[key];
                 elType = helperElemType(obj[key]);
-
+                
                 if(elType === "Object" || elType === "Array")
                 {
                     if(elType === "Object")
@@ -131,6 +137,12 @@ var CSSC = (function()
                         
                     for(i = 0; i < obKey.length; i++)
                     {
+                        if(key === "@namespace" || key === "@import")
+                        {
+                            cssText += key+" "+obKey[i]+";"+(type === cssc.export.type.min?'':"\n");
+                            continue;
+                        }
+                        
                         tmp = helperCssTextFromObj(obKey[i], addTab+tab, type);
                         
                         if(tmp !== "")
@@ -144,7 +156,9 @@ var CSSC = (function()
                 }
                 else
                 {
-                    if(type === cssc.export.type.min)
+                    if(key === "@namespace" || key === "@import")
+                        cssText += key+" "+obKey+";"+(type === cssc.export.type.min?'':"\n");
+                    else if(type === cssc.export.type.min)
                         cssText += key+":"+obKey+";";
                     else cssText += (addTab.length < tab.length ? tab : addTab)
                                  + key+": "+obKey+";\n";
@@ -281,12 +295,8 @@ var CSSC = (function()
         indexCssRules = function(cssRules, parent)
         {
             for(var i = 0; i < cssRules.length; i++)
-            {
                 if(!helperIsElemInOwnNode(cssRules[i]))
-                {
                     addToIndex(cssRules[i], parent);
-                }
-            }
         },
         addToIndex = function(cssRule, parent, csscSelector)
         {
@@ -303,18 +313,22 @@ var CSSC = (function()
             && indexType !== cssc.type.keyframes
             && indexType !== cssc.type.keyframe
             && indexType !== cssc.type.page
-            && indexType !== cssc.type.supports)
+            && indexType !== cssc.type.supports
+            && indexType !== cssc.type.namespace
+            && indexType !== cssc.type.import)
             {
                 console.log("unsuported type: [" + indexType + "] - " + cssc.type.names[indexType]);
                 return;
             }
             
+            if(indexType === cssc.type.namespace)
+                indexKey = "@namespace";
+            if(indexType === cssc.type.import)
+                indexKey = "@import";
             
             toIndex._update = false;
             if(indexType === cssc.type.rule)
-            {
                 toIndex.style._update = {};
-            }
             
             indexObjWrapper = {
                 indexElem: toIndex,
@@ -370,9 +384,8 @@ var CSSC = (function()
             var appendToElem;
             
             if(!parent && !ownStyleElem)
-            {
                 helperCreateNewStyleElem();
-            }
+            
             appendToElem = !!parent ? parent.indexElem : ownStyleElem.sheet;
             
             
@@ -396,9 +409,7 @@ var CSSC = (function()
                             ruleString += key+":"+prop+"; ";
                         }
                         else
-                        {
                             ruleString += key+":"+property[key]+"; ";
-                        }
                     }
                 }
                 else if(propType === "Function")
@@ -406,38 +417,36 @@ var CSSC = (function()
                     var prop = property();
                     
                     for(var key in prop)
-                    {
                         ruleString += key+":"+prop[key]+"; ";
-                    }
                 }
                 else
-                { 
                     ruleString = property+":"+value+";";
-                }
             }
 
             try
             {
+                var insRuleString = selector+"{"+ruleString+"}";
+                
+                if(selector === "@namespace" || selector === "@import")
+                    insRuleString = selector+" "+property;
+                
                 if("insertRule" in appendToElem)
-                {
-                    appendToElem.insertRule(selector+"{"+ruleString+"}", rulePos);
-                }
+                    appendToElem.insertRule(insRuleString, rulePos);
                 else if("appendRule" in appendToElem)
-                {
-                    appendToElem.appendRule(selector+"{"+ruleString+"}", rulePos);
-                }
+                    appendToElem.appendRule(insRuleString, rulePos);
                 else if("addRule" in appendToElem)
-                {
                     appendToElem.addRule(selector, ruleString, rulePos);
-                }
                 
                 
                 return addToIndex(appendToElem.cssRules[rulePos], parent, selector);
             }
             catch(err)
             {
-                if(cssc.conf.viewErr) console.log("\""+selector+"\" -> "+err);
-                cssc.messages.push("\""+selector+"\" -> "+err);
+                var errTxt = (parent ? '"' + parent.selector + '" > ' : '')
+                             + "\"" + selector + "\" -> " + err;
+                
+                if(cssc.conf.viewErr) console.log(errTxt);
+                cssc.messages.push(errTxt);
             }
             
             return false;
@@ -594,7 +603,7 @@ var CSSC = (function()
                 {
                     if(key.charAt(0) === "@")
                     {
-                        if(key === "@font-face")
+                        if(key === "@font-face" || key === "@namespace" || key === "@import")
                         {
                             createRule(key, importElem[i], null, parent);
                         }
@@ -1049,35 +1058,40 @@ var CSSC = (function()
                 {
                     if(ignore.indexOf(this.e[i]) >= 0) continue; 
                     
-                    obj = Object.assign({}, this.e[i].obj);
-
-                    for(key in this.e[i].obj)
+                    if(this.e[i].type === cssc.type.namespace || this.e[i].type === cssc.type.import)
+                        obj = this.e[i].obj;
+                    else
                     {
-                        if(typeof this.e[i].obj[key] === "object" 
-                        && "length" in this.e[i].obj[key])
+                        obj = Object.assign({}, this.e[i].obj);
+
+                        for(key in this.e[i].obj)
                         {
-                            if(type === cssc.export.type.notMDObject)
+                            if(typeof this.e[i].obj[key] === "object" 
+                            && "length" in this.e[i].obj[key])
                             {
-                                obj[key] = null;
-                                delete obj[key];
+                                if(type === cssc.export.type.notMDObject)
+                                {
+                                    obj[key] = null;
+                                    delete obj[key];
 
-                                continue;
+                                    continue;
+                                }
+
+                                obj[key] = [];
+
+                                for(j = 0; j < this.e[i].obj[key].length; j++)
+                                {
+                                    tmp = ruleHandler([this.e[i].obj[key][j]]);
+                                    obj[key][j] = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
+
+                                    ignore.push(this.e[i].obj[key][j]);
+                                }
+
+                                if(obj[key].length === 1) obj[key] = obj[key][0];
                             }
-
-                            obj[key] = [];
-
-                            for(j = 0; j < this.e[i].obj[key].length; j++)
-                            {
-                                tmp = ruleHandler([this.e[i].obj[key][j]]);
-                                obj[key][j] = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
-
-                                ignore.push(this.e[i].obj[key][j]);
-                            }
-
-                            if(obj[key].length === 1) obj[key] = obj[key][0];
                         }
                     }
-
+                    
                     if(!!this.e[i].children)
                     {
                         childHandler = getHandler(null, this.e[i].children);
@@ -1092,14 +1106,11 @@ var CSSC = (function()
                         else
                             exportObj[this.e[i].selector] = Object.assign(obj, childHandler.export(type, ignore));
                     }
-                    
                     else if(exportObj[this.e[i].selector])
                     {
-                        if(!("length" in exportObj[this.e[i].selector]))
-                        {
+                        if(!(typeof exportObj[this.e[i].selector] === "object" && "length" in exportObj[this.e[i].selector]))
                             exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
-                        }
-
+                        
                         exportObj[this.e[i].selector].push(obj);
                     }
                     else
@@ -1178,14 +1189,14 @@ var CSSC = (function()
         cssc.type = {
             'rule':       1, //check
             'charset':    2,
-            'import':     3,
+            'import':     3, //check
             'media':      4, //check
             'fontFace':   5, //check
             'page':       6, //check
             'keyframes':  7, //check
             'keyframe':   8, //check
             
-            'namespace':      10,
+            'namespace':      10, //check
             'counterStyle':   11,
             'supports':       12, //check
             
