@@ -756,7 +756,6 @@ var CSSC = (function()
                     {
                         if(cssc.conf.viewErr)
                             console.log("Element of Type \""+cssc.type.names[this.e[pos].indexElem.type]+"\" is readonly.");
-                        
                         cssc.messages.push("Element of Type \""+cssc.type.names[this.e[pos].indexElem.type]+"\" is readonly.");
                         
                         return this;
@@ -774,26 +773,31 @@ var CSSC = (function()
                         if(valType === "Object" || valType === "Array")
                         {
                             var newSel = helperGenSelector(this.e[pos].selector, prop),
-                                valArr = valType === 'Object' ? [val] : val, rule, i;
-                            
-//                            if(prop.charAt(0) === "@")
-//                                console.log(prop, this.e[pos].selector);
+                                valArr = valType === 'Object' ? [val] : val, rule, i, handlerObj;
                             
                             for(i = 0; i < valArr.length; i++)
                             {
-                                rule = createRule(newSel, null, null, this.e[pos].parent);
-
-                                if(rule)
+                                if(prop.charAt(0) === "@")
                                 {
-                                    var handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
-                                    handlerObj.set(valArr[i]);
+                                    handlerObj = getHandler(prop);
+                                    handlerObj = handlerObj(this.e[pos].selector);
 
-                                    if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
+                                    handlerObj.set(valArr[i]);
+                                }
+                                else
+                                {
+                                    rule = createRule(newSel, null, null, this.e[pos].parent);
+
+                                    if(rule)
                                     {
-                                        this.e[pos].obj[prop] = [];
+                                        handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
+                                        handlerObj.set(valArr[i]);
+
+                                        if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
+                                            this.e[pos].obj[prop] = [];
+
+                                        this.e[pos].obj[prop].push(rule.content[rule.content.length-1]);
                                     }
-                                    
-                                    this.e[pos].obj[prop].push(rule.content[rule.content.length-1]);
                                 }
                             }
                         }
@@ -829,13 +833,9 @@ var CSSC = (function()
                         propType = helperElemType(prop);
 
                     if(propType === "Object")
-                    {
                         propLen = Object.keys(prop).length;
-                    }
                     else if(propType === "Function")
-                    {
                         props = prop();
-                    }
                     
                     createRuleIfNotExists();
                     
