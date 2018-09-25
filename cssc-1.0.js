@@ -697,9 +697,41 @@ var CSSC = (function()
         },
         ruleHandler = function(indexElemArr, sel, fromHas, parents)
         {
-            var handler = function(sel, hasProp)
+            var handler,
+            createRuleIfNotExists = function()
+            {
+                if(handler.e.length <= 0 && !fromHas && helperElemType(sel) === "String")
+                {
+                    var rule, contentElems = [], i, key;
+
+                    if(!parents)
+                    {
+                        rule = createRule(sel, null, null);
+
+                        if(rule) contentElems = rule.content;
+                    }
+                    else
+                    {
+                        for(i = 0; i < parents.length; i++)
+                        {
+                            rule = createRule(sel, null, null, parents[i]);
+
+                            if(rule) for(key = 0; key < rule.content.length; key++)
+                                contentElems.push(rule.content[key]);
+                        }
+                    }
+
+                    handler.e = contentElems;
+                    handler.eLength = contentElems.length;
+                }
+            };
+            
+            handler = function(sel, hasProp)
             {
                 var i, j, elArr = [], tmp;
+                
+                createRuleIfNotExists();
+                
                 for(i = 0; i < handler.e.length; i++)
                 {
                     if(!!handler.e[i].children)
@@ -707,9 +739,7 @@ var CSSC = (function()
                         tmp = handleSelection(sel, hasProp, handler.e[i].children, true);
                         
                         for(j = 0; j < tmp.length; j++)
-                        {
                             elArr.push(tmp[j]);
-                        }
                     }
                 }
                 return ruleHandler(elArr, sel, null, handler.e);
@@ -722,7 +752,6 @@ var CSSC = (function()
             {
                 if(typeof pos === "number") // single Set
                 {
-                    //can not change font-face values on Firefox..
                     if(this.e[pos].indexElem.type === cssc.type.fontFace)
                     {
                         if(cssc.conf.viewErr)
@@ -746,6 +775,9 @@ var CSSC = (function()
                         {
                             var newSel = helperGenSelector(this.e[pos].selector, prop),
                                 valArr = valType === 'Object' ? [val] : val, rule, i;
+                            
+//                            if(prop.charAt(0) === "@")
+//                                console.log(prop, this.e[pos].selector);
                             
                             for(i = 0; i < valArr.length; i++)
                             {
@@ -805,39 +837,7 @@ var CSSC = (function()
                         props = prop();
                     }
                     
-                    //create new Element
-                    if(this.e.length <= 0 && !fromHas 
-                       && helperElemType(sel) === "String")
-                    {
-                        var rule, contentElems = [];
-                        
-                        if(!parents)
-                        {
-                            rule = createRule(sel, null, null);
-                            
-                            if(rule) contentElems = rule.content;
-                        }
-                        else
-                        {
-                            var contentElems = [];
-                            
-                            for(i = 0; i < parents.length; i++)
-                            {
-                                rule = createRule(sel, null, null, parents[i].indexElem, parents[i].children);
-                                
-                                if(rule)
-                                {
-                                    for(key = 0; key < rule.content.length; key++)
-                                    {
-                                        contentElems.push(rule.content[key]);
-                                    }
-                                }
-                            }
-                        }
-                        
-                        this.e = contentElems;
-                        this.eLength = contentElems.length;
-                    }
+                    createRuleIfNotExists();
                     
                     if(propType === "Array" 
                     || (propType === "Function" && helperElemType(props) === "Array"))
@@ -1012,7 +1012,7 @@ var CSSC = (function()
                         var childHandler = getHandler(null, this.e[i].children);
                         childHandler.update();
                     }
-                    else
+                    else if(!!this.e[i].indexElem.style)
                     {
                         for(key in this.e[i].indexElem.style._update)
                         {
