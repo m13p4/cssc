@@ -612,6 +612,9 @@ var CSSC = (function()
                 else
                     importElem = [importObj[key]];
                 
+                if(key.charAt(0) === "$" && key.substr(1) in cssc.vars)
+                    key = cssc.vars[key.substr(1)];
+                
                 for(i = 0; i < importElem.length; i++)
                 {
                     if(key.charAt(0) === "@")
@@ -1280,6 +1283,7 @@ var CSSC = (function()
             'viewErr': true
         };
         cssc.messages = [];
+        cssc.vars = {};
         
         if(!!initOnRun)
         {
