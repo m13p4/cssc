@@ -12,7 +12,7 @@ var CSSC = (function()
     
     var ownStyleElem;
     
-    var cntrl = function(styleSheetsDOM, initOnRun)
+    var cntrl = function(styleSheetsDOM)
     {
         var index   = {},
             isInit  = false,
@@ -241,6 +241,32 @@ var CSSC = (function()
             for(i = 0; i < parent.cssRules.length; i++)
                 if(parent.cssRules[i] === cssRule)
                     parent.deleteRule(i);
+        },
+        helperParseVars = function(str, vars)
+        {
+            var reg = /(^|[^\\\$])(\$[^\W]+)/, c=0,
+                match = str.match(reg), sStr, tmp;
+            
+            if(!vars) vars = {};
+            
+            while(match)
+            {
+                sStr = match[2].substr(1);
+                tmp = new RegExp("\\"+match[2], "g");
+                
+                if(sStr in vars)
+                    str = str.replace(tmp, vars[sStr]);
+                else if(sStr in cssc.vars)
+                    str = str.replace(tmp, cssc.vars[sStr]);
+                else
+                    str = str.replace(tmp, "\\\\"+match[2]);
+                
+                if(c++ > 100) break;
+                
+                match = str.match(reg)
+            }
+            
+            return str;
         };
     
         var init = function()
@@ -588,7 +614,7 @@ var CSSC = (function()
             }
             else
             {
-                handleImport(sel, null, indexElem);
+                handleImport(sel);
 
                 return;
             }
@@ -612,8 +638,7 @@ var CSSC = (function()
                 else
                     importElem = [importObj[key]];
                 
-                if(key.charAt(0) === "$" && key.substr(1) in cssc.vars)
-                    key = cssc.vars[key.substr(1)];
+                key = helperParseVars(key);
                 
                 for(i = 0; i < importElem.length; i++)
                 {
@@ -760,7 +785,9 @@ var CSSC = (function()
                         
                         return this;
                     }
-
+                    
+                    prop = helperParseVars(prop);
+                    
                     if(!!this.e[pos].children)
                     {
                         var childHandler = getHandler(null, this.e[pos].children);
@@ -768,21 +795,38 @@ var CSSC = (function()
                     }
                     else 
                     {
-                        var prsVal, valType = helperElemType(val);
+                        var prsVal, valType = helperElemType(val), tmp;
                         
                         if(valType === "Object" || valType === "Array")
                         {
-                            var newSel = helperGenSelector(this.e[pos].selector, prop),
+                            var newSel = helperGenSelector(this.e[pos].selector, prop), pObj,
                                 valArr = valType === 'Object' ? [val] : val, rule, i, handlerObj;
                             
                             for(i = 0; i < valArr.length; i++)
                             {
+                                tmp = null;
+                                
                                 if(prop.charAt(0) === "@")
                                 {
-                                    handlerObj = getHandler(prop);
+                                    handlerObj = getHandler(
+                                                        this.e[pos].parent ? 
+                                                            helperGenSelector(this.e[pos].parent.selector, prop) 
+                                                        : prop);
                                     handlerObj = handlerObj(this.e[pos].selector);
 
                                     handlerObj.set(valArr[i]);
+                                    
+                                    tmp = handlerObj.e[handlerObj.e.length-1];
+                                    
+                                    if(this.e[pos].parent)
+                                    {
+                                        pObj = this.e[pos].parent;
+                                        
+                                        if(!pObj.obj[prop] || !("push" in pObj.obj[prop]))
+                                            pObj.obj[prop] = [];
+                                        
+                                        pObj.obj[prop].push(tmp.parent);
+                                    }
                                 }
                                 else
                                 {
@@ -792,12 +836,16 @@ var CSSC = (function()
                                     {
                                         handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
                                         handlerObj.set(valArr[i]);
-
-                                        if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
-                                            this.e[pos].obj[prop] = [];
-
-                                        this.e[pos].obj[prop].push(rule.content[rule.content.length-1]);
+                                        
+                                        tmp = rule.content[rule.content.length-1]
                                     }
+                                }
+                                
+                                if(tmp !== null)
+                                {
+                                    if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
+                                        this.e[pos].obj[prop] = [];
+                                    this.e[pos].obj[prop].push(tmp);
                                 }
                             }
                         }
@@ -885,20 +933,9 @@ var CSSC = (function()
             };
             handler.get = function(prop, returnAllProps)
             {
-                if(!prop)
-                {
-                    var exp = this.export(cssc.export.type.object), key, expKey;
-                    
-                    for(key in exp)
-                    {
-                        if(!!expKey) return exp;
-                        expKey = key;
-                    }
-                    
-                    return exp[expKey];
-                }
+                if(!prop) return this.export(cssc.export.type.object);
                 
-                var arrToRet = [], propToRet = "", tmp, i;
+                var arrToRet = [], propToRet = "", tmp, i, expObj;
 
                 returnAllProps = !!returnAllProps;
 
@@ -906,20 +943,23 @@ var CSSC = (function()
                 {
                     tmp = "";
                     
-                    if(!!this.e[i].obj[prop] && !this.e[i].obj[prop].selector)
+                    if(this.e[i].obj[prop]) 
                     {
                         tmp = this.e[i].obj[prop];
+                        
+                        if(helperElemType(tmp) === "Array")
+                        {
+                            expObj = ruleHandler(tmp);
+                            tmp = expObj.export(cssc.export.type.object);
+                        }
                     }
                     
                     if(!tmp || tmp === "")
-                    {
                         tmp = this.e[i].indexElem.style[prop];
-                    }
+                    
                     //use helper, if property value not found in style object (margin, padding, border, etc..)
                     if(!tmp || tmp === "")
-                    { 
                         tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, prop);
-                    }
 
                     if(!!tmp)
                     {
@@ -1026,6 +1066,7 @@ var CSSC = (function()
             handler.delete = function(prop)
             {
                 var i;
+                
                 if(typeof prop === "undefined")
                 {
                     for(i = 0; i < this.e.length; i++)
@@ -1097,13 +1138,16 @@ var CSSC = (function()
 
                                 for(j = 0; j < this.e[i].obj[key].length; j++)
                                 {
+                                    if(ignore.indexOf(this.e[i].obj[key][j]) >= 0) continue; 
+                                    
                                     tmp = ruleHandler([this.e[i].obj[key][j]]);
                                     obj[key][j] = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
-
+                                    
                                     ignore.push(this.e[i].obj[key][j]);
                                 }
 
-                                if(obj[key].length === 1) obj[key] = obj[key][0];
+                                if(obj[key].length === 0) delete obj[key];
+                                else if(obj[key].length === 1) obj[key] = obj[key][0];
                             }
                         }
                     }
@@ -1111,28 +1155,21 @@ var CSSC = (function()
                     if(!!this.e[i].children)
                     {
                         childHandler = getHandler(null, this.e[i].children);
-
-                        if(exportObj[this.e[i].selector])
-                        {
-                            if(!("length" in exportObj[this.e[i].selector]))
-                                exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
-
-                            exportObj[this.e[i].selector].push(Object.assign(obj, childHandler.export(type, ignore)));
-                        }
-                        else
-                            exportObj[this.e[i].selector] = Object.assign(obj, childHandler.export(type, ignore));
+                        obj = Object.assign(childHandler.export(type, ignore), obj);
                     }
-                    else if(exportObj[this.e[i].selector])
+                    
+                    if(Object.keys(obj).length <= 0) continue;
+                    
+                    if(exportObj[this.e[i].selector])
                     {
                         if(!(typeof exportObj[this.e[i].selector] === "object" && "length" in exportObj[this.e[i].selector]))
                             exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
                         
                         exportObj[this.e[i].selector].push(obj);
                     }
-                    else
-                    {
-                        exportObj[this.e[i].selector] = obj;
-                    }
+                    else exportObj[this.e[i].selector] = obj;
+                    
+                    ignore.push(this.e[i]);
                 }
                 
                 var sortExpObj = {};
@@ -1285,20 +1322,10 @@ var CSSC = (function()
         cssc.messages = [];
         cssc.vars = {};
         
-        if(!!initOnRun)
-        {
-            init();
-        }
-        else
-        {
-            window.addEventListener("load", function()
-            {
-                init();
-            });
-        }
+        cssc.messages.push(index);
         
         return cssc;
     };
     
-    return cntrl(document.styleSheets, true);
+    return cntrl(document.styleSheets);
 })();
