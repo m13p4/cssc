@@ -1318,8 +1318,6 @@ var CSSC = (function()
         cssc.messages = [];
         cssc.vars = {};
         
-        cssc.messages.push(index);
-        
         return cssc;
     };
     
