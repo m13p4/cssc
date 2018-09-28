@@ -205,9 +205,7 @@ var CSSC = (function()
         helperGenSelector = function(pSel, sel)
         {
             if(sel.charAt(0) === "@" && pSel.charAt(0) === "@")
-            {
                 sel = sel.substr(1);
-            }
 
             if(sel.charAt(0) === "/")
                 sel = sel.substr(1);
@@ -244,68 +242,66 @@ var CSSC = (function()
         },
         helperParseVars = function(str, vars)
         {
-            var reg = /(^|[^\\\$])(\$[^\W]+)/, c=0,
-                match = str.match(reg), sStr, tmp;
+            var reg = /(^|[^\\\$])(\$[^\W]+)(\([^\)]+\))?/, c=0,
+                match = str.match(reg), sStr, tmp, v, i;
             
             if(!vars) vars = {};
             
-            while(match)
-            {
+            while(match && c < 100)
+            { c++;
+                
+                v = null;
                 sStr = match[2].substr(1);
-                tmp = new RegExp("\\"+match[2], "g");
                 
                 if(sStr in vars)
-                    str = str.replace(tmp, vars[sStr]);
+                    v = vars[sStr];
                 else if(sStr in cssc.vars)
-                    str = str.replace(tmp, cssc.vars[sStr]);
-                else
-                    str = str.replace(tmp, "\\\\"+match[2]);
+                    v = cssc.vars[sStr];
                 
-                if(c++ > 100) break;
+                tmp = helperElemType(v);
                 
-                match = str.match(reg)
+                if(tmp === "Function")
+                {
+                    tmp = [];
+                    
+                    if(!!match[3] && match[3].length > 0)
+                    {
+                        sStr = match[3].substr(1, match[3].length-2);
+                        sStr = sStr.split(",");
+                        
+                        for(i = 0; i < sStr.length; i++)
+                            tmp.push(helperParseVars(sStr[i], vars));
+                    }
+                    
+                    v = v.apply(null, tmp);
+                    
+                    str = str.replace(match[2]+match[3], v);
+                }
+                else str = str.replace((new RegExp("\\"+match[2], "g")), 
+                                        tmp === "String" ? v : "\\\\"+match[2]);
+                
+                match = str.match(reg);
             }
             
             return str;
         };
     
-        var init = function()
-        {
-            if(isInit) return;
-            
-            initElements(styleSheetsDOM);
-            
-            isInit = true;
-        },
-        initElements = function(toInit)
+        var initElements = function(toInit)
         {
             var ignVal;
             
-            if("cssRules" in toInit)
+            toInit = "length" in toInit ? toInit : [toInit];
+            
+            for(var i = 0; i < toInit.length; i++)
             {
-                ignVal = (toInit.ownerNode.getAttribute('data-cssc-ignore') || "").toLowerCase();
+                if("sheet" in toInit[i]) toInit[i] = toInit[i].sheet;
                 
-                if(ignVal !== "true" && ignVal !== "1")
-                {
-                    try
-                    {
-                        indexCssRules(toInit.cssRules, null);
-                    }
-                    catch(err)
-                    {
-                        if(cssc.conf.viewErr) console.log("Cannot init CSS from \""+toInit.href+"\"");
-                        cssc.messages.push("Cannot init CSS from \""+toInit.href+"\"");
-                    }
-                }
-            }
-            else if("length" in toInit)
-            {
-                for(var i = 0; i < toInit.length; i++)
+                if("cssRules" in toInit[i])
                 {
                     ignVal = (toInit[i].ownerNode.getAttribute('data-cssc-ignore') || "").toLowerCase();
-                    
+
                     if(ignVal === "true" || ignVal === "1") continue;
-                    
+
                     try
                     {
                         indexCssRules(toInit[i].cssRules, null);
@@ -417,7 +413,6 @@ var CSSC = (function()
             
             appendToElem = !!parent ? parent.indexElem : ownStyleElem.sheet;
             
-            
             var rulePos = appendToElem.cssRules.length,
                 ruleString = "";
         
@@ -492,10 +487,7 @@ var CSSC = (function()
         },
         getFromIndex = function(sel, indexElem)
         {
-            if(!isInit) init();
-            
             var _index = !!indexElem ? indexElem : index;
-
             return !!_index[sel] ? _index[sel] : null;
         },
         delFromIndex = function(sel, indexElem, toDel)
@@ -1235,11 +1227,11 @@ var CSSC = (function()
                 if(cssc.conf.viewErr) console.log(err);
                 cssc.messages.push(err);
             }
-        },
+        };
         cssc.export = function(type)
         {
             return handleSelection().export(type);
-        },
+        };
         cssc.update = function(sel)
         {
             var handler;
@@ -1257,7 +1249,11 @@ var CSSC = (function()
                     handler.update();
                 }
             }
-        },
+        };
+        cssc.init = function(toInit)
+        {
+            initElements(toInit);
+        };
         cssc.type = {
             'rule':       1, //check
             'charset':    2, //check
