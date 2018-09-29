@@ -242,7 +242,7 @@ var CSSC = (function()
         if(!str)  str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
-            c = 0, v, xyz, tmp, key, type;
+            c = 0, cc = 0, v, xyz, tmp, key, type, lKey;
 
         while(varStart >= 0 && c < 100)
         { c++;
@@ -260,6 +260,7 @@ var CSSC = (function()
 
                 if(key in vars)             v = vars[key];
                 else if(key in cssc.vars)   v = cssc.vars[key];
+                else                        v = "$"+key;
 
                 type = helperElemType(v);
 
@@ -289,10 +290,15 @@ var CSSC = (function()
                 else if(type === "Function") v = v();
 
                 str = str.substr(0, varStart) + v + str.substr(varEnd+1);
+                
+                if('$'+key === v) varStart--;
+                if(varStart === -1) break;
             }
             
-            varStart = str.lastIndexOf("$");
+            varStart = str.lastIndexOf("$", varStart);
         }
+        
+        console.log(c, varStart);
         
         return str;
     };
@@ -1227,15 +1233,7 @@ var CSSC = (function()
     };
     cssc.import = function(importObj)
     {
-        try
-        {
-            return handleImport(importObj);
-        }
-        catch (err)
-        {
-            if(cssc.conf.viewErr) console.log(err);
-            cssc.messages.push(err);
-        }
+        return handleImport(importObj);
     };
     cssc.export = function(type)
     {
@@ -1243,25 +1241,11 @@ var CSSC = (function()
     };
     cssc.update = function(sel)
     {
-        var handler;
-
-        if(!!sel)
-        {
-            handler = cssc(sel);
-            handler.update();
-        }
-        else
-        {
-            for(var i in index)
-            {
-                handler = ruleHandler(index[i].content);
-                handler.update();
-            }
-        }
+        return handleSelection(sel).update()
     };
     cssc.init = function(toInit)
     {
-        initElements(toInit);
+        return initElements(toInit);
     };
     cssc.type = {
         'rule':       1, //check
