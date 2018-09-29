@@ -242,7 +242,7 @@ var CSSC = (function()
         if(!str)  str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
-            c = 0, v, xyz, tmp, key, type;
+            c = 0, v, i, xyz, tmp, key, type;
 
         while(varStart >= 0 && c < 100)
         { c++;
@@ -252,23 +252,35 @@ var CSSC = (function()
                 v = null;
                 tmp = str.substr(varStart+1);
 
-                varEnd = tmp.search(/\W/); 
+                varEnd = tmp.search(/[^\w\.]/); 
 
-                if(varEnd < 0) varEnd = str.length;
-                else varEnd += varStart;
+                if(varEnd < 0)  varEnd  = str.length;
+                else            varEnd += varStart;
 
                 key = str.substr(varStart+1, varEnd-varStart);
-
-                if(key in vars)             v = vars[key];
-                else if(key in cssc.vars)   v = cssc.vars[key];
-                else                        v = "$"+key;
-
+                tmp = key.split(".");
+                
+                for(i = 0; i < tmp.length; i++)
+                {
+                    type = typeof v;
+                    
+                    if(i === 0 && tmp[i] in vars)                           v = vars[tmp[i]];
+                    else if(i === 0 && tmp[i] in cssc.vars)                 v = cssc.vars[tmp[i]];
+                    else if(v !== null && type === "object" && tmp[i] in v) v = v[tmp[i]];
+                    else if(type === "string" && tmp[i].match(/^[0-9]+$/))  v = v.charAt(tmp[i]);
+                    else
+                    {
+                        v = "$"+key;
+                        break;
+                    }
+                }
+                    
                 type = helperElemType(v);
-
-                if(str.charAt(varEnd+1) === "(" && type === "Function")
+                
+                if(type === "Function" && str.charAt(varEnd+1) === "(")
                 {
                     varEnd++;
-
+                    
                     tmp = varEnd;
                     xyz = varEnd;
 
@@ -1216,7 +1228,6 @@ var CSSC = (function()
             return this.pos(this.e.length-1);
         };
 
-
         return handler;
     },
     cssc = function(sel, hasProp)
@@ -1310,6 +1321,6 @@ var CSSC = (function()
     };
     cssc.messages = [];
     cssc.vars = {};
-
+    
     return cssc;
 })();
