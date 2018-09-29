@@ -242,10 +242,11 @@ var CSSC = (function()
         if(!str)  str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
-            c = 0, cc = 0, v, xyz, tmp, key, type, lKey;
+            c = 0, v, xyz, tmp, key, type;
 
         while(varStart >= 0 && c < 100)
         { c++;
+            
             if(str.charAt(varStart-1) !== "\\")
             {
                 v = null;
@@ -287,18 +288,17 @@ var CSSC = (function()
 
                     v   = v.apply(null, tmp);
                 }
-                else if(type === "Function") v = v();
+                else if(type === "Function") 
+                    v = v();
 
                 str = str.substr(0, varStart) + v + str.substr(varEnd+1);
                 
-                if('$'+key === v) varStart--;
+                if('$'+key === v)   varStart--;
                 if(varStart === -1) break;
             }
             
             varStart = str.lastIndexOf("$", varStart);
         }
-        
-        console.log(c, varStart);
         
         return str;
     };
