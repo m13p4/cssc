@@ -11,6 +11,7 @@ var CSSC = (function()
 { 'use strict';
     
     var index   = {},
+        indPos  = [],
         cssc    = null,
         ownStyleElem;
 
@@ -58,8 +59,7 @@ var CSSC = (function()
     {
         if(isFinite(value))
         {
-            if(value%1 === 0)
-                return value + "px";
+            if(value%1 === 0) return value + "px";
 
             return (Math.floor(value * 100) / 100) + "px";
         }
@@ -77,10 +77,8 @@ var CSSC = (function()
                     {
                         tmp = v[i];
 
-                        if(tmp%1 === 0) 
-                            v[i] = tmp + "px";
-                        else            
-                            v[i] = (Math.floor(tmp * 100) / 100) + "px";
+                        if(tmp%1 === 0) v[i] = tmp + "px";
+                        else v[i] = (Math.floor(tmp * 100) / 100) + "px";
                     }
                 }
 
@@ -118,8 +116,7 @@ var CSSC = (function()
 
         addTab = addTab || "";
 
-        if(helperElemType(obj) === "String")
-            return obj;
+        if(helperElemType(obj) === "String") return obj;
 
         for(key in obj)
         {
@@ -128,8 +125,7 @@ var CSSC = (function()
 
             if(elType === "Object" || elType === "Array")
             {
-                if(elType === "Object")
-                    obKey = [obj[key]];
+                if(elType === "Object") obKey = [obj[key]];
 
                 for(i = 0; i < obKey.length; i++)
                 {
@@ -144,7 +140,7 @@ var CSSC = (function()
                     if(tmp !== "")
                     {
                         if(type === cssc.export.type.min)
-                            cssText += key+"{"+tmp+"}";
+                            cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
                         else 
                             cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                     }
@@ -155,7 +151,7 @@ var CSSC = (function()
                 if(key === "@namespace" || key === "@import" || key === "@charset")
                     cssText += key+" "+obKey+";"+(type === cssc.export.type.min?'':"\n");
                 else if(type === cssc.export.type.min)
-                    cssText += key+":"+obKey+";";
+                    cssText += key+":"+obKey.trim().replace(/\s*,\s*/g,",")+";";
                 else cssText += (addTab.length < tab.length ? tab : addTab)
                              + key+": "+obKey+";\n";
             }
@@ -430,6 +426,9 @@ var CSSC = (function()
 
             indexC = 0;
         }
+        
+        //if(!parent) 
+            indPos.push(_index[indexKey].content[indexC]);
 
         //handle Media & KeyFrames Rules
         if(indexType === cssc.type.media 
@@ -629,12 +628,24 @@ var CSSC = (function()
 
         return ret;
     },
-    handleImport = function(importObj, parent)
+    handleImport = function(importObj, parent, isPreImport)
     {
-        var importElem, rule, handlerObj, key, i, tmp, rcl;
+        var importElem, rule, handlerObj, key, i, tmp, rcl, preImport = {};
 
+        if(!isPreImport && !parent)
+        {
+            if("@charset" in importObj)   preImport["@charset"]   = importObj["@charset"];
+            if("@import" in importObj)    preImport["@import"]    = importObj["@import"];
+            if("@namespace" in importObj) preImport["@namespace"] = importObj["@namespace"];
+            if("@font-face" in importObj) preImport["@font-face"] = importObj["@font-face"];
+
+            if(Object.keys(preImport).length > 0) handleImport(preImport, parent, true);
+        }
+        
         for(key in importObj)
         {
+            if(key in preImport) continue;
+            
             if(helperElemType(importObj[key]) === "Array")
                 importElem = importObj[key];
             else
@@ -1123,7 +1134,7 @@ var CSSC = (function()
                         if(typeof this.e[i].obj[key] === "object" 
                         && "length" in this.e[i].obj[key])
                         {
-                            if(type === cssc.export.type.notMDObject)
+                            if(type === cssc.export.type.notMDObject || type === cssc.export.type.array)
                             {
                                 obj[key] = null;
                                 delete obj[key];
@@ -1161,8 +1172,21 @@ var CSSC = (function()
 
 
                 if(Object.keys(obj).length <= 0) continue;
-
-                if(exportObj[this.e[i].selector])
+                
+                if(type === cssc.export.type.array)
+                {
+                    tmp = indPos.indexOf(this.e[i]);
+                    
+                    if(this.e[i].selector === "@charset")           tmp  = 0;
+                    else if(this.e[i].selector === "@import")       tmp++;
+                    else if(this.e[i].selector === "@namespace")    tmp += 100000;
+                    else if(this.e[i].selector === "@font-face")    tmp += 500000;
+                    else                                            tmp += 1000000;
+                    
+                    exportObj[tmp] = {};
+                    exportObj[tmp][this.e[i].selector] = obj;
+                }
+                else if(exportObj[this.e[i].selector])
                 {
                     if(!(typeof exportObj[this.e[i].selector] === "object" && "length" in exportObj[this.e[i].selector]))
                         exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
@@ -1174,22 +1198,15 @@ var CSSC = (function()
                 ignore.push(this.e[i]);
             }
 
+            if(type === cssc.export.type.array) return Object.values(exportObj);
+
             var sortExpObj = {};
-
-            if(!!exportObj['@charset'])
-                sortExpObj['@charset'] = exportObj['@charset'];
-
-            if(!!exportObj['@import'])
-                sortExpObj['@import'] = exportObj['@import'];
-
-            if(!!exportObj['@namespace'])
-                sortExpObj['@namespace'] = exportObj['@namespace'];
-
-            if(!!exportObj['@font-face'])
-                sortExpObj['@font-face'] = exportObj['@font-face'];
+            if(exportObj['@charset'])     sortExpObj['@charset'] = exportObj['@charset'];
+            if(exportObj['@import'])      sortExpObj['@import'] = exportObj['@import'];
+            if(exportObj['@namespace'])   sortExpObj['@namespace'] = exportObj['@namespace'];
+            if(exportObj['@font-face'])   sortExpObj['@font-face'] = exportObj['@font-face'];
 
             tmp = Object.keys(sortExpObj).length > 0;
-
             if(tmp) for(i in exportObj) if(!sortExpObj[i])
                 sortExpObj[i] = exportObj[i];
 
@@ -1200,7 +1217,7 @@ var CSSC = (function()
         };
         handler.parse = function(min)
         {
-            return this.export(min ? cssc.export.type.min : cssc.export.type.normal);
+            return this.export(!min ? cssc.export.type.normal : cssc.export.type.min);
         };
         handler.pos = function(p)
         {
@@ -1241,6 +1258,7 @@ var CSSC = (function()
     {
         return handleSelection().parse(min);
     };
+    cssc.parseVars = helperParseVars;
     cssc.update = function(sel)
     {
         return handleSelection(sel).update()
@@ -1304,7 +1322,8 @@ var CSSC = (function()
          // Object output
         'obj':          'obj',
         'object':       'object',
-        'notMDObject':  'objNMD' //not MultiDimensional Object
+        'notMDObject':  'objNMD', //not MultiDimensional Object
+        'array':        'array'
     };
     cssc.conf = {
         'styleId': "cssc-style",
@@ -1312,6 +1331,7 @@ var CSSC = (function()
     };
     cssc.messages = [];
     cssc.vars = {};
+    cssc.version = "1.0b";
     
     return cssc;
 })();
