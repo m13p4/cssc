@@ -242,72 +242,86 @@ var CSSC = (function()
         if(!str)  str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
-            c = 0, v, i, xyz, tmp, key, type;
+            c = 0, v, i, xyz, tmp, key, keySplit, type;
 
         while(varStart >= 0 && c < 100)
-        { c++;
+        { c++; v = null;
             
-            if(str.charAt(varStart-1) !== "\\")
+            tmp    = str.substr(varStart+1);
+            varEnd = tmp.search(/[^\w\.]/); 
+
+            if(varEnd < 0)  varEnd  = str.length;
+            else            varEnd += varStart;
+
+            key = str.substr(varStart+1, varEnd-varStart);
+            keySplit = key.split(".");
+
+            for(i = 0; i < keySplit.length; i++)
             {
-                v = null;
-                tmp = str.substr(varStart+1);
+                type = typeof v;
 
-                varEnd = tmp.search(/[^\w\.]/); 
-
-                if(varEnd < 0)  varEnd  = str.length;
-                else            varEnd += varStart;
-
-                key = str.substr(varStart+1, varEnd-varStart);
-                tmp = key.split(".");
-                
-                for(i = 0; i < tmp.length; i++)
+                if(i === 0 && keySplit[i] in vars)                           v = vars[keySplit[i]];
+                else if(i === 0 && keySplit[i] in cssc.vars)                 v = cssc.vars[keySplit[i]];
+                else if(v !== null && type === "object" && keySplit[i] in v) v = v[keySplit[i]];
+                else if(type === "string" && keySplit[i].match(/^[0-9]+$/))  v = v.charAt(keySplit[i]);
+                else
                 {
-                    type = typeof v;
-                    
-                    if(i === 0 && tmp[i] in vars)                           v = vars[tmp[i]];
-                    else if(i === 0 && tmp[i] in cssc.vars)                 v = cssc.vars[tmp[i]];
-                    else if(v !== null && type === "object" && tmp[i] in v) v = v[tmp[i]];
-                    else if(type === "string" && tmp[i].match(/^[0-9]+$/))  v = v.charAt(tmp[i]);
-                    else
+                    v = "$"+key;
+                    break;
+                }
+                
+                if(typeof v === "function")
+                {
+                    if(str.charAt(varEnd+1) === "(")
                     {
-                        v = "$"+key;
-                        break;
+                        varEnd++;
+
+                        tmp = varEnd;
+                        xyz = varEnd;
+
+                        while(true)
+                        {
+                            xyz = str.indexOf("(", xyz+1);
+                            varEnd = str.indexOf(")", varEnd+1);
+
+                            if(xyz > -1 && xyz < varEnd) continue;
+                            else break;
+                        }
+
+                        if(varEnd < 0) varEnd = str.length;
+
+                        tmp = str.substr(tmp+1, varEnd-tmp-1);
+                        tmp = tmp.trim().split(/\s*,\s*/);
+
+                        v   = v.apply(null, tmp);
+                    }
+                    else v = v();
+                    
+                    if(str.charAt(varEnd+1) === ".")
+                    {
+                        varEnd++;
+
+                        xyz    = varEnd;
+                        tmp    = str.substr(varEnd+1);
+                        varEnd = tmp.search(/[^\w\.]/); 
+                        tmp    = tmp.substr(0, varEnd > -1 ? varEnd : tmp.length);
+
+                        if(varEnd < 0)  varEnd  = str.length;
+                        else            varEnd += xyz;
+
+                        key = str.substr(varStart+1, varEnd-varStart);
+                        tmp = tmp.split(".");
+
+                        for(xyz = 0; xyz < tmp.length; xyz++)
+                            keySplit.push(tmp[xyz]);
                     }
                 }
-                    
-                type = helperElemType(v);
-                
-                if(type === "Function" && str.charAt(varEnd+1) === "(")
-                {
-                    varEnd++;
-                    
-                    tmp = varEnd;
-                    xyz = varEnd;
-
-                    while(true)
-                    {
-                        xyz = str.indexOf("(", xyz+1);
-                        varEnd = str.indexOf(")", varEnd+1);
-
-                        if(xyz > -1 && xyz < varEnd) continue;
-                        else break;
-                    }
-
-                    if(varEnd < 0) varEnd = str.length;
-
-                    tmp = str.substr(tmp+1, varEnd-tmp-1);
-                    tmp = tmp.trim().split(/\s*,\s*/);
-
-                    v   = v.apply(null, tmp);
-                }
-                else if(type === "Function") 
-                    v = v();
-
-                str = str.substr(0, varStart) + v + str.substr(varEnd+1);
-                
-                if('$'+key === v)   varStart--;
-                if(varStart === -1) break;
             }
+
+            str = str.substr(0, varStart) + v + str.substr(varEnd+1);
+
+            if('$'+key === v)   varStart--;
+            if(varStart < 0)    break;
             
             varStart = str.lastIndexOf("$", varStart);
         }
@@ -528,7 +542,6 @@ var CSSC = (function()
             if(!toDel) delete _index[sel];
             else if(tmp >= 0)
             {
-
                 _index[sel].content.splice(tmp, 1);
 
                 if(_index[sel].content.length <= 0)
@@ -545,10 +558,8 @@ var CSSC = (function()
         {
             var iElem = getFromIndex(sel, _index);
 
-            if(!!getElements)
-            {
-                return (!!iElem ? iElem.content : []);
-            }
+            if(!!getElements) return (!!iElem ? iElem.content : []);
+            
             return ruleHandler((!!iElem ? iElem.content : []), sel);
         }
         else if(selType === "RegExp")
@@ -556,20 +567,11 @@ var CSSC = (function()
             var matches = [], key;
 
             for(key in _index)
-            {
                 if(!!key.match(sel))
-                {
                     for(i = 0; i < _index[key].content.length; i++)
-                    {
                         matches.push(_index[key].content[i]);
-                    }
-                }
-            }
 
-            if(!!getElements)
-            {
-                return matches;
-            }
+            if(!!getElements) return matches;
 
             return ruleHandler(matches, sel);
         }
@@ -582,18 +584,11 @@ var CSSC = (function()
                 tmp = getFromIndex(sel[i], _index);
 
                 if(tmp !== null)
-                {
                     for(j = 0; j < tmp.content.length; j++)
-                    {
                         matches.push(tmp.content[j]);
-                    }
-                }
             }
 
-            if(!!getElements)
-            {
-                return matches;
-            }
+            if(!!getElements) return matches;
 
             return ruleHandler(matches, sel);
         }
@@ -602,17 +597,10 @@ var CSSC = (function()
             var matches = [], key;
 
             for(key in _index)
-            {
                 for(i = 0; i < _index[key].content.length; i++)
-                {
                     matches.push(_index[key].content[i]);
-                }
-            }
 
-            if(!!getElements)
-            {
-                return matches;
-            }
+            if(!!getElements) return matches;
 
             return ruleHandler(matches, sel);
         }
@@ -639,10 +627,7 @@ var CSSC = (function()
         }
 
         //return Elements with hasProp
-        if(!!hasProp)
-        {
-            return ret.has(hasProp);
-        }
+        if(!!hasProp) return ret.has(hasProp);
 
         return ret;
     },
@@ -1313,7 +1298,7 @@ var CSSC = (function()
          // Object output
         'obj':          'obj',
         'object':       'object',
-        'notMDObject':  'objNMDO' //not MultiDimensional Object
+        'notMDObject':  'objNMD' //not MultiDimensional Object
     };
     cssc.conf = {
         'styleId': "cssc-style",
@@ -1321,6 +1306,8 @@ var CSSC = (function()
     };
     cssc.messages = [];
     cssc.vars = {};
+    
+    cssc.messages.push(helperParseVars);
     
     return cssc;
 })();
