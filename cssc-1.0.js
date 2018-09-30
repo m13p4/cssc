@@ -544,8 +544,7 @@ var CSSC = (function()
             {
                 _index[sel].content.splice(tmp, 1);
 
-                if(_index[sel].content.length <= 0)
-                    delete _index[sel];
+                if(_index[sel].content.length <= 0) delete _index[sel];
             }
         }
     },
@@ -622,7 +621,6 @@ var CSSC = (function()
         else
         {
             handleImport(sel);
-
             return;
         }
 
@@ -1200,6 +1198,10 @@ var CSSC = (function()
 
             return tmp ? sortExpObj : exportObj;
         };
+        handler.parse = function(min)
+        {
+            return this.export(min ? cssc.export.type.min : cssc.export.type.normal);
+        };
         handler.pos = function(p)
         {
             return ruleHandler(this.e[p] ? [this.e[p]] : []);
@@ -1234,6 +1236,10 @@ var CSSC = (function()
     cssc.export = function(type)
     {
         return handleSelection().export(type);
+    };
+    cssc.parse = function(min)
+    {
+        return handleSelection().parse(min);
     };
     cssc.update = function(sel)
     {
@@ -1306,8 +1312,6 @@ var CSSC = (function()
     };
     cssc.messages = [];
     cssc.vars = {};
-    
-    cssc.messages.push(helperParseVars);
     
     return cssc;
 })();
