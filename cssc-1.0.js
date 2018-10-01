@@ -110,53 +110,71 @@ var CSSC = (function()
 
         return obj;
     },
-    helperCssTextFromObj = function(obj, addTab, type)
+    helperCssTextFromObj = function(obj, addTab, type, fromArrayParse)
     {
-        var cssText = "", tab = "  ", key, obKey, elType, i, tmp;
+        var cssText = "", tab = "  ", key, obKey, 
+            elType = helperElemType(obj), i, tmp;
 
         addTab = addTab || "";
 
-        if(helperElemType(obj) === "String") return obj;
-
-        for(key in obj)
+        if(elType === "String") return obj;
+        
+        if(elType === "Array")
+            for(i = 0; i < obj.length; i++)
+                cssText += helperCssTextFromObj(obj[i], addTab, type, true);
+        else
         {
-            obKey = obj[key];
-            elType = helperElemType(obj[key]);
-
-            if(elType === "Object" || elType === "Array")
+            for(key in obj)
             {
-                if(elType === "Object") obKey = [obj[key]];
+                obKey = obj[key];
+                elType = helperElemType(obj[key]);
 
-                for(i = 0; i < obKey.length; i++)
+                if(elType === "Object" || elType === "Array")
                 {
-                    if(key === "@namespace" || key === "@import" || key === "@charset")
+                    if(elType === "Array" && fromArrayParse)
                     {
-                        cssText += key+" "+obKey[i]+";"+(type === cssc.export.type.min?'':"\n");
-                        continue;
-                    }
-
-                    tmp = helperCssTextFromObj(obKey[i], addTab+tab, type);
-
-                    if(tmp !== "")
-                    {
+                        tmp = helperCssTextFromObj(obj[key], addTab+tab, type, fromArrayParse);
+                        
                         if(type === cssc.export.type.min)
                             cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
                         else 
                             cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                        
+                        continue;
+                    }
+                        
+                    if(elType === "Object") obKey = [obj[key]];
+
+                    for(i = 0; i < obKey.length; i++)
+                    {
+                        if(key === "@namespace" || key === "@import" || key === "@charset")
+                        {
+                            cssText += key+" "+obKey[i]+";"+(type === cssc.export.type.min?'':"\n");
+                            continue;
+                        }
+
+                        tmp = helperCssTextFromObj(obKey[i], addTab+tab, type, fromArrayParse);
+
+                        if(tmp !== "")
+                        {
+                            if(type === cssc.export.type.min)
+                                cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
+                            else 
+                                cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                        }
                     }
                 }
-            }
-            else
-            {
-                if(key === "@namespace" || key === "@import" || key === "@charset")
-                    cssText += key+" "+obKey+";"+(type === cssc.export.type.min?'':"\n");
-                else if(type === cssc.export.type.min)
-                    cssText += key+":"+obKey.trim().replace(/\s*,\s*/g,",")+";";
-                else cssText += (addTab.length < tab.length ? tab : addTab)
-                             + key+": "+obKey+";\n";
+                else
+                {
+                    if(key === "@namespace" || key === "@import" || key === "@charset")
+                        cssText += key+" "+obKey+";"+(type === cssc.export.type.min?'':"\n");
+                    else if(type === cssc.export.type.min)
+                        cssText += key+":"+obKey.trim().replace(/\s*,\s*/g,",")+";";
+                    else cssText += (addTab.length < tab.length ? tab : addTab)
+                                 + key+": "+obKey+";\n";
+                }
             }
         }
-
         return cssText;
     },
     helperFindPropInCssText = function(cssText, prop)
@@ -1113,7 +1131,7 @@ var CSSC = (function()
                 type = cssc.export.type.object;
 
             if(type === cssc.export.type.normal || type === cssc.export.type.min)
-                type = cssc.export.type.notMDObject;
+                type = cssc.export.type.array;
 
             if(!ignore) ignore = [];
 
@@ -1170,19 +1188,18 @@ var CSSC = (function()
                     obj = Object.assign(childHandler.export(type, ignore), obj);
                 }
 
-
                 if(Object.keys(obj).length <= 0) continue;
                 
                 if(type === cssc.export.type.array)
                 {
                     tmp = indPos.indexOf(this.e[i]);
                     
-                    if(this.e[i].selector === "@charset")           tmp  = 0;
-                    else if(this.e[i].selector === "@import")       tmp++;
-                    else if(this.e[i].selector === "@namespace")    tmp += 100000;
-                    else if(this.e[i].selector === "@font-face")    tmp += 500000;
-                    else                                            tmp += 1000000;
-                    
+                    if(this.e[i].selector === "@charset")        tmp  = 0;
+                    else if(this.e[i].selector === "@import")    tmp += 100000;
+                    else if(this.e[i].selector === "@namespace") tmp += 200000;
+                    else if(this.e[i].selector === "@font-face") tmp += 300000;
+                    else                                         tmp += 1000000;
+
                     exportObj[tmp] = {};
                     exportObj[tmp][this.e[i].selector] = obj;
                 }
@@ -1198,20 +1215,22 @@ var CSSC = (function()
                 ignore.push(this.e[i]);
             }
 
-            if(type === cssc.export.type.array) return Object.values(exportObj);
+            if(type === cssc.export.type.array) 
+            {   
+                exportObj = Object.values(exportObj);
+                if(type === _type) return exportObj;
+                else               return helperCssTextFromObj(exportObj, null, _type);
+            }
 
             var sortExpObj = {};
-            if(exportObj['@charset'])     sortExpObj['@charset'] = exportObj['@charset'];
-            if(exportObj['@import'])      sortExpObj['@import'] = exportObj['@import'];
+            if(exportObj['@charset'])     sortExpObj['@charset']   = exportObj['@charset'];
+            if(exportObj['@import'])      sortExpObj['@import']    = exportObj['@import'];
             if(exportObj['@namespace'])   sortExpObj['@namespace'] = exportObj['@namespace'];
             if(exportObj['@font-face'])   sortExpObj['@font-face'] = exportObj['@font-face'];
 
             tmp = Object.keys(sortExpObj).length > 0;
             if(tmp) for(i in exportObj) if(!sortExpObj[i])
                 sortExpObj[i] = exportObj[i];
-
-            if(_type === cssc.export.type.normal || _type === cssc.export.type.min)
-                return helperCssTextFromObj(tmp ? sortExpObj : exportObj, null, _type);
 
             return tmp ? sortExpObj : exportObj;
         };
@@ -1320,7 +1339,7 @@ var CSSC = (function()
         'min':     'minCss',
 
          // Object output
-        'obj':          'obj',
+        'obj':          'obj',    //default
         'object':       'object',
         'notMDObject':  'objNMD', //not MultiDimensional Object
         'array':        'array'
