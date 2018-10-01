@@ -1265,7 +1265,7 @@ var CSSC = (function()
             cssc.messages.push(err);
         }
     };
-    cssc.import = function(importObj)
+    cssc.import = function(importObj, vars)
     {
         return handleImport(importObj);
     };
@@ -1277,7 +1277,6 @@ var CSSC = (function()
     {
         return handleSelection().parse(min);
     };
-    cssc.parseVars = helperParseVars;
     cssc.update = function(sel)
     {
         return handleSelection(sel).update()
@@ -1286,6 +1285,21 @@ var CSSC = (function()
     {
         return initElements(toInit);
     };
+    
+    //helper functions
+    cssc.parseVars = function(txt, vars)
+    {
+        return helperParseVars(txt, vars);
+    };
+    cssc.objFromCss = function(css)
+    {
+        return helperObjFromCssText(css);
+    };
+    cssc.cssFromObj = function(obj, min)
+    {
+        return helperCssTextFromObj(obj, min ? "minCss" : "css");
+    };
+    
     cssc.type = {
         'rule':       1, //check
         'charset':    2, //check
