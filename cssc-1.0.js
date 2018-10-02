@@ -14,13 +14,12 @@ var CSSC = (function()
         indPos  = [],
         cssc, ownStyleElem;
 
-    var //helper
-    helperElemType = function(elem, returnFullValue)
+    function helperElemType(elem, returnFullValue)
     {
         if(returnFullValue) return Object.prototype.toString.call(elem);
         return Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
-    },
-    helperCreateNewStyleElem = function()
+    }
+    function helperCreateNewStyleElem()
     {
         if(!!document.getElementById(cssc.conf.styleId))
         {
@@ -47,14 +46,14 @@ var CSSC = (function()
         document.head.appendChild(styleElem);
 
         ownStyleElem = styleElem;
-    },
-    helperIsElemInOwnNode = function(elem)
+    }
+    function helperIsElemInOwnNode(elem)
     {
         return (elem && !!elem.parentStyleSheet 
                 && !!elem.parentStyleSheet.ownerNode 
                 && elem.parentStyleSheet.ownerNode.id === cssc.conf.styleId);
-    },
-    helperParseValue = function(value)
+    }
+    function helperParseValue(value)
     {
         if(isFinite(value))
         {
@@ -86,8 +85,8 @@ var CSSC = (function()
         }
 
         return value;
-    },
-    helperObjFromCssText = function(cssText)
+    }
+    function helperObjFromCssText(cssText)
     {
         if(cssText.match(/^@(namespace|import|charset)/))
             return cssText.replace(/(^@(namespace|import|charset)\s*|\s*;\s*$)/g, "");
@@ -108,8 +107,8 @@ var CSSC = (function()
         }
 
         return obj;
-    },
-    helperCssTextFromObj = function(obj, min, tabLen, addTab, fromArrayParse)
+    }
+    function helperCssTextFromObj(obj, min, tabLen, addTab, fromArrayParse)
     {
         var cssText = "", tab = (new Array((parseInt(tabLen)||2)+1).join(" ")), 
             key, obKey, elType = helperElemType(obj), i, tmp;
@@ -166,15 +165,15 @@ var CSSC = (function()
             }
         }
         return cssText;
-    },
-    helperFindPropInCssText = function(cssText, prop)
+    }
+    function helperFindPropInCssText(cssText, prop)
     {
         var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
             find = cssText.match(regExp);
 
         return !!find ? find[1].trim() : "";
-    },
-    helperSelectorType = function(sel)
+    }
+    function helperSelectorType(sel)
     {
         sel = sel.trim();
 
@@ -199,8 +198,8 @@ var CSSC = (function()
         }
 
         return (key in cssc.type) ? cssc.type[key] : -1;
-    },
-    helperGenSelector = function(pSel, sel)
+    }
+    function helperGenSelector(pSel, sel)
     {
         if(sel.charAt(0) === "@" && pSel.charAt(0) === "@")
             sel = sel.substr(1);
@@ -226,16 +225,16 @@ var CSSC = (function()
         }
 
         return pSel + sel;
-    },
-    helperDeleteCSSRule = function(cssRule)
+    }
+    function helperDeleteCSSRule(cssRule)
     {
         var parent = !!cssRule.parentRule ? cssRule.parentRule : cssRule.parentStyleSheet, i;
 
         for(i = 0; i < parent.cssRules.length; i++)
             if(parent.cssRules[i] === cssRule)
                 parent.deleteRule(i);
-    },
-    helperParseVars = function(str, vars)
+    }
+    function helperParseVars(str, vars)
     {
         if(!vars) vars = {};
         if(!str)  str = "";
@@ -325,8 +324,8 @@ var CSSC = (function()
         }
         
         return str;
-    },
-    helperReadOnlyProps = function(obj, propsObj)
+    }
+    function helperReadOnlyProps(obj, propsObj)
     {
         var key;
         
@@ -336,8 +335,8 @@ var CSSC = (function()
                 value: propsObj[key]
             });
         else for(key in propsObj) obj[key] = propsObj[key];
-    },
-    helperReadOnlyObj = function(obj)
+    }
+    function helperReadOnlyObj(obj)
     {
         if(!!Object.freeze) return Object.freeze(obj);
         else if(!!Object.defineProperty)
@@ -354,9 +353,9 @@ var CSSC = (function()
             return retObj;
         }
         else return obj;
-    };
+    }
 
-    var initElements = function(toInit)
+    function initElements(toInit)
     {
         var ignVal;
 
@@ -383,14 +382,14 @@ var CSSC = (function()
                 }
             }
         }
-    },
-    indexCssRules = function(cssRules, parent)
+    }
+    function indexCssRules(cssRules, parent)
     {
         for(var i = 0; i < cssRules.length; i++)
             if(!helperIsElemInOwnNode(cssRules[i]))
                 addToIndex(cssRules[i], parent);
-    },
-    addToIndex = function(cssRule, parent, csscSelector)
+    }
+    function addToIndex(cssRule, parent, csscSelector)
     {
         var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
             indexType = cssRule.type, 
@@ -469,8 +468,8 @@ var CSSC = (function()
             _index[indexKey].content[indexC].obj = helperObjFromCssText(cssRule.cssText);
 
         return _index[indexKey];
-    },
-    createRule = function(selector, property, value, parent)
+    }
+    function createRule(selector, property, value, parent)
     {
         var appendToElem;
 
@@ -549,13 +548,13 @@ var CSSC = (function()
         }
 
         return false;
-    },
-    getFromIndex = function(sel, indexElem)
+    }
+    function getFromIndex(sel, indexElem)
     {
         var _index = !!indexElem ? indexElem : index;
         return !!_index[sel] ? _index[sel] : null;
-    },
-    delFromIndex = function(sel, indexElem, toDel)
+    }
+    function delFromIndex(sel, indexElem, toDel)
     {
         var _index = !!indexElem ? indexElem : index, tmp;
 
@@ -571,8 +570,8 @@ var CSSC = (function()
                 if(_index[sel].content.length <= 0) delete _index[sel];
             }
         }
-    },
-    getHandler = function(sel, indexElem, getElements)
+    }
+    function getHandler(sel, indexElem, getElements)
     {
         var _index = !!indexElem ? indexElem : index,
             selType = helperElemType(sel); 
@@ -629,8 +628,8 @@ var CSSC = (function()
         }
 
         return null;
-    },
-    handleSelection = function(sel, hasProp, indexElem, getElements)
+    }
+    function handleSelection(sel, hasProp, indexElem, getElements)
     {
         var ret, selType = helperElemType(sel);
 
@@ -652,15 +651,15 @@ var CSSC = (function()
         if(!!hasProp) return ret.has(hasProp);
 
         return ret;
-    },
-    handleImport = function(importObj, parent, isPreImport)
+    }
+    function handleImport(importObj, parent, isPreImport)
     {
-        var importElem, rule, handlerObj, key, i, tmp, rcl, preImport = {};
+        var importElem, rule, handlerObj, key, i, tmp, rlk, preImport = {};
 
         if(!isPreImport && !parent)
         {
-            if("@charset" in importObj)   preImport["@charset"]   = importObj["@charset"];
-            if("@import" in importObj)    preImport["@import"]    = importObj["@import"];
+            if("@charset"   in importObj) preImport["@charset"]   = importObj["@charset"];
+            if("@import"    in importObj) preImport["@import"]    = importObj["@import"];
             if("@namespace" in importObj) preImport["@namespace"] = importObj["@namespace"];
             if("@font-face" in importObj) preImport["@font-face"] = importObj["@font-face"];
 
@@ -683,9 +682,7 @@ var CSSC = (function()
                 if(key.charAt(0) === "@")
                 {
                     if(key === "@font-face" || key === "@namespace" || key === "@import" || key === "@charset")
-                    {
                         createRule(key, importElem[i], null, parent);
-                    }
                     else if(key.match(/^@(media|keyframes|supports)/) 
                             || (parent && (parent.type === cssc.type.media
                                         || parent.type === cssc.type.keyframes
@@ -705,21 +702,16 @@ var CSSC = (function()
 
                         rule = createRule(key, null, null, tmp);
 
-                        if(rule && rule.content[rule.content.length - 1].selector === rule.content[rule.content.length - 1].csscSelector)
-                        {
-                            handleImport(importElem[i], rule.content[rule.content.length - 1]);
-                        }
+                        rlk = (rule ? rule.content.length : 0) - 1;
+
+                        if(rlk > -1 && rule.content[rlk].selector === rule.content[rlk].csscSelector)
+                            handleImport(importElem[i], rule.content[rlk]);
                         else
                         {
-                            if(rule)
+                            if(rlk > -1)
                             {
-                                rcl = rule.content.length - 1;
-
-                                helperDeleteCSSRule(rule.content[rcl].indexElem);
-
-                                delFromIndex(rule.content[rcl].selector, 
-                                             rule.content[rcl].parent, 
-                                             rule.content[rcl]);
+                                helperDeleteCSSRule(rule.content[rlk].indexElem);
+                                delFromIndex(rule.content[rlk].selector, rule.content[rlk].parent, rule.content[rlk]);
                             }
 
                             tmp = {
@@ -737,8 +729,7 @@ var CSSC = (function()
 
                         if(!!parent)
                         {
-                            if(!parent.obj[handlerObj])
-                                parent.obj[handlerObj] = [];
+                            if(!parent.obj[handlerObj]) parent.obj[handlerObj] = [];
 
                             parent.obj[handlerObj].push(rule.content[rule.content.length - 1]);
                         }
@@ -757,11 +748,12 @@ var CSSC = (function()
                 }
             }
         }
-    },
-    ruleHandler = function(indexElemArr, sel, fromHas, parents)
+    }
+    function ruleHandler(indexElemArr, sel, fromHas, parents)
     {
-        var handler,
-        createRuleIfNotExists = function()
+        var handler;
+        
+        function createRuleIfNotExists()
         {
             if(handler.e.length <= 0 && !fromHas && helperElemType(sel) === "String")
             {
@@ -787,7 +779,7 @@ var CSSC = (function()
                 handler.e = contentElems;
                 handler.eLength = contentElems.length;
             }
-        };
+        }
 
         handler = function(sel, hasProp)
         {
@@ -801,8 +793,7 @@ var CSSC = (function()
                 {
                     tmp = handleSelection(sel, hasProp, handler.e[i].children, true);
 
-                    for(j = 0; j < tmp.length; j++)
-                        elArr.push(tmp[j]);
+                    for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
                 }
             }
             return ruleHandler(elArr, sel, null, handler.e);
@@ -844,17 +835,17 @@ var CSSC = (function()
                         {
                             tmp = null;
 
-                            if(prop.charAt(0) === "@")
+                            if(prop.charAt(0) === "@") newSel = this.e[pos].parent ? 
+                                helperGenSelector(this.e[pos].parent.selector, prop) : prop;
+                            
+                            rule = createRule(newSel, null, null, this.e[pos].parent);
+
+                            if(rule)
                             {
-                                handlerObj = getHandler(
-                                                    this.e[pos].parent ? 
-                                                        helperGenSelector(this.e[pos].parent.selector, prop) 
-                                                    : prop);
-                                handlerObj = handlerObj(this.e[pos].selector);
-
+                                tmp = rule.content[rule.content.length-1];
+                                
+                                handlerObj = ruleHandler([tmp], key);
                                 handlerObj.set(valArr[i]);
-
-                                tmp = handlerObj.e[handlerObj.e.length-1];
 
                                 if(this.e[pos].parent)
                                 {
@@ -866,19 +857,7 @@ var CSSC = (function()
                                     pObj.obj[prop].push(tmp.parent);
                                 }
                             }
-                            else
-                            {
-                                rule = createRule(newSel, null, null, this.e[pos].parent);
-
-                                if(rule)
-                                {
-                                    handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
-                                    handlerObj.set(valArr[i]);
-
-                                    tmp = rule.content[rule.content.length-1]
-                                }
-                            }
-
+                            
                             if(tmp !== null)
                             {
                                 if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
@@ -1259,7 +1238,8 @@ var CSSC = (function()
         };
 
         return handler;
-    },
+    }
+    
     cssc = function(sel, hasProp)
     {
         try
@@ -1272,7 +1252,6 @@ var CSSC = (function()
             cssc.messages.push(err);
         }
     };
-    
     helperReadOnlyProps(cssc, {
         version: "1.0b",
         
@@ -1342,7 +1321,6 @@ var CSSC = (function()
             'destroy':        "destroy"
         })
     });
-    
     helperReadOnlyProps(cssc.export, {
         type: helperReadOnlyObj({
             // Text output
