@@ -133,6 +133,8 @@ var CSSC = (function()
                     {
                         tmp = helperCssTextFromObj(obj[key], min, tabLen, addTab+tab, fromArrayParse);
                         
+                        if(tmp === "") continue;
+                        
                         if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
                         else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                         
@@ -151,11 +153,10 @@ var CSSC = (function()
 
                         tmp = helperCssTextFromObj(obKey[i], min, tabLen, addTab+tab, fromArrayParse);
 
-                        if(tmp !== "")
-                        {
-                            if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
-                            else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
-                        }
+                        if(tmp === "") continue;
+                        
+                        if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
+                        else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                     }
                 }
                 else if(key === "@namespace" || key === "@import" || key === "@charset")
@@ -324,6 +325,35 @@ var CSSC = (function()
         }
         
         return str;
+    },
+    helperReadOnlyProps = function(obj, propsObj)
+    {
+        var key;
+        
+        if(!!Object.defineProperty) for(key in propsObj)
+            Object.defineProperty(obj, key, {
+                enumerable: true,
+                value: propsObj[key]
+            });
+        else for(key in propsObj) obj[key] = propsObj[key];
+    },
+    helperReadOnlyObj = function(obj)
+    {
+        if(!!Object.freeze) return Object.freeze(obj);
+        else if(!!Object.defineProperty)
+        {
+            var retObj = {}, key;
+
+            for(key in obj) Object.defineProperty(retObj, key, {
+                enumerable: true,
+                value: obj[key]
+            });
+            
+            if(!!Object.preventExtensions) Object.preventExtensions(retObj);
+            
+            return retObj;
+        }
+        else return obj;
     };
 
     var initElements = function(toInit)
@@ -1242,106 +1272,93 @@ var CSSC = (function()
             cssc.messages.push(err);
         }
     };
-    cssc.import = function(importObj, vars)
-    {
-        return handleImport(importObj);
-    };
-    cssc.export = function(type)
-    {
-        return handleSelection().export(type);
-    };
-    cssc.parse = function(min)
-    {
-        return handleSelection().parse(min);
-    };
-    cssc.update = function(sel)
-    {
-        return handleSelection(sel).update()
-    };
-    cssc.init = function(toInit)
-    {
-        return initElements(toInit);
-    };
     
-    //helper functions
-    cssc.parseVars = function(txt, vars)
-    {
-        return helperParseVars(txt, vars);
-    };
-    cssc.objFromCss = function(css)
-    {
-        return helperObjFromCssText(css);
-    };
-    cssc.cssFromObj = function(obj, min, tabLen)
-    {
-        return helperCssTextFromObj(obj, min, tabLen);
-    };
+    helperReadOnlyProps(cssc, {
+        version: "1.0b",
+        
+        //core functions
+        'import': function(importObj, vars){ return handleImport(importObj); },
+        'export': function(type){ return handleSelection().export(type); },
+        'parse':  function(min){ return handleSelection().parse(min); },
+        'update': function(sel){ return handleSelection(sel).update(); },
+        'init':   function(toInit){ return initElements(toInit); },
+
+        //helper functions
+        parseVars:  function(txt, vars){ return helperParseVars(txt, vars); },
+        objFromCss: function(css){ return helperObjFromCssText(css); },
+        cssFromObj: function(obj, min, tabLen){ return helperCssTextFromObj(obj, min, tabLen); },
+        
+        conf: helperReadOnlyObj({
+            'styleId': "cssc-style",
+            'viewErr': true
+        }),
+        
+        "type": helperReadOnlyObj({
+            'rule':       1, //check
+            'charset':    2, //check
+            'import':     3, //check
+            'media':      4, //check
+            'fontFace':   5, //check
+            'page':       6, //check
+            'keyframes':  7, //check
+            'keyframe':   8, //check
+
+            'namespace':      10, //check
+            'counterStyle':   11, 
+            'supports':       12, //check
+
+            'fontFeatureValues': 14,
+            'viewport':          15,
+
+            names: helperReadOnlyObj({
+                1:  "rule",
+                2:  "charset",
+                3:  "import",
+                4:  "media",
+                5:  "font-face",
+                6:  "page",
+                7:  "keyframes",
+                8:  "keyframe",
+
+                10: "namespace",
+                11: "counter-style",
+                12: "supports",
+
+                14: "font-feature-values",
+                15: "viewport"
+            })
+        }),
+        
+        "events": helperReadOnlyObj({
+            'beforeChange':   "beforechange",
+            'change':         "change",
+            'beforeSet':      "beforeset",
+            'set':            "set",
+            'beforeCreate':   "beforecreate",
+            'create':         "create",
+            'beforeDelete':   "beforedelete",
+            'delete':         "delete",
+            'beforeDestroy':  "beforedestroy",
+            'destroy':        "destroy"
+        })
+    });
     
-    cssc.type = {
-        'rule':       1, //check
-        'charset':    2, //check
-        'import':     3, //check
-        'media':      4, //check
-        'fontFace':   5, //check
-        'page':       6, //check
-        'keyframes':  7, //check
-        'keyframe':   8, //check
+    helperReadOnlyProps(cssc.export, {
+        type: helperReadOnlyObj({
+            // Text output
+           'normal':  'css',
+           'min':     'minCss',
 
-        'namespace':      10, //check
-        'counterStyle':   11, 
-        'supports':       12, //check
-
-        'fontFeatureValues': 14,
-        'viewport':          15,
-
-        names: {
-            1:  "rule",
-            2:  "charset",
-            3:  "import",
-            4:  "media",
-            5:  "font-face",
-            6:  "page",
-            7:  "keyframes",
-            8:  "keyframe",
-
-            10: "namespace",
-            11: "counter-style",
-            12: "supports",
-
-            14: "font-feature-values",
-            15: "viewport"
-        }
-    };
-    cssc.events = {
-        'beforeChange':   "beforechange",
-        'change':         "change",
-        'beforeSet':      "beforeset",
-        'set':            "set",
-        'beforeCreate':   "beforecreate",
-        'create':         "create",
-        'beforeDelete':   "beforedelete",
-        'delete':         "delete",
-        'beforeDestroy':  "beforedestroy",
-        'destroy':        "destroy"
-    };
-    cssc.export.type = {
-         // Text output
-        'normal':  'css',
-        'min':     'minCss',
-
-         // Object output
-        'obj':          'obj',    //default
-        'object':       'object',
-        'notMDObject':  'objNMD', //not MultiDimensional Object
-        'array':        'array'
-    };
-    cssc.conf = {
-        'styleId': "cssc-style",
-        'viewErr': true
-    };
+            // Object output
+           'obj':          'obj',    //default
+           'object':       'object',
+           'notMDObject':  'objNMD', //not MultiDimensional Object
+           'array':        'array'
+       })
+    });
+    
     cssc.messages = [];
     cssc.vars = {};
-    cssc.version = "1.0b";
     
     return cssc;
 })();
