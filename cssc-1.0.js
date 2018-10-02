@@ -828,26 +828,29 @@ var CSSC = (function()
 
                     if(valType === "Object" || valType === "Array")
                     {
-                        var newSel = helperGenSelector(this.e[pos].selector, prop), pObj,
-                            valArr = valType === 'Object' ? [val] : val, rule, i, handlerObj;
+                        var isAtRule = prop.charAt(0) === "@", pObj, rule, rlp,
+                            valArr = valType === 'Object' ? [val] : val, i, handlerObj,
+                            newSel = helperGenSelector(this.e[pos].selector, prop);
+
+                        if(isAtRule) newSel = this.e[pos].parent ? helperGenSelector(this.e[pos].parent.selector, prop) : prop;
 
                         for(i = 0; i < valArr.length; i++)
                         {
-                            tmp = null;
-
-                            if(prop.charAt(0) === "@") newSel = this.e[pos].parent ? 
-                                helperGenSelector(this.e[pos].parent.selector, prop) : prop;
-                            
-                            rule = createRule(newSel, null, null, this.e[pos].parent);
+                            rule = createRule(newSel, null, null, isAtRule ? false : this.e[pos].parent);
 
                             if(rule)
                             {
-                                tmp = rule.content[rule.content.length-1];
+                                rlp = rule.content.length-1;
                                 
-                                handlerObj = ruleHandler([tmp], key);
+                                handlerObj = ruleHandler([rule.content[rlp]], newSel);
+                                if(isAtRule) 
+                                    handlerObj = handlerObj(this.e[pos].selector);
+                                
                                 handlerObj.set(valArr[i]);
 
-                                if(this.e[pos].parent)
+                                tmp = handlerObj.e[handlerObj.e.length-1];
+                                
+                                if(isAtRule && this.e[pos].parent)
                                 {
                                     pObj = this.e[pos].parent;
 
@@ -856,10 +859,7 @@ var CSSC = (function()
 
                                     pObj.obj[prop].push(tmp.parent);
                                 }
-                            }
-                            
-                            if(tmp !== null)
-                            {
+                                
                                 if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
                                     this.e[pos].obj[prop] = [];
                                 this.e[pos].obj[prop].push(tmp);
@@ -950,7 +950,7 @@ var CSSC = (function()
         };
         handler.get = function(prop, returnAllProps)
         {
-            if(!prop) return this.export(cssc.export.type.object);
+            if(!prop) return this.export(cssc.expType.object);
 
             var arrToRet = [], propToRet = "", tmp, i, expObj;
 
@@ -967,7 +967,7 @@ var CSSC = (function()
                     if(helperElemType(tmp) === "Array")
                     {
                         expObj = ruleHandler(tmp);
-                        tmp = expObj.export(cssc.export.type.object);
+                        tmp = expObj.export(cssc.expType.object);
                     }
                 }
 
@@ -1113,11 +1113,11 @@ var CSSC = (function()
         {
             var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
 
-            if(type === cssc.export.type.obj)
-                type = cssc.export.type.object;
+            if(type === cssc.expType.obj)
+                type = cssc.expType.object;
 
-            if(type === cssc.export.type.normal || type === cssc.export.type.min)
-                type = cssc.export.type.array;
+            if(type === cssc.expType.normal || type === cssc.expType.min)
+                type = cssc.expType.array;
 
             if(!ignore) ignore = [];
 
@@ -1138,7 +1138,7 @@ var CSSC = (function()
                         if(typeof this.e[i].obj[key] === "object" 
                         && "length" in this.e[i].obj[key])
                         {
-                            if(type === cssc.export.type.notMDObject || type === cssc.export.type.array)
+                            if(type === cssc.expType.notMDObject || type === cssc.expType.array)
                             {
                                 obj[key] = null;
                                 delete obj[key];
@@ -1176,7 +1176,7 @@ var CSSC = (function()
 
                 if(Object.keys(obj).length <= 0) continue;
                 
-                if(type === cssc.export.type.array)
+                if(type === cssc.expType.array)
                 {
                     tmp = indPos.indexOf(this.e[i]);
                     
@@ -1201,11 +1201,11 @@ var CSSC = (function()
                 ignore.push(this.e[i]);
             }
 
-            if(type === cssc.export.type.array) 
+            if(type === cssc.expType.array) 
             {   
                 exportObj = Object.values(exportObj);
                 if(type === _type) return exportObj;
-                else               return helperCssTextFromObj(exportObj, _type===cssc.export.type.min);
+                else               return helperCssTextFromObj(exportObj, _type===cssc.expType.min);
             }
 
             var sortExpObj = {};
@@ -1222,7 +1222,7 @@ var CSSC = (function()
         };
         handler.parse = function(min)
         {
-            return this.export(!min ? cssc.export.type.normal : cssc.export.type.min);
+            return this.export(!min ? cssc.expType.normal : cssc.expType.min);
         };
         handler.pos = function(p)
         {
@@ -1252,15 +1252,16 @@ var CSSC = (function()
             cssc.messages.push(err);
         }
     };
+    cssc.export = {};
     helperReadOnlyProps(cssc, {
         version: "1.0b",
         
         //core functions
+        'init':   function(toInit){ return initElements(toInit); },
         'import': function(importObj, vars){ return handleImport(importObj); },
         'export': function(type){ return handleSelection().export(type); },
         'parse':  function(min){ return handleSelection().parse(min); },
         'update': function(sel){ return handleSelection(sel).update(); },
-        'init':   function(toInit){ return initElements(toInit); },
 
         //helper functions
         parseVars:  function(txt, vars){ return helperParseVars(txt, vars); },
@@ -1308,6 +1309,18 @@ var CSSC = (function()
             })
         }),
         
+        expType: helperReadOnlyObj({
+            // Text output
+           'normal':  'css',
+           'min':     'minCss',
+
+            // Object output
+           'obj':          'obj',    //default
+           'object':       'object',
+           'notMDObject':  'objNMD', //not MultiDimensional Object
+           'array':        'array'
+       }),
+        
         "events": helperReadOnlyObj({
             'beforeChange':   "beforechange",
             'change':         "change",
@@ -1320,19 +1333,6 @@ var CSSC = (function()
             'beforeDestroy':  "beforedestroy",
             'destroy':        "destroy"
         })
-    });
-    helperReadOnlyProps(cssc.export, {
-        type: helperReadOnlyObj({
-            // Text output
-           'normal':  'css',
-           'min':     'minCss',
-
-            // Object output
-           'obj':          'obj',    //default
-           'object':       'object',
-           'notMDObject':  'objNMD', //not MultiDimensional Object
-           'array':        'array'
-       })
     });
     
     cssc.messages = [];
