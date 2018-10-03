@@ -317,12 +317,12 @@ var CSSC = (function()
             }
             str = str.substr(0, varStart) + v + str.substr(varEnd+1);
 
-            if('$'+key === v)   varStart--;
+            if('$'+key === v)   varEnd = varStart-1;
             if(varStart < 0)    break;
             
-            varStart = str.lastIndexOf("$", varStart);
+            varStart = str.lastIndexOf("$", varEnd); //, varStart);
         }
-        
+        //console.log(c);
         return str;
     }
     function helperReadOnlyProps(obj, propsObj)
@@ -341,18 +341,18 @@ var CSSC = (function()
         if(!!Object.freeze) return Object.freeze(obj);
         else if(!!Object.defineProperty)
         {
-            var retObj = {}, key;
+            var tmp = {}, key;
 
-            for(key in obj) Object.defineProperty(retObj, key, {
+            for(key in obj) Object.defineProperty(tmp, key, {
                 enumerable: true,
                 value: obj[key]
             });
             
-            if(!!Object.preventExtensions) Object.preventExtensions(retObj);
-            
-            return retObj;
+            obj = tmp;
         }
-        else return obj;
+        
+        if(!!Object.preventExtensions) Object.preventExtensions(obj);
+        return obj;
     }
 
     function initElements(toInit)
@@ -638,14 +638,9 @@ var CSSC = (function()
         || selType === "Array"
         || selType === "Null"
         || selType === "Undefined")
-        {
             ret = getHandler(sel, indexElem, getElements);
-        }
-        else
-        {
-            handleImport(sel);
-            return;
-        }
+        
+        else return handleImport(sel);
 
         //return Elements with hasProp
         if(!!hasProp) return ret.has(hasProp);
@@ -804,6 +799,8 @@ var CSSC = (function()
 
         handler.set = function(prop, val, pos)
         {
+            createRuleIfNotExists();
+            
             if(typeof pos === "number") // single Set
             {
                 if(this.e[pos].indexElem.type === cssc.type.fontFace)
@@ -817,7 +814,7 @@ var CSSC = (function()
 
                 prop = helperParseVars(prop);
 
-                if(!!this.e[pos].children)
+                if(this.e[pos].children)
                 {
                     var childHandler = getHandler(null, this.e[pos].children);
                     childHandler.set(prop, val);
@@ -902,8 +899,6 @@ var CSSC = (function()
                 else if(propType === "Function")
                     props = prop();
 
-                createRuleIfNotExists();
-
                 if(propType === "Array" 
                 || (propType === "Function" && helperElemType(props) === "Array"))
                 {
@@ -918,32 +913,20 @@ var CSSC = (function()
                             break;
                     }
                 }
-                else
+                else for(i = 0; i < this.e.length; i++)
                 {
-                    for(i = 0; i < this.e.length; i++)
+                    if(propType === "Object" && propLen > 0) 
+                        for(key in prop)
+                            this.set(key, prop[key], i);
+                    else if(propType === "Function")
                     {
-                        if(propType === "Object" && propLen > 0) 
-                        {
-                            for(key in prop)
-                            {
-                                this.set(key, prop[key], i);
-                            }
-                        }
-                        else if(propType === "Function")
-                        {
-                            for(key in props)
-                            {
-                                this.set(key, props[key], i);
-                            }
+                        for(key in props)
+                            this.set(key, props[key], i);
 
-                            //add to updatable
-                            this.e[i].indexElem._update = prop;
-                        }
-                        else
-                        {
-                            this.set(prop, val, i);
-                        }
+                        //add to updatable
+                        this.e[i].indexElem._update = prop;
                     }
+                    else this.set(prop, val, i);
                 }
             }
             return this;
@@ -989,6 +972,7 @@ var CSSC = (function()
         };
         handler.has = function(prop)
         {
+            //@todo: new .has function
             var matches = [], propVal, i, tmp,
                 propType = helperElemType(prop);
 
@@ -1031,15 +1015,8 @@ var CSSC = (function()
                 {
                     m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g);
 
-                    if(!!m)
-                    {
-                        for(j = 0; j < m.length; j++)
-                        {
-                            tmp = m[j].match(prop);
-
-                            if(!!tmp) matches.push(this.e[i]);
-                        }
-                    }
+                    if(m) for(j = 0; j < m.length; j++) if(m[j].match(prop)) 
+                        matches.push(this.e[i]);
                 }
             }
 
@@ -1055,58 +1032,38 @@ var CSSC = (function()
                 {
                     tmp = this.e[i].indexElem._update();
 
-                    for(key in tmp)
-                        this.set(key, tmp[key], i);
+                    for(key in tmp) this.set(key, tmp[key], i);
                 }
 
                 if(!!this.e[i].children)
-                {
-                    var childHandler = getHandler(null, this.e[i].children);
-                    childHandler.update();
-                }
-                else if(!!this.e[i].indexElem.style)
-                {
+                    getHandler(null, this.e[i].children).update();
+                
+                else if(this.e[i].indexElem.style)
                     for(key in this.e[i].indexElem.style._update)
-                    {
-                        tmp = this.e[i].indexElem.style._update[key]();
-                        this.set(key, tmp, i);
-                    }
-                }
+                        this.set(key, this.e[i].indexElem.style._update[key](), i);
             }
             return this;
         };
         handler.delete = function(prop)
         {
-            var i;
+            var isUndef = typeof prop === "undefined", i;
 
-            if(typeof prop === "undefined")
+            if(isUndef) for(i = 0; i < this.e.length; i++)
             {
-                for(i = 0; i < this.e.length; i++)
-                {
-                    helperDeleteCSSRule(this.e[i].indexElem);
+                if(this.e[i].children)
+                    getHandler(null, this.e[i].children).delete(prop);
 
-                    delFromIndex(this.e[i].selector, (!!this.e[i].parent ? this.e[i].parent : null), this.e[i]);
-
-                    if(!!this.e[i].children)
-                    {
-                        var childHandler = getHandler(null, this.e[i].children);
-                        childHandler.delete(prop);
-                    }
-                }
+                helperDeleteCSSRule(this.e[i].indexElem);
+                delFromIndex(this.e[i].selector, (!!this.e[i].parent ? this.e[i].parent : null), this.e[i]);
             }
-            else
+            else for(i = 0; i < this.e.length; i++)
             {
-                for(i = 0; i < this.e.length; i++)
-                {
-                    this.e[i].indexElem.style[prop] = "";
+                this.e[i].indexElem.style[prop] = "";
 
-                    if(!!this.e[i].children)
-                    {
-                        var childHandler = getHandler(null, this.e[i].children);
-                        childHandler.delete(prop);
-                    }
-                }
+                if(this.e[i].children)
+                    getHandler(null, this.e[i].children).delete(prop);
             }
+            
             return this;
         };
         handler.export = function(type, ignore)
@@ -1168,7 +1125,7 @@ var CSSC = (function()
                     }
                 }
 
-                if(!!this.e[i].children)
+                if(this.e[i].children)
                 {
                     childHandler = getHandler(null, this.e[i].children);
                     obj = Object.assign(childHandler.export(type, ignore), obj);
@@ -1180,7 +1137,7 @@ var CSSC = (function()
                 {
                     tmp = indPos.indexOf(this.e[i]);
                     
-                    if(this.e[i].selector === "@charset")        tmp  = 0;
+                    if     (this.e[i].selector === "@charset")   tmp  = 0;
                     else if(this.e[i].selector === "@import")    tmp += 100000;
                     else if(this.e[i].selector === "@namespace") tmp += 200000;
                     else if(this.e[i].selector === "@font-face") tmp += 300000;
@@ -1204,15 +1161,14 @@ var CSSC = (function()
             if(type === cssc.expType.array) 
             {   
                 exportObj = Object.values(exportObj);
-                if(type === _type) return exportObj;
-                else               return helperCssTextFromObj(exportObj, _type===cssc.expType.min);
+                return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===cssc.expType.min);
             }
 
             var sortExpObj = {};
-            if(exportObj['@charset'])     sortExpObj['@charset']   = exportObj['@charset'];
-            if(exportObj['@import'])      sortExpObj['@import']    = exportObj['@import'];
-            if(exportObj['@namespace'])   sortExpObj['@namespace'] = exportObj['@namespace'];
-            if(exportObj['@font-face'])   sortExpObj['@font-face'] = exportObj['@font-face'];
+            if(exportObj['@charset'])   sortExpObj['@charset']   = exportObj['@charset'];
+            if(exportObj['@import'])    sortExpObj['@import']    = exportObj['@import'];
+            if(exportObj['@namespace']) sortExpObj['@namespace'] = exportObj['@namespace'];
+            if(exportObj['@font-face']) sortExpObj['@font-face'] = exportObj['@font-face'];
 
             tmp = Object.keys(sortExpObj).length > 0;
             if(tmp) for(i in exportObj) if(!sortExpObj[i])
@@ -1252,7 +1208,6 @@ var CSSC = (function()
             cssc.messages.push(err);
         }
     };
-    cssc.export = {};
     helperReadOnlyProps(cssc, {
         version: "1.0b",
         
@@ -1319,7 +1274,7 @@ var CSSC = (function()
            'object':       'object',
            'notMDObject':  'objNMD', //not MultiDimensional Object
            'array':        'array'
-       }),
+        }),
         
         "events": helperReadOnlyObj({
             'beforeChange':   "beforechange",
