@@ -302,7 +302,7 @@ var CSSC = (function()
                         xyz    = varEnd;
                         tmp    = str.substr(varEnd+1);
                         varEnd = tmp.search(/[^\w\.]/); 
-                        tmp    = tmp.substr(0, varEnd > -1 ? varEnd : tmp.length);
+                        tmp    = tmp.substr(0, varEnd < 0 ? tmp.length : varEnd);
 
                         if(varEnd < 0)  varEnd  = str.length;
                         else            varEnd += xyz;
@@ -317,10 +317,10 @@ var CSSC = (function()
             }
             str = str.substr(0, varStart) + v + str.substr(varEnd+1);
 
-            if('$'+key === v)   varEnd = varStart-1;
-            if(varStart < 0)    break;
+            if('$'+key === v) varEnd  = varStart;
+            else              varEnd += v.length-1;
             
-            varStart = str.lastIndexOf("$", varEnd); //, varStart);
+            varStart = str.lastIndexOf("$", --varEnd); //, varStart);
         }
         //console.log(c);
         return str;
