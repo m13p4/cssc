@@ -817,14 +817,20 @@ var CSSC = (function()
                             if(rule)
                             {
                                 rlp = rule.content.length-1;
-                                
                                 handlerObj = ruleHandler([rule.content[rlp]], newSel);
+                                
                                 if(isAtRule) 
-                                    handlerObj = handlerObj(e[pos].selector);
+                                {
+                                    rule = createRule(e[pos].selector, null, null, rule.content[rlp]);
+                                    if(rule)
+                                    {
+                                        rlp = rule.content.length-1;
+                                        handlerObj = ruleHandler([rule.content[rlp]], e[pos].selector);
+                                    }
+                                }
                                 
                                 handlerObj.set(valArr[i]);
-
-                                tmp = handlerObj.e[handlerObj.e.length-1];
+                                tmp = rule.content[rlp];
                                 
                                 if(isAtRule && e[pos].parent)
                                 {
@@ -936,8 +942,6 @@ var CSSC = (function()
 
                 if(!tmp || tmp === "")
                     tmp = e[i].indexElem.style[prop];
-
-                //use helper, if property value not found in style object (margin, padding, border, etc..)
                 if(!tmp || tmp === "")
                     tmp = helperFindPropInCssText(e[i].indexElem.cssText, prop);
 
@@ -1118,21 +1122,18 @@ var CSSC = (function()
 
             createRuleIfNotExists();
 
-            for(i = 0; i < handler.e.length; i++)
+            for(i = 0; i < e.length; i++)
             {
-                if(!!handler.e[i].children)
+                if(e[i].children)
                 {
-                    tmp = handleSelection(sel, hasProp, handler.e[i].children, true);
+                    tmp = handleSelection(sel, hasProp, e[i].children, true);
 
                     for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
                 }
             }
-            return ruleHandler(elArr, sel, null, handler.e);
+            return ruleHandler(elArr, sel, null, e);
         };
-
-        handler.e = e;
-        handler.eLength = e.length;
-
+        
         helperReadOnlyProps(handler, {
             'set':    function(prop, val, pos){ return _set(prop, val, pos); },
             'get':    function(prop, retAP){ return _get(prop, retAP); },
