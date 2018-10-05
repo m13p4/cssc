@@ -256,6 +256,7 @@ var CSSC = (function()
 
             for(i = 0; i < keySplit.length; i++)
             {
+                if(keySplit[i].length < 1) continue;
                 type = typeof v;
 
                 if(i === 0 && keySplit[i] in vars)                           v = vars[keySplit[i]];
@@ -277,14 +278,12 @@ var CSSC = (function()
                         tmp = varEnd;
                         xyz = varEnd;
 
-                        while(true)
+                        do
                         {
                             xyz = str.indexOf("(", xyz+1);
                             varEnd = str.indexOf(")", varEnd+1);
-
-                            if(xyz > -1 && xyz < varEnd) continue;
-                            else break;
                         }
+                        while(xyz > -1 && xyz < varEnd)
 
                         if(varEnd < 0) varEnd = str.length;
 
@@ -320,9 +319,9 @@ var CSSC = (function()
             if('$'+key === v) varEnd  = varStart;
             else              varEnd += v.length-1;
             
-            varStart = str.lastIndexOf("$", --varEnd); //, varStart);
+            if(--varEnd < 0) break;
+            varStart = str.lastIndexOf("$", varEnd);
         }
-        //console.log(c);
         return str;
     }
     function helperReadOnlyProps(obj, propsObj)
@@ -744,13 +743,13 @@ var CSSC = (function()
             }
         }
     }
-    function ruleHandler(indexElemArr, sel, fromHas, parents)
+    function ruleHandler(e, sel, fromHas, parents)
     {
         var handler;
         
         function createRuleIfNotExists()
         {
-            if(handler.e.length <= 0 && !fromHas && helperElemType(sel) === "String")
+            if(e.length <= 0 && !fromHas && helperElemType(sel) === "String")
             {
                 var rule, contentElems = [], i, key;
 
@@ -771,52 +770,32 @@ var CSSC = (function()
                     }
                 }
 
-                handler.e = contentElems;
+                e = contentElems;
+                handler.e = e;
                 handler.eLength = contentElems.length;
             }
         }
-
-        handler = function(sel, hasProp)
-        {
-            var i, j, elArr = [], tmp;
-
-            createRuleIfNotExists();
-
-            for(i = 0; i < handler.e.length; i++)
-            {
-                if(!!handler.e[i].children)
-                {
-                    tmp = handleSelection(sel, hasProp, handler.e[i].children, true);
-
-                    for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
-                }
-            }
-            return ruleHandler(elArr, sel, null, handler.e);
-        };
-
-        handler.e = indexElemArr;
-        handler.eLength = indexElemArr.length;
-
-        handler.set = function(prop, val, pos)
+        
+        function _set(prop, val, pos)
         {
             createRuleIfNotExists();
             
             if(typeof pos === "number") // single Set
             {
-                if(this.e[pos].indexElem.type === cssc.type.fontFace)
+                if(e[pos].indexElem.type === cssc.type.fontFace)
                 {
                     if(cssc.conf.viewErr)
-                        console.log("Element of Type \""+cssc.type.names[this.e[pos].indexElem.type]+"\" is readonly.");
-                    cssc.messages.push("Element of Type \""+cssc.type.names[this.e[pos].indexElem.type]+"\" is readonly.");
+                        console.log("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
+                    cssc.messages.push("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
 
                     return this;
                 }
 
                 prop = helperParseVars(prop);
 
-                if(this.e[pos].children)
+                if(e[pos].children)
                 {
-                    var childHandler = getHandler(null, this.e[pos].children);
+                    var childHandler = getHandler(null, e[pos].children);
                     childHandler.set(prop, val);
                 }
                 else 
@@ -827,13 +806,13 @@ var CSSC = (function()
                     {
                         var isAtRule = prop.charAt(0) === "@", pObj, rule, rlp,
                             valArr = valType === 'Object' ? [val] : val, i, handlerObj,
-                            newSel = helperGenSelector(this.e[pos].selector, prop);
+                            newSel = helperGenSelector(e[pos].selector, prop);
 
-                        if(isAtRule) newSel = this.e[pos].parent ? helperGenSelector(this.e[pos].parent.selector, prop) : prop;
+                        if(isAtRule) newSel = e[pos].parent ? helperGenSelector(e[pos].parent.selector, prop) : prop;
 
                         for(i = 0; i < valArr.length; i++)
                         {
-                            rule = createRule(newSel, null, null, isAtRule ? false : this.e[pos].parent);
+                            rule = createRule(newSel, null, null, isAtRule ? false : e[pos].parent);
 
                             if(rule)
                             {
@@ -841,15 +820,15 @@ var CSSC = (function()
                                 
                                 handlerObj = ruleHandler([rule.content[rlp]], newSel);
                                 if(isAtRule) 
-                                    handlerObj = handlerObj(this.e[pos].selector);
+                                    handlerObj = handlerObj(e[pos].selector);
                                 
                                 handlerObj.set(valArr[i]);
 
                                 tmp = handlerObj.e[handlerObj.e.length-1];
                                 
-                                if(isAtRule && this.e[pos].parent)
+                                if(isAtRule && e[pos].parent)
                                 {
-                                    pObj = this.e[pos].parent;
+                                    pObj = e[pos].parent;
 
                                     if(!pObj.obj[prop] || !("push" in pObj.obj[prop]))
                                         pObj.obj[prop] = [];
@@ -857,22 +836,22 @@ var CSSC = (function()
                                     pObj.obj[prop].push(tmp.parent);
                                 }
                                 
-                                if(!this.e[pos].obj[prop] || !("push" in this.e[pos].obj[prop]))
-                                    this.e[pos].obj[prop] = [];
-                                this.e[pos].obj[prop].push(tmp);
+                                if(!e[pos].obj[prop] || !("push" in e[pos].obj[prop]))
+                                    e[pos].obj[prop] = [];
+                                e[pos].obj[prop].push(tmp);
                             }
                         }
                     }
                     else if(valType === "Function")
                     {
-                        var oldVal = this.pos(pos).get(prop), valToSet;
+                        var oldVal = _pos(pos).get(prop), valToSet;
 
                         try
                         {
                             valToSet = val(oldVal);
 
-                            this.set(prop, valToSet, pos);
-                            this.e[pos].indexElem.style._update[prop] = val;
+                            _set(prop, valToSet, pos);
+                            e[pos].indexElem.style._update[prop] = val;
                         }
                         catch(err)
                         {
@@ -884,8 +863,8 @@ var CSSC = (function()
                     {
                         prsVal = helperParseValue(val);
 
-                        this.e[pos].indexElem.style[prop] = prsVal;
-                        this.e[pos].obj[prop] = prsVal;
+                        e[pos].indexElem.style[prop] = prsVal;
+                        e[pos].obj[prop] = prsVal;
                     }
                 }
             }
@@ -905,7 +884,7 @@ var CSSC = (function()
                     var elH, prp = (propType === "Array" ? prop : props);
                     for(i = 0; i < prp.length; i++)
                     {
-                        elH = this.pos(i);
+                        elH = _pos(i);
 
                         if(elH.e.length === 1)
                             elH.set(prp[i]);
@@ -913,39 +892,40 @@ var CSSC = (function()
                             break;
                     }
                 }
-                else for(i = 0; i < this.e.length; i++)
+                else for(i = 0; i < e.length; i++)
                 {
                     if(propType === "Object" && propLen > 0) 
                         for(key in prop)
-                            this.set(key, prop[key], i);
+                            _set(key, prop[key], i);
                     else if(propType === "Function")
                     {
                         for(key in props)
-                            this.set(key, props[key], i);
+                            _set(key, props[key], i);
 
                         //add to updatable
-                        this.e[i].indexElem._update = prop;
+                        e[i].indexElem._update = prop;
                     }
-                    else this.set(prop, val, i);
+                    else _set(prop, val, i);
                 }
             }
             return this;
-        };
-        handler.get = function(prop, returnAllProps)
+        }
+        
+        function _get(prop, returnAllProps)
         {
-            if(!prop) return this.export(cssc.expType.object);
+            if(!prop) return _export(cssc.expType.object);
 
             var arrToRet = [], propToRet = "", tmp, i, expObj;
 
             returnAllProps = !!returnAllProps;
 
-            for(i = 0; i < this.e.length; i++)
+            for(i = 0; i < e.length; i++)
             {
                 tmp = "";
 
-                if(this.e[i].obj[prop]) 
+                if(e[i].obj[prop]) 
                 {
-                    tmp = this.e[i].obj[prop];
+                    tmp = e[i].obj[prop];
 
                     if(helperElemType(tmp) === "Array")
                     {
@@ -955,11 +935,11 @@ var CSSC = (function()
                 }
 
                 if(!tmp || tmp === "")
-                    tmp = this.e[i].indexElem.style[prop];
+                    tmp = e[i].indexElem.style[prop];
 
                 //use helper, if property value not found in style object (margin, padding, border, etc..)
                 if(!tmp || tmp === "")
-                    tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, prop);
+                    tmp = helperFindPropInCssText(e[i].indexElem.cssText, prop);
 
                 if(!!tmp)
                 {
@@ -969,104 +949,9 @@ var CSSC = (function()
                 }
             }
             return returnAllProps ? arrToRet : propToRet;
-        };
-        handler.has = function(prop)
-        {
-            //@todo: new .has function
-            var matches = [], propVal, i, tmp,
-                propType = helperElemType(prop);
-
-            if(propType === "String")
-            {
-                propVal = prop.split(":");
-
-                for(i = 0; i < this.e.length; i++)
-                {
-                    tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
-
-                    if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
-                    {
-                        matches.push(this.e[i]);
-                    }
-                }
-            }
-            else if(propType === "Array")
-            {
-                for(var j = 0; j < prop.length; j++)
-                {
-                    propVal = prop[j].split(":");
-
-                    for(i = 0; i < this.e.length; i++)
-                    {
-                        tmp = helperFindPropInCssText(this.e[i].indexElem.cssText, propVal[0]);
-
-                        if(tmp !== "" && ((!propVal[1]) || (!!propVal[1] && propVal[1].replace(/ |;/g,"") === tmp)))
-                        {
-                            matches.push(this.e[i]);
-                        }
-                    }
-                }
-            }
-            else if(propType === "RegExp")
-            {
-                var m, j;
-
-                for(i = 0; i < this.e.length; i++)
-                {
-                    m = this.e[i].indexElem.cssText.match(/[\S]+:.+?;/g);
-
-                    if(m) for(j = 0; j < m.length; j++) if(m[j].match(prop)) 
-                        matches.push(this.e[i]);
-                }
-            }
-
-            return ruleHandler(matches, sel, true);
-        };
-        handler.update = function()
-        {
-            var i, tmp, key;
-
-            for(i = 0; i < this.e.length; i++)
-            {
-                if(this.e[i].indexElem._update !== false)
-                {
-                    tmp = this.e[i].indexElem._update();
-
-                    for(key in tmp) this.set(key, tmp[key], i);
-                }
-
-                if(!!this.e[i].children)
-                    getHandler(null, this.e[i].children).update();
-                
-                else if(this.e[i].indexElem.style)
-                    for(key in this.e[i].indexElem.style._update)
-                        this.set(key, this.e[i].indexElem.style._update[key](), i);
-            }
-            return this;
-        };
-        handler.delete = function(prop)
-        {
-            var isUndef = typeof prop === "undefined", i;
-
-            if(isUndef) for(i = 0; i < this.e.length; i++)
-            {
-                if(this.e[i].children)
-                    getHandler(null, this.e[i].children).delete(prop);
-
-                helperDeleteCSSRule(this.e[i].indexElem);
-                delFromIndex(this.e[i].selector, (!!this.e[i].parent ? this.e[i].parent : null), this.e[i]);
-            }
-            else for(i = 0; i < this.e.length; i++)
-            {
-                this.e[i].indexElem.style[prop] = "";
-
-                if(this.e[i].children)
-                    getHandler(null, this.e[i].children).delete(prop);
-            }
-            
-            return this;
-        };
-        handler.export = function(type, ignore)
+        }
+        
+        function _export(type, ignore)
         {
             var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
 
@@ -1078,22 +963,22 @@ var CSSC = (function()
 
             if(!ignore) ignore = [];
 
-            for(i = 0; i < this.e.length; i++)
+            for(i = 0; i < e.length; i++)
             {
-                if(ignore.indexOf(this.e[i]) >= 0) continue; 
+                if(ignore.indexOf(e[i]) >= 0) continue; 
 
-                if(this.e[i].type === cssc.type.namespace 
-                || this.e[i].type === cssc.type.import 
-                || this.e[i].type === cssc.type.charset)
-                    obj = this.e[i].obj;
+                if(e[i].type === cssc.type.namespace 
+                || e[i].type === cssc.type.import 
+                || e[i].type === cssc.type.charset)
+                    obj = e[i].obj;
                 else
                 {
-                    obj = Object.assign({}, this.e[i].obj);
+                    obj = Object.assign({}, e[i].obj);
 
-                    for(key in this.e[i].obj)
+                    for(key in e[i].obj)
                     {
-                        if(typeof this.e[i].obj[key] === "object" 
-                        && "length" in this.e[i].obj[key])
+                        if(typeof e[i].obj[key] === "object" 
+                        && "length" in e[i].obj[key])
                         {
                             if(type === cssc.expType.notMDObject || type === cssc.expType.array)
                             {
@@ -1105,14 +990,14 @@ var CSSC = (function()
 
                             obj[key] = [];
 
-                            for(j = 0; j < this.e[i].obj[key].length; j++)
+                            for(j = 0; j < e[i].obj[key].length; j++)
                             {
-                                if(ignore.indexOf(this.e[i].obj[key][j]) >= 0) continue; 
+                                if(ignore.indexOf(e[i].obj[key][j]) >= 0) continue; 
 
-                                tmp = ruleHandler([this.e[i].obj[key][j]]);
-                                tmp = tmp.export(type, ignore)[this.e[i].obj[key][j].selector];
+                                tmp = ruleHandler([e[i].obj[key][j]]);
+                                tmp = tmp.export(type, ignore)[e[i].obj[key][j].selector];
 
-                                ignore.push(this.e[i].obj[key][j]);
+                                ignore.push(e[i].obj[key][j]);
 
                                 if(!tmp || Object.keys(tmp).length <= 0) continue;
 
@@ -1125,9 +1010,9 @@ var CSSC = (function()
                     }
                 }
 
-                if(this.e[i].children)
+                if(e[i].children)
                 {
-                    childHandler = getHandler(null, this.e[i].children);
+                    childHandler = getHandler(null, e[i].children);
                     obj = Object.assign(childHandler.export(type, ignore), obj);
                 }
 
@@ -1135,27 +1020,27 @@ var CSSC = (function()
                 
                 if(type === cssc.expType.array)
                 {
-                    tmp = indPos.indexOf(this.e[i]);
+                    tmp = indPos.indexOf(e[i]);
                     
-                    if     (this.e[i].selector === "@charset")   tmp  = 0;
-                    else if(this.e[i].selector === "@import")    tmp += 100000;
-                    else if(this.e[i].selector === "@namespace") tmp += 200000;
-                    else if(this.e[i].selector === "@font-face") tmp += 300000;
-                    else                                         tmp += 1000000;
+                    if     (e[i].selector === "@charset")   tmp  = 0;
+                    else if(e[i].selector === "@import")    tmp += 100000;
+                    else if(e[i].selector === "@namespace") tmp += 200000;
+                    else if(e[i].selector === "@font-face") tmp += 300000;
+                    else                                    tmp += 1000000;
 
                     exportObj[tmp] = {};
-                    exportObj[tmp][this.e[i].selector] = obj;
+                    exportObj[tmp][e[i].selector] = obj;
                 }
-                else if(exportObj[this.e[i].selector])
+                else if(exportObj[e[i].selector])
                 {
-                    if(!(typeof exportObj[this.e[i].selector] === "object" && "length" in exportObj[this.e[i].selector]))
-                        exportObj[this.e[i].selector] = [exportObj[this.e[i].selector]];
+                    if(!(typeof exportObj[e[i].selector] === "object" && "length" in exportObj[e[i].selector]))
+                        exportObj[e[i].selector] = [exportObj[e[i].selector]];
 
-                    exportObj[this.e[i].selector].push(obj);
+                    exportObj[e[i].selector].push(obj);
                 }
-                else exportObj[this.e[i].selector] = obj;
+                else exportObj[e[i].selector] = obj;
 
-                ignore.push(this.e[i]);
+                ignore.push(e[i]);
             }
 
             if(type === cssc.expType.array) 
@@ -1176,22 +1061,89 @@ var CSSC = (function()
 
             return tmp ? sortExpObj : exportObj;
         };
-        handler.parse = function(min)
+        
+        function _update()
         {
-            return this.export(!min ? cssc.expType.normal : cssc.expType.min);
-        };
-        handler.pos = function(p)
+            var i, tmp, key;
+
+            for(i = 0; i < e.length; i++)
+            {
+                if(e[i].indexElem._update !== false)
+                {
+                    tmp = e[i].indexElem._update();
+
+                    for(key in tmp) _set(key, tmp[key], i);
+                }
+
+                if(!!e[i].children)
+                    getHandler(null, e[i].children).update();
+                else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
+                    _set(key, e[i].indexElem.style._update[key](), i);
+            }
+            return this;
+        }
+        
+        function _delete(prop)
         {
-            return ruleHandler(this.e[p] ? [this.e[p]] : []);
-        };
-        handler.first = function()
+            var isUndef = typeof prop === "undefined", i;
+
+            if(isUndef) for(i = 0; i < e.length; i++)
+            {
+                if(e[i].children)
+                    getHandler(null, e[i].children).delete(prop);
+
+                helperDeleteCSSRule(e[i].indexElem);
+                delFromIndex(e[i].selector, (e[i].parent ? e[i].parent : null), e[i]);
+            }
+            else for(i = 0; i < e.length; i++)
+            {
+                e[i].indexElem.style[prop] = "";
+
+                if(e[i].children) getHandler(null, e[i].children).delete(prop);
+            }
+            
+            return this;
+        }
+        
+        function _pos(p)
         {
-            return this.pos(0);
-        };
-        handler.last = function()
+            if(p < 0) p = e.length+p;
+            return ruleHandler(e[p] ? [e[p]] : []);
+        }
+        
+
+        handler = function(sel, hasProp)
         {
-            return this.pos(this.e.length-1);
+            var i, j, elArr = [], tmp;
+
+            createRuleIfNotExists();
+
+            for(i = 0; i < handler.e.length; i++)
+            {
+                if(!!handler.e[i].children)
+                {
+                    tmp = handleSelection(sel, hasProp, handler.e[i].children, true);
+
+                    for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
+                }
+            }
+            return ruleHandler(elArr, sel, null, handler.e);
         };
+
+        handler.e = e;
+        handler.eLength = e.length;
+
+        helperReadOnlyProps(handler, {
+            'set':    function(prop, val, pos){ return _set(prop, val, pos); },
+            'get':    function(prop, retAP){ return _get(prop, retAP); },
+            'update': function(){ return _update(); },
+            'delete': function(prop){ return _delete(prop); },
+            'export': function(type){ return _export(type); },
+            'parse':  function(min){ return _export(!min ? cssc.expType.normal : cssc.expType.min); },
+            'pos':    function(p) { return _pos(p); },
+            'first':  function(){ return _pos(0); },
+            'last':   function(){ return _pos(-1); }
+        });
 
         return handler;
     }
