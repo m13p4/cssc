@@ -733,23 +733,359 @@ var CSSC = (function()
                 {
                     rule = createRule(key, null, null, parent);
 
-                    if(rule)
-                    {
-                        handlerObj = ruleHandler([rule.content[rule.content.length-1]], key);
-
-                        handlerObj.set(importElem[i]);
-                    }
+                    if(rule) _set([rule.content[rule.content.length-1]], importElem[i]);
                 }
             }
         }
     }
-    function ruleHandler(e, sel, fromHas, parents)
+    
+    function _set(e, prop, val, pos)
+    {
+        if(typeof pos === "number") // single Set
+        {
+            if(e[pos].indexElem.type === cssc.type.fontFace)
+            {
+                if(cssc.conf.viewErr)
+                    console.log("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
+                cssc.messages.push("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
+
+                return;
+            }
+
+            prop = helperParseVars(prop);
+
+            if(e[pos].children)
+            {
+                var childHandler = getHandler(null, e[pos].children);
+                childHandler.set(prop, val);
+            }
+            else 
+            {
+                var prsVal, valType = helperElemType(val), tmp;
+
+                if(valType === "Object" || valType === "Array")
+                {
+                    var isAtRule = prop.charAt(0) === "@", pObj, rule, rlp,
+                        valArr = valType === 'Object' ? [val] : val, i,
+                        newSel = helperGenSelector(e[pos].selector, prop);
+
+                    if(isAtRule) newSel = e[pos].parent ? helperGenSelector(e[pos].parent.selector, prop) : prop;
+
+                    for(i = 0; i < valArr.length; i++)
+                    {
+                        rule = createRule(newSel, null, null, isAtRule ? false : e[pos].parent);
+
+                        if(rule)
+                        {
+                            rlp = rule.content.length-1;
+
+                            if(isAtRule) 
+                            {
+                                tmp = rule;
+                                rule = createRule(e[pos].selector, null, null, rule.content[rlp]);
+                                
+                                if(rule) rlp = rule.content.length-1;
+                                else     rule = tmp;
+                            }
+
+                            tmp = rule.content[rlp];
+                            _set([tmp], valArr[i]);
+
+                            if(isAtRule && e[pos].parent)
+                            {
+                                pObj = e[pos].parent;
+
+                                if(!pObj.obj[prop] || !("push" in pObj.obj[prop]))
+                                    pObj.obj[prop] = [];
+
+                                pObj.obj[prop].push(tmp.parent);
+                            }
+
+                            if(!e[pos].obj[prop] || !("push" in e[pos].obj[prop]))
+                                e[pos].obj[prop] = [];
+                            e[pos].obj[prop].push(tmp);
+                        }
+                    }
+                }
+                else if(valType === "Function")
+                {
+                    var oldVal = _pos(pos).get(prop), valToSet;
+
+                    try
+                    {
+                        valToSet = val(oldVal);
+
+                        _set(e, prop, valToSet, pos);
+                        e[pos].indexElem.style._update[prop] = val;
+                    }
+                    catch(err)
+                    {
+                        if(cssc.conf.viewErr) console.log(err);
+                        cssc.messages.push(err);
+                    }
+                }
+                else
+                {
+                    prsVal = helperParseValue(val);
+
+                    e[pos].indexElem.style[prop] = prsVal;
+                    e[pos].obj[prop] = prsVal;
+                }
+            }
+        }
+        else // multi Set
+        {
+            var i, propLen, key, props,
+                propType = helperElemType(prop);
+
+            if(propType === "Object")
+                propLen = Object.keys(prop).length;
+            else if(propType === "Function")
+                props = prop();
+
+            if(propType === "Array" 
+            || (propType === "Function" && helperElemType(props) === "Array"))
+            {
+                var elH, prp = (propType === "Array" ? prop : props);
+                for(i = 0; i < prp.length; i++)
+                {
+                    elH = _pos(i);
+
+                    if(elH.e.length === 1)
+                        elH.set(prp[i]);
+                    else 
+                        break;
+                }
+            }
+            else for(i = 0; i < e.length; i++)
+            {
+                if(propType === "Object" && propLen > 0) 
+                    for(key in prop)
+                        _set(e, key, prop[key], i);
+                else if(propType === "Function")
+                {
+                    for(key in props)
+                        _set(e, key, props[key], i);
+
+                    //add to updatable
+                    e[i].indexElem._update = prop;
+                }
+                else _set(e, prop, val, i);
+            }
+        }
+        return;
+    }
+    function _get(e, prop, returnAllProps)
+    {
+        if(!prop) return _export(cssc.expType.object);
+
+        var arrToRet = [], propToRet = "", tmp, i;
+
+        returnAllProps = !!returnAllProps;
+
+        for(i = 0; i < e.length; i++)
+        {
+            tmp = "";
+
+            if(e[i].obj[prop]) 
+            {
+                tmp = e[i].obj[prop];
+
+                if(helperElemType(tmp) === "Array")
+                    tmp = _export(tmp, cssc.expType.object);
+            }
+
+            if(!tmp || tmp === "")
+                tmp = e[i].indexElem.style[prop];
+            if(!tmp || tmp === "")
+                tmp = helperFindPropInCssText(e[i].indexElem.cssText, prop);
+
+            if(!!tmp)
+            {
+                propToRet = tmp;
+
+                if(returnAllProps) arrToRet.push(propToRet);
+            }
+        }
+        return returnAllProps ? arrToRet : propToRet;
+    }
+    function _export(e, type, ignore)
+    {
+        var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
+
+        if(type === cssc.expType.obj)
+            type = cssc.expType.object;
+
+        if(type === cssc.expType.normal || type === cssc.expType.min)
+            type = cssc.expType.array;
+
+        if(!ignore) ignore = [];
+
+        for(i = 0; i < e.length; i++)
+        {
+            if(ignore.indexOf(e[i]) >= 0) continue; 
+
+            if(e[i].type === cssc.type.namespace 
+            || e[i].type === cssc.type.import 
+            || e[i].type === cssc.type.charset)
+                obj = e[i].obj;
+            else
+            {
+                obj = Object.assign({}, e[i].obj);
+
+                for(key in e[i].obj)
+                {
+                    if(typeof e[i].obj[key] === "object" 
+                    && "length" in e[i].obj[key])
+                    {
+                        if(type === cssc.expType.notMDObject || type === cssc.expType.array)
+                        {
+                            obj[key] = null;
+                            delete obj[key];
+
+                            continue;
+                        }
+
+                        obj[key] = [];
+
+                        for(j = 0; j < e[i].obj[key].length; j++)
+                        {
+                            if(ignore.indexOf(e[i].obj[key][j]) >= 0) continue; 
+
+                            tmp = _export([e[i].obj[key][j]], type, ignore)[e[i].obj[key][j].selector];
+
+                            ignore.push(e[i].obj[key][j]);
+
+                            if(!tmp || Object.keys(tmp).length <= 0) continue;
+
+                            obj[key][j] = tmp;
+                        }
+
+                        if(obj[key].length === 0) delete obj[key];
+                        else if(obj[key].length === 1) obj[key] = obj[key][0];
+                    }
+                }
+            }
+
+            if(e[i].children)
+            {
+                childHandler = getHandler(null, e[i].children);
+                obj = Object.assign(childHandler.export(type, ignore), obj);
+            }
+
+            if(Object.keys(obj).length <= 0) continue;
+
+            if(type === cssc.expType.array)
+            {
+                tmp = indPos.indexOf(e[i]);
+
+                if     (e[i].selector === "@charset")   tmp  = 0;
+                else if(e[i].selector === "@import")    tmp += 100000;
+                else if(e[i].selector === "@namespace") tmp += 200000;
+                else if(e[i].selector === "@font-face") tmp += 300000;
+                else                                    tmp += 1000000;
+
+                exportObj[tmp] = {};
+                exportObj[tmp][e[i].selector] = obj;
+            }
+            else if(exportObj[e[i].selector])
+            {
+                if(!(typeof exportObj[e[i].selector] === "object" && "length" in exportObj[e[i].selector]))
+                    exportObj[e[i].selector] = [exportObj[e[i].selector]];
+
+                exportObj[e[i].selector].push(obj);
+            }
+            else exportObj[e[i].selector] = obj;
+
+            ignore.push(e[i]);
+        }
+
+        if(type === cssc.expType.array) 
+        {   
+            exportObj = Object.values(exportObj);
+            return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===cssc.expType.min);
+        }
+
+        var sortExpObj = {};
+        if(exportObj['@charset'])   sortExpObj['@charset']   = exportObj['@charset'];
+        if(exportObj['@import'])    sortExpObj['@import']    = exportObj['@import'];
+        if(exportObj['@namespace']) sortExpObj['@namespace'] = exportObj['@namespace'];
+        if(exportObj['@font-face']) sortExpObj['@font-face'] = exportObj['@font-face'];
+
+        tmp = Object.keys(sortExpObj).length > 0;
+        if(tmp) for(i in exportObj) if(!sortExpObj[i])
+            sortExpObj[i] = exportObj[i];
+
+        return tmp ? sortExpObj : exportObj;
+    }
+    function _update(e)
+    {
+        var i, tmp, key;
+
+        for(i = 0; i < e.length; i++)
+        {
+            if(e[i].indexElem._update !== false)
+            {
+                tmp = e[i].indexElem._update();
+
+                for(key in tmp) _set(key, tmp[key], i);
+            }
+
+            if(!!e[i].children)
+                getHandler(null, e[i].children).update();
+            else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
+                _set(key, e[i].indexElem.style._update[key](), i);
+        }
+        return;
+    }
+    function _delete(e, prop)
+    {
+        var isUndef = typeof prop === "undefined", i;
+
+        if(isUndef) for(i = 0; i < e.length; i++)
+        {
+            if(e[i].children)
+                getHandler(null, e[i].children).delete(prop);
+
+            helperDeleteCSSRule(e[i].indexElem);
+            delFromIndex(e[i].selector, (e[i].parent ? e[i].parent : null), e[i]);
+        }
+        else for(i = 0; i < e.length; i++)
+        {
+            e[i].indexElem.style[prop] = "";
+
+            if(e[i].children) getHandler(null, e[i].children).delete(prop);
+        }
+
+        return;
+    }
+    function _pos(e, p, sel, parents)
+    {
+        if(p < 0) p += e.length;
+        if(e[p]) return ruleHandler([e[p]], sel, false, e[p].parent ? e[p].parent : false);
+        return ruleHandler([], sel, false, parents);
+    }
+
+    function _getE(e)
+    {
+        var _e = [];
+        for(var i = 0; i < e.length; i++) if(e[i].indexElem)
+            _e.push(e[i].indexElem);
+        return _e;
+    };
+
+    function _selector(e, sel)
+    {
+        return e.length === 1 ? e[0].selector : sel;
+    }
+    
+    function ruleHandler(els, sel, fromHas, parents)
     {
         var handler;
         
         function createRuleIfNotExists()
         {
-            if(e.length <= 0 && !fromHas && helperElemType(sel) === "String")
+            if(els.length <= 0 && !fromHas && helperElemType(sel) === "String")
             {
                 var rule, contentElems = [], i, key;
 
@@ -770,380 +1106,42 @@ var CSSC = (function()
                     }
                 }
 
-                e = contentElems;
-                handler.e = e;
-                handler.eLength = contentElems.length;
+                els = contentElems;
+                handler.e = _getE(els);
+                handler.selector = _selector(els, sel);
             }
         }
         
-        function _set(prop, val, pos)
-        {
-            createRuleIfNotExists();
-            
-            if(typeof pos === "number") // single Set
-            {
-                if(e[pos].indexElem.type === cssc.type.fontFace)
-                {
-                    if(cssc.conf.viewErr)
-                        console.log("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
-                    cssc.messages.push("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
-
-                    return this;
-                }
-
-                prop = helperParseVars(prop);
-
-                if(e[pos].children)
-                {
-                    var childHandler = getHandler(null, e[pos].children);
-                    childHandler.set(prop, val);
-                }
-                else 
-                {
-                    var prsVal, valType = helperElemType(val), tmp;
-
-                    if(valType === "Object" || valType === "Array")
-                    {
-                        var isAtRule = prop.charAt(0) === "@", pObj, rule, rlp,
-                            valArr = valType === 'Object' ? [val] : val, i, handlerObj,
-                            newSel = helperGenSelector(e[pos].selector, prop);
-
-                        if(isAtRule) newSel = e[pos].parent ? helperGenSelector(e[pos].parent.selector, prop) : prop;
-
-                        for(i = 0; i < valArr.length; i++)
-                        {
-                            rule = createRule(newSel, null, null, isAtRule ? false : e[pos].parent);
-
-                            if(rule)
-                            {
-                                rlp = rule.content.length-1;
-                                handlerObj = ruleHandler([rule.content[rlp]], newSel);
-                                
-                                if(isAtRule) 
-                                {
-                                    rule = createRule(e[pos].selector, null, null, rule.content[rlp]);
-                                    if(rule)
-                                    {
-                                        rlp = rule.content.length-1;
-                                        handlerObj = ruleHandler([rule.content[rlp]], e[pos].selector);
-                                    }
-                                }
-                                
-                                handlerObj.set(valArr[i]);
-                                tmp = rule.content[rlp];
-                                
-                                if(isAtRule && e[pos].parent)
-                                {
-                                    pObj = e[pos].parent;
-
-                                    if(!pObj.obj[prop] || !("push" in pObj.obj[prop]))
-                                        pObj.obj[prop] = [];
-
-                                    pObj.obj[prop].push(tmp.parent);
-                                }
-                                
-                                if(!e[pos].obj[prop] || !("push" in e[pos].obj[prop]))
-                                    e[pos].obj[prop] = [];
-                                e[pos].obj[prop].push(tmp);
-                            }
-                        }
-                    }
-                    else if(valType === "Function")
-                    {
-                        var oldVal = _pos(pos).get(prop), valToSet;
-
-                        try
-                        {
-                            valToSet = val(oldVal);
-
-                            _set(prop, valToSet, pos);
-                            e[pos].indexElem.style._update[prop] = val;
-                        }
-                        catch(err)
-                        {
-                            if(cssc.conf.viewErr) console.log(err);
-                            cssc.messages.push(err);
-                        }
-                    }
-                    else
-                    {
-                        prsVal = helperParseValue(val);
-
-                        e[pos].indexElem.style[prop] = prsVal;
-                        e[pos].obj[prop] = prsVal;
-                    }
-                }
-            }
-            else // multi Set
-            {
-                var i, propLen, key, props,
-                    propType = helperElemType(prop);
-
-                if(propType === "Object")
-                    propLen = Object.keys(prop).length;
-                else if(propType === "Function")
-                    props = prop();
-
-                if(propType === "Array" 
-                || (propType === "Function" && helperElemType(props) === "Array"))
-                {
-                    var elH, prp = (propType === "Array" ? prop : props);
-                    for(i = 0; i < prp.length; i++)
-                    {
-                        elH = _pos(i);
-
-                        if(elH.e.length === 1)
-                            elH.set(prp[i]);
-                        else 
-                            break;
-                    }
-                }
-                else for(i = 0; i < e.length; i++)
-                {
-                    if(propType === "Object" && propLen > 0) 
-                        for(key in prop)
-                            _set(key, prop[key], i);
-                    else if(propType === "Function")
-                    {
-                        for(key in props)
-                            _set(key, props[key], i);
-
-                        //add to updatable
-                        e[i].indexElem._update = prop;
-                    }
-                    else _set(prop, val, i);
-                }
-            }
-            return this;
-        }
-        
-        function _get(prop, returnAllProps)
-        {
-            if(!prop) return _export(cssc.expType.object);
-
-            var arrToRet = [], propToRet = "", tmp, i, expObj;
-
-            returnAllProps = !!returnAllProps;
-
-            for(i = 0; i < e.length; i++)
-            {
-                tmp = "";
-
-                if(e[i].obj[prop]) 
-                {
-                    tmp = e[i].obj[prop];
-
-                    if(helperElemType(tmp) === "Array")
-                    {
-                        expObj = ruleHandler(tmp);
-                        tmp = expObj.export(cssc.expType.object);
-                    }
-                }
-
-                if(!tmp || tmp === "")
-                    tmp = e[i].indexElem.style[prop];
-                if(!tmp || tmp === "")
-                    tmp = helperFindPropInCssText(e[i].indexElem.cssText, prop);
-
-                if(!!tmp)
-                {
-                    propToRet = tmp;
-
-                    if(returnAllProps) arrToRet.push(propToRet);
-                }
-            }
-            return returnAllProps ? arrToRet : propToRet;
-        }
-        
-        function _export(type, ignore)
-        {
-            var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
-
-            if(type === cssc.expType.obj)
-                type = cssc.expType.object;
-
-            if(type === cssc.expType.normal || type === cssc.expType.min)
-                type = cssc.expType.array;
-
-            if(!ignore) ignore = [];
-
-            for(i = 0; i < e.length; i++)
-            {
-                if(ignore.indexOf(e[i]) >= 0) continue; 
-
-                if(e[i].type === cssc.type.namespace 
-                || e[i].type === cssc.type.import 
-                || e[i].type === cssc.type.charset)
-                    obj = e[i].obj;
-                else
-                {
-                    obj = Object.assign({}, e[i].obj);
-
-                    for(key in e[i].obj)
-                    {
-                        if(typeof e[i].obj[key] === "object" 
-                        && "length" in e[i].obj[key])
-                        {
-                            if(type === cssc.expType.notMDObject || type === cssc.expType.array)
-                            {
-                                obj[key] = null;
-                                delete obj[key];
-
-                                continue;
-                            }
-
-                            obj[key] = [];
-
-                            for(j = 0; j < e[i].obj[key].length; j++)
-                            {
-                                if(ignore.indexOf(e[i].obj[key][j]) >= 0) continue; 
-
-                                tmp = ruleHandler([e[i].obj[key][j]]);
-                                tmp = tmp.export(type, ignore)[e[i].obj[key][j].selector];
-
-                                ignore.push(e[i].obj[key][j]);
-
-                                if(!tmp || Object.keys(tmp).length <= 0) continue;
-
-                                obj[key][j] = tmp;
-                            }
-
-                            if(obj[key].length === 0) delete obj[key];
-                            else if(obj[key].length === 1) obj[key] = obj[key][0];
-                        }
-                    }
-                }
-
-                if(e[i].children)
-                {
-                    childHandler = getHandler(null, e[i].children);
-                    obj = Object.assign(childHandler.export(type, ignore), obj);
-                }
-
-                if(Object.keys(obj).length <= 0) continue;
-                
-                if(type === cssc.expType.array)
-                {
-                    tmp = indPos.indexOf(e[i]);
-                    
-                    if     (e[i].selector === "@charset")   tmp  = 0;
-                    else if(e[i].selector === "@import")    tmp += 100000;
-                    else if(e[i].selector === "@namespace") tmp += 200000;
-                    else if(e[i].selector === "@font-face") tmp += 300000;
-                    else                                    tmp += 1000000;
-
-                    exportObj[tmp] = {};
-                    exportObj[tmp][e[i].selector] = obj;
-                }
-                else if(exportObj[e[i].selector])
-                {
-                    if(!(typeof exportObj[e[i].selector] === "object" && "length" in exportObj[e[i].selector]))
-                        exportObj[e[i].selector] = [exportObj[e[i].selector]];
-
-                    exportObj[e[i].selector].push(obj);
-                }
-                else exportObj[e[i].selector] = obj;
-
-                ignore.push(e[i]);
-            }
-
-            if(type === cssc.expType.array) 
-            {   
-                exportObj = Object.values(exportObj);
-                return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===cssc.expType.min);
-            }
-
-            var sortExpObj = {};
-            if(exportObj['@charset'])   sortExpObj['@charset']   = exportObj['@charset'];
-            if(exportObj['@import'])    sortExpObj['@import']    = exportObj['@import'];
-            if(exportObj['@namespace']) sortExpObj['@namespace'] = exportObj['@namespace'];
-            if(exportObj['@font-face']) sortExpObj['@font-face'] = exportObj['@font-face'];
-
-            tmp = Object.keys(sortExpObj).length > 0;
-            if(tmp) for(i in exportObj) if(!sortExpObj[i])
-                sortExpObj[i] = exportObj[i];
-
-            return tmp ? sortExpObj : exportObj;
-        };
-        
-        function _update()
-        {
-            var i, tmp, key;
-
-            for(i = 0; i < e.length; i++)
-            {
-                if(e[i].indexElem._update !== false)
-                {
-                    tmp = e[i].indexElem._update();
-
-                    for(key in tmp) _set(key, tmp[key], i);
-                }
-
-                if(!!e[i].children)
-                    getHandler(null, e[i].children).update();
-                else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
-                    _set(key, e[i].indexElem.style._update[key](), i);
-            }
-            return this;
-        }
-        
-        function _delete(prop)
-        {
-            var isUndef = typeof prop === "undefined", i;
-
-            if(isUndef) for(i = 0; i < e.length; i++)
-            {
-                if(e[i].children)
-                    getHandler(null, e[i].children).delete(prop);
-
-                helperDeleteCSSRule(e[i].indexElem);
-                delFromIndex(e[i].selector, (e[i].parent ? e[i].parent : null), e[i]);
-            }
-            else for(i = 0; i < e.length; i++)
-            {
-                e[i].indexElem.style[prop] = "";
-
-                if(e[i].children) getHandler(null, e[i].children).delete(prop);
-            }
-            
-            return this;
-        }
-        
-        function _pos(p)
-        {
-            if(p < 0) p = e.length+p;
-            return ruleHandler(e[p] ? [e[p]] : []);
-        }
-        
-
         handler = function(sel, hasProp)
         {
             var i, j, elArr = [], tmp;
 
             createRuleIfNotExists();
 
-            for(i = 0; i < e.length; i++)
+            for(i = 0; i < els.length; i++)
             {
-                if(e[i].children)
+                if(els[i].children)
                 {
-                    tmp = handleSelection(sel, hasProp, e[i].children, true);
+                    tmp = handleSelection(sel, hasProp, els[i].children, true);
 
                     for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
                 }
             }
-            return ruleHandler(elArr, sel, null, e);
+            return ruleHandler(elArr, sel, null, els);
         };
+        handler.e = _getE(els);
+        handler.selector = _selector(els, sel);
         
         helperReadOnlyProps(handler, {
-            'set':    function(prop, val, pos){ return _set(prop, val, pos); },
-            'get':    function(prop, retAP){ return _get(prop, retAP); },
-            'update': function(){ return _update(); },
-            'delete': function(prop){ return _delete(prop); },
-            'export': function(type){ return _export(type); },
-            'parse':  function(min){ return _export(!min ? cssc.expType.normal : cssc.expType.min); },
-            'pos':    function(p) { return _pos(p); },
-            'first':  function(){ return _pos(0); },
-            'last':   function(){ return _pos(-1); }
+            'set':      function(prop, val, pos){ createRuleIfNotExists(); _set(els, prop, val, pos); return this; },
+            'get':      function(prop, retAP){ return _get(els, prop, retAP); },
+            'update':   function(){ _update(els); return this; },
+            'delete':   function(prop){ _delete(els, prop); return this; },
+            'export':   function(type){ return _export(els, type); },
+            'parse':    function(min){ return _export(els, !min ? cssc.expType.normal : cssc.expType.min); },
+            'pos':      function(p) { return _pos(els, p, sel, parents); },
+            'first':    function(){ return _pos(els, 0, sel, parents); },
+            'last':     function(){ return _pos(els, -1, sel, parents); }
         });
 
         return handler;
