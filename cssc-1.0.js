@@ -10,7 +10,30 @@
 var CSSC = (function()
 { 'use strict';
     
-    var index   = {},
+    var TYPE_rule       = 1, //check
+        TYPE_charset    = 2, //check
+        TYPE_import     = 3, //check
+        TYPE_media      = 4, //check
+        TYPE_fontFace   = 5, //check
+        TYPE_page       = 6, //check
+        TYPE_keyframes  = 7, //check
+        TYPE_keyframe   = 8, //check
+        
+        TYPE_namespace      = 10, //check
+        TYPE_counterStyle   = 11, 
+        TYPE_supports       = 12, //check
+        
+        TYPE_fontFeatureValues = 14,
+        TYPE_viewport          = 15,
+        
+        TYPE_EXPORT_normal      = "css",
+        TYPE_EXPORT_min         = "minCss",
+        TYPE_EXPORT_obj         = "obj",
+        TYPE_EXPORT_object      = "object", //default
+        TYPE_EXPORT_notMDObject = "objNMD", //not MultiDimensional Object
+        TYPE_EXPORT_array       = "array",
+        
+        index   = {},
         indPos  = [],
         cssc, ownStyleElem;
 
@@ -177,7 +200,7 @@ var CSSC = (function()
     {
         sel = sel.trim();
 
-        if(sel.charAt(0) !== "@") return cssc.type.rule;
+        if(sel.charAt(0) !== "@") return TYPE_rule;
 
         sel = sel.substr(1);
 
@@ -397,27 +420,27 @@ var CSSC = (function()
             indexObjWrapper, indexC;
 
         //@todo: support all types
-        if(indexType !== cssc.type.rule 
-        && indexType !== cssc.type.fontFace 
-        && indexType !== cssc.type.media
-        && indexType !== cssc.type.keyframes
-        && indexType !== cssc.type.keyframe
-        && indexType !== cssc.type.page
-        && indexType !== cssc.type.supports
-        && indexType !== cssc.type.namespace
-        && indexType !== cssc.type.import
-        && indexType !== cssc.type.charset)
+        if(indexType !== TYPE_rule 
+        && indexType !== TYPE_fontFace 
+        && indexType !== TYPE_media
+        && indexType !== TYPE_keyframes
+        && indexType !== TYPE_keyframe
+        && indexType !== TYPE_page
+        && indexType !== TYPE_supports
+        && indexType !== TYPE_namespace
+        && indexType !== TYPE_import
+        && indexType !== TYPE_charset)
         {
-            console.log("unsuported type: [" + indexType + "] - " + cssc.type.names[indexType]);
+            console.log("unsuported type: "+indexType);
             return;
         }
 
-        if(indexType === cssc.type.namespace) indexKey = "@namespace";
-        if(indexType === cssc.type.import)    indexKey = "@import";
-        if(indexType === cssc.type.charset)   indexKey = "@charset";
+        if(indexType === TYPE_namespace) indexKey = "@namespace";
+        if(indexType === TYPE_import)    indexKey = "@import";
+        if(indexType === TYPE_charset)   indexKey = "@charset";
 
         toIndex._update = false;
-        if(indexType === cssc.type.rule) toIndex.style._update = {};
+        if(indexType === TYPE_rule) toIndex.style._update = {};
 
         indexObjWrapper = {
             indexElem: toIndex,
@@ -455,9 +478,9 @@ var CSSC = (function()
         indPos.push(_index[indexKey].content[indexC]);
 
         //handle Media & KeyFrames Rules
-        if(indexType === cssc.type.media 
-        || indexType === cssc.type.keyframes 
-        || indexType === cssc.type.supports)
+        if(indexType === TYPE_media 
+        || indexType === TYPE_keyframes 
+        || indexType === TYPE_supports)
         {
             _index[indexKey].content[indexC].children = {};
 
@@ -533,7 +556,7 @@ var CSSC = (function()
                                 csscSelector: selector,
                                 cssText: insRuleString,
                                 parent: false,
-                                type: cssc.type.charset,
+                                type: TYPE_charset,
                                 cssRules: {}
                             }, parent, key);
         }
@@ -678,9 +701,9 @@ var CSSC = (function()
                     if(key === "@font-face" || key === "@namespace" || key === "@import" || key === "@charset")
                         createRule(key, importElem[i], null, parent);
                     else if(key.match(/^@(media|keyframes|supports)/) 
-                            || (parent && (parent.type === cssc.type.media
-                                        || parent.type === cssc.type.keyframes
-                                        || parent.type === cssc.type.supports)
+                            || (parent && (parent.type === TYPE_media
+                                        || parent.type === TYPE_keyframes
+                                        || parent.type === TYPE_supports)
                                )
                     )
                     {
@@ -743,11 +766,11 @@ var CSSC = (function()
     {
         if(typeof pos === "number") // single Set
         {
-            if(e[pos].indexElem.type === cssc.type.fontFace)
+            if(e[pos].indexElem.type === TYPE_fontFace)
             {
                 if(cssc.conf.viewErr)
-                    console.log("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
-                cssc.messages.push("Element of Type \""+cssc.type.names[e[pos].indexElem.type]+"\" is readonly.");
+                    console.log("@font-face rules are readonly.");
+                cssc.messages.push("@font-face rules are readonly.");
 
                 return;
             }
@@ -877,7 +900,7 @@ var CSSC = (function()
     }
     function _get(e, prop, returnAllProps)
     {
-        if(!prop) return _export(cssc.expType.object);
+        if(!prop) return _export(TYPE_EXPORT_object);
 
         var arrToRet = [], propToRet = "", tmp, i;
 
@@ -892,7 +915,7 @@ var CSSC = (function()
                 tmp = e[i].obj[prop];
 
                 if(helperElemType(tmp) === "Array")
-                    tmp = _export(tmp, cssc.expType.object);
+                    tmp = _export(tmp, TYPE_EXPORT_object);
             }
 
             if(!tmp || tmp === "")
@@ -913,11 +936,11 @@ var CSSC = (function()
     {
         var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
 
-        if(type === cssc.expType.obj)
-            type = cssc.expType.object;
+        if(type === TYPE_EXPORT_obj)
+            type = TYPE_EXPORT_object;
 
-        if(type === cssc.expType.normal || type === cssc.expType.min)
-            type = cssc.expType.array;
+        if(type === TYPE_EXPORT_normal || type === TYPE_EXPORT_min)
+            type = TYPE_EXPORT_array;
 
         if(!ignore) ignore = [];
 
@@ -925,9 +948,9 @@ var CSSC = (function()
         {
             if(ignore.indexOf(e[i]) >= 0) continue; 
 
-            if(e[i].type === cssc.type.namespace 
-            || e[i].type === cssc.type.import 
-            || e[i].type === cssc.type.charset)
+            if(e[i].type === TYPE_namespace 
+            || e[i].type === TYPE_import 
+            || e[i].type === TYPE_charset)
                 obj = e[i].obj;
             else
             {
@@ -938,7 +961,7 @@ var CSSC = (function()
                     if(typeof e[i].obj[key] === "object" 
                     && "length" in e[i].obj[key])
                     {
-                        if(type === cssc.expType.notMDObject || type === cssc.expType.array)
+                        if(type === TYPE_EXPORT_notMDObject || type === TYPE_EXPORT_array)
                         {
                             obj[key] = null;
                             delete obj[key];
@@ -975,7 +998,7 @@ var CSSC = (function()
 
             if(Object.keys(obj).length <= 0) continue;
 
-            if(type === cssc.expType.array)
+            if(type === TYPE_EXPORT_array)
             {
                 tmp = indPos.indexOf(e[i]);
 
@@ -1000,10 +1023,10 @@ var CSSC = (function()
             ignore.push(e[i]);
         }
 
-        if(type === cssc.expType.array) 
+        if(type === TYPE_EXPORT_array) 
         {   
             exportObj = Object.values(exportObj);
-            return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===cssc.expType.min);
+            return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min);
         }
 
         var sortExpObj = {};
@@ -1138,7 +1161,7 @@ var CSSC = (function()
             'update':   function(){ _update(els); return this; },
             'delete':   function(prop){ _delete(els, prop); return this; },
             'export':   function(type){ return _export(els, type); },
-            'parse':    function(min){ return _export(els, !min ? cssc.expType.normal : cssc.expType.min); },
+            'parse':    function(min){ return _export(els, !min ? TYPE_EXPORT_normal : TYPE_EXPORT_min); },
             'pos':      function(p) { return _pos(els, p, sel, parents); },
             'first':    function(){ return _pos(els, 0, sel, parents); },
             'last':     function(){ return _pos(els, -1, sel, parents); }
@@ -1161,83 +1184,59 @@ var CSSC = (function()
     };
     helperReadOnlyProps(cssc, {
         version: "1.0b",
-        
         //core functions
         'init':   function(toInit){ return initElements(toInit); },
         'import': function(importObj, vars){ return handleImport(importObj); },
         'export': function(type){ return handleSelection().export(type); },
         'parse':  function(min){ return handleSelection().parse(min); },
         'update': function(sel){ return handleSelection(sel).update(); },
-
         //helper functions
         parseVars:  function(txt, vars){ return helperParseVars(txt, vars); },
         objFromCss: function(css){ return helperObjFromCssText(css); },
         cssFromObj: function(obj, min, tabLen){ return helperCssTextFromObj(obj, min, tabLen); },
-        
+        //config & defs
         conf: helperReadOnlyObj({
             'styleId': "cssc-style",
             'viewErr': true
         }),
-        
         "type": helperReadOnlyObj({
-            'rule':       1, //check
-            'charset':    2, //check
-            'import':     3, //check
-            'media':      4, //check
-            'fontFace':   5, //check
-            'page':       6, //check
-            'keyframes':  7, //check
-            'keyframe':   8, //check
+            'rule':      TYPE_rule, 
+            'charset':   TYPE_charset, 
+            'import':    TYPE_import,
+            'media':     TYPE_media, 
+            'fontFace':  TYPE_fontFace,
+            'page':      TYPE_page,
+            'keyframes': TYPE_keyframes,
+            'keyframe':  TYPE_keyframe,
 
-            'namespace':      10, //check
-            'counterStyle':   11, 
-            'supports':       12, //check
+            'namespace':    TYPE_namespace,
+            'counterStyle': TYPE_counterStyle, 
+            'supports':     TYPE_supports,
 
-            'fontFeatureValues': 14,
-            'viewport':          15,
-
-            names: helperReadOnlyObj({
-                1:  "rule",
-                2:  "charset",
-                3:  "import",
-                4:  "media",
-                5:  "font-face",
-                6:  "page",
-                7:  "keyframes",
-                8:  "keyframe",
-
-                10: "namespace",
-                11: "counter-style",
-                12: "supports",
-
-                14: "font-feature-values",
-                15: "viewport"
-            })
+            'fontFeatureValues': TYPE_fontFeatureValues,
+            'viewport':          TYPE_viewport
         }),
-        
-        expType: helperReadOnlyObj({
+        exportType: helperReadOnlyObj({
             // Text output
-           'normal':  'css',
-           'min':     'minCss',
-
+           'normal': TYPE_EXPORT_normal,
+           'min':    TYPE_EXPORT_min,
             // Object output
-           'obj':          'obj',    //default
-           'object':       'object',
-           'notMDObject':  'objNMD', //not MultiDimensional Object
-           'array':        'array'
+           'obj':         TYPE_EXPORT_obj,
+           'object':      TYPE_EXPORT_object,
+           'notMDObject': TYPE_EXPORT_notMDObject,
+           'array':       TYPE_EXPORT_array
         }),
-        
         "events": helperReadOnlyObj({
-            'beforeChange':   "beforechange",
-            'change':         "change",
-            'beforeSet':      "beforeset",
-            'set':            "set",
-            'beforeCreate':   "beforecreate",
-            'create':         "create",
-            'beforeDelete':   "beforedelete",
-            'delete':         "delete",
-            'beforeDestroy':  "beforedestroy",
-            'destroy':        "destroy"
+            'beforeChange':  "beforechange",
+            'change':        "change",
+            'beforeSet':     "beforeset",
+            'set':           "set",
+            'beforeCreate':  "beforecreate",
+            'create':        "create",
+            'beforeDelete':  "beforedelete",
+            'delete':        "delete",
+            'beforeDestroy': "beforedestroy",
+            'destroy':       "destroy"
         })
     });
     
