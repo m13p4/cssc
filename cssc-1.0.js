@@ -25,7 +25,7 @@ var CSSC = (function()
         TYPE_supports       = 12, //check
         TYPE_fontFeatureValues = 14,
         TYPE_viewport          = 15,
-        TYPE = helperReadOnlyObj({
+        TYPE = helperObjectFreeze({
             'rule':      TYPE_rule, 
             'charset':   TYPE_charset, 
             'import':    TYPE_import,
@@ -47,7 +47,7 @@ var CSSC = (function()
         TYPE_EXPORT_object      = "object", //default
         TYPE_EXPORT_notMDObject = "objNMD", //not MultiDimensional Object
         TYPE_EXPORT_array       = "array",
-        TYPE_EXPORT = helperReadOnlyObj({
+        TYPE_EXPORT = helperObjectFreeze({
            normal:      TYPE_EXPORT_normal,
            min:         TYPE_EXPORT_min,
            obj:         TYPE_EXPORT_obj,
@@ -59,7 +59,7 @@ var CSSC = (function()
         CONF_DEFAULT_styleId = "cssc-style",
         CONF_DEFAULT_viewErr = true,
         CONF_DEFAULT_tabLen  = 2,
-        CONF_DEFAULT = helperReadOnlyObj({
+        CONF_DEFAULT = helperObjectFreeze({
             styleId: CONF_DEFAULT_styleId,
             viewErr: CONF_DEFAULT_viewErr,
             tabLen: CONF_DEFAULT_tabLen
@@ -71,6 +71,7 @@ var CSSC = (function()
     {
         if(returnFullValue) return Object.prototype.toString.call(elem);
         var n = Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
+        if(n === "Number") n = Math.floor(elem) === elem ? "int" : "float";
         if(!len) return n;
         return n.substr(0,len);
     }
@@ -78,36 +79,57 @@ var CSSC = (function()
     {
         if(Object.assign) return Object.assign.apply(null, arguments);
         
-        var clone = {}, key, i;
-        for(i = 0; i < arguments.length; i++)
+        var key, i;
+        for(i = 1; i < arguments.length; i++)
             for(key in arguments[i]) 
-                clone[key] = arguments[i][key];
+                arguments[0][key] = arguments[i][key];
+        return arguments[0];
+    }
+    function helperObjectDefineReadOnlyPropertys(obj, propsObj)
+    {
+        var key;
         
-        return clone;
+        if(Object.defineProperty) for(key in propsObj)
+            Object.defineProperty(obj, key, {
+                enumerable: true,
+                value: propsObj[key]
+            });
+        else for(key in propsObj) obj[key] = propsObj[key];
+    }
+    function helperObjectFreeze(obj)
+    {
+        if(Object.freeze) return Object.freeze(obj);
+        else if(Object.defineProperty)
+        {
+            var tmp = {}, key;
+            for(key in obj) Object.defineProperty(tmp, key, {
+                enumerable: true,
+                value: obj[key]
+            });
+            obj = tmp;
+        }
+        
+        if(Object.preventExtensions) Object.preventExtensions(obj);
+        return obj;
     }
     function helperCreateNewStyleElem(index)
     {
-        var CONF = index[4];
-        if(!!document.getElementById(CONF.styleId))
+        if(document.getElementById(index[4].styleId))
         {
             for(var i = 0; i < 10; i++)
-            {
-                if(!document.getElementById(CONF.styleId+'-'+i))
+                if(!document.getElementById(index[4].styleId+'-'+i))
                 {
-                    CONF.styleId = CONF.styleId+'-'+i;
+                    index[4].styleId = index[4].styleId+'-'+i;
                     break;
                 }
-            } 
 
-            if(!!document.getElementById(CONF.styleId))
-            {
+            if(document.getElementById(index[4].styleId))
                 throw new Error("cann not create new element..");
-            }
         }
 
         var styleElem = document.createElement("style");
         styleElem.setAttribute("type", "text/css");
-        styleElem.setAttribute("id", CONF.styleId);
+        styleElem.setAttribute("id", index[4].styleId);
         styleElem.appendChild(document.createTextNode(""));
 
         document.head.appendChild(styleElem);
@@ -130,16 +152,13 @@ var CSSC = (function()
             {
                 var tmp;
 
-                for(var i = 0; i < v.length; i++)
-                {
-                    if(isFinite(v[i]))
+                for(var i = 0; i < v.length; i++) if(isFinite(v[i]))
                     {
                         tmp = v[i];
 
                         if(tmp%1 === 0) v[i] = tmp + "px";
                         else v[i] = (Math.floor(tmp * 100) / 100) + "px";
                     }
-                }
 
                 return v.join(" ");
             }
@@ -179,7 +198,7 @@ var CSSC = (function()
         if(elType === "S") return obj;
         
         if(elType === "A") for(i = 0; i < obj.length; i++)
-            cssText += helperCssTextFromObj(obj[i], min, tabLen, addTab, true);
+                cssText += helperCssTextFromObj(obj[i], min, tabLen, addTab, true);
         else
         {
             for(key in obj)
@@ -284,7 +303,6 @@ var CSSC = (function()
 
             return newSel.replace(/,+\s*$/,"");
         }
-
         return pSel + sel;
     }
     function helperDeleteCSSRule(cssRule)
@@ -320,7 +338,7 @@ var CSSC = (function()
             for(i = 0; i < keySplit.length; i++)
             {
                 if(keySplit[i].length < 1) continue;
-                type = typeof v;
+                type = helperElemType(v,1);
 
                 if(i === 0)
                 {
@@ -330,15 +348,15 @@ var CSSC = (function()
                         break;
                     }
                 }
-                else if(v !== null && type === "object" && keySplit[i] in v) v = v[keySplit[i]];
-                else if(type === "string" && keySplit[i].match(/^[0-9]+$/))  v = v.charAt(keySplit[i]);
+                else if(v !== null && type.match(/[OA]/) && keySplit[i] in v) v = v[keySplit[i]];
+                else if(type === "S" && keySplit[i].match(/^[0-9]+$/))        v = v.charAt(keySplit[i]);
                 else
                 {
                     v = "$"+key;
                     break;
                 }
                 
-                if(typeof v === "function")
+                if(helperElemType(v,1) === "F")
                 {
                     if(str.charAt(varEnd+1) === "(")
                     {
@@ -392,35 +410,6 @@ var CSSC = (function()
             varStart = str.lastIndexOf("$", varEnd);
         }
         return str;
-    }
-    function helperReadOnlyProps(obj, propsObj)
-    {
-        var key;
-        
-        if(!!Object.defineProperty) for(key in propsObj)
-            Object.defineProperty(obj, key, {
-                enumerable: true,
-                value: propsObj[key]
-            });
-        else for(key in propsObj) obj[key] = propsObj[key];
-    }
-    function helperReadOnlyObj(obj)
-    {
-        if(!!Object.freeze) return Object.freeze(obj);
-        else if(!!Object.defineProperty)
-        {
-            var tmp = {}, key;
-
-            for(key in obj) Object.defineProperty(tmp, key, {
-                enumerable: true,
-                value: obj[key]
-            });
-            
-            obj = tmp;
-        }
-        
-        if(!!Object.preventExtensions) Object.preventExtensions(obj);
-        return obj;
     }
 
     function initElements(index, toInit)
@@ -789,7 +778,7 @@ var CSSC = (function()
     
     function _set(index, e, prop, val, pos)
     {
-        if(typeof pos === "number") // single Set
+        if(helperElemType(pos,1) === "i") // single Set
         {
             if(e[pos].indexElem.type === TYPE_fontFace)
             {
@@ -802,10 +791,7 @@ var CSSC = (function()
             prop = helperParseVars(prop, index[3]);
 
             if(e[pos].children)
-            {
-                var childHandler = getHandler(e[pos].children);
-                childHandler.set(prop, val);
-            }
+                _set(index, getHandler(e[pos].children, null, true), prop, val);
             else 
             {
                 var prsVal, valType = helperElemType(val,1), tmp;
@@ -885,22 +871,16 @@ var CSSC = (function()
             var i, propLen, key, props,
                 propType = helperElemType(prop, 1);
 
-            if(propType === "O")
-                propLen = Object.keys(prop).length;
-            else if(propType === "F")
-                props = prop();
+            if(propType === "O")      propLen = Object.keys(prop).length;
+            else if(propType === "F") props = prop();
 
             if(propType === "A" || (propType === "F" && helperElemType(props, 1) === "A"))
             {
-                var elH, prp = (propType === "A" ? prop : props);
+                var prp = (propType === "A" ? prop : props);
                 for(i = 0; i < prp.length; i++)
                 {
-                    elH = _pos(index,e,i);
-
-                    if(elH.e.length === 1)
-                        elH.set(prp[i]);
-                    else 
-                        break;
+                    if(e.length > i) _set(index, [e[i]], prp[i]);
+                    else             break;
                 }
             }
             else for(i = 0; i < e.length; i++)
@@ -957,7 +937,7 @@ var CSSC = (function()
     }
     function _export(index, e, type, ignore)
     {
-        var exportObj = {}, obj, childHandler, i, j, key, tmp, _type = type;
+        var exportObj = {}, obj, i, j, key, tmp, _type = type;
 
         if(type === TYPE_EXPORT_obj)
             type = TYPE_EXPORT_object;
@@ -981,8 +961,7 @@ var CSSC = (function()
 
                 for(key in e[i].obj)
                 {
-                    if(typeof e[i].obj[key] === "object" 
-                    && "length" in e[i].obj[key])
+                    if(helperElemType(e[i].obj[key], 1) === "A")
                     {
                         if(type === TYPE_EXPORT_notMDObject || type === TYPE_EXPORT_array)
                         {
@@ -1015,8 +994,7 @@ var CSSC = (function()
 
             if(e[i].children)
             {
-                childHandler = getHandler(e[i].children);
-                obj = helperObjectAssign(childHandler.export(type, ignore), obj);
+                obj = helperObjectAssign(_export(index, getHandler(e[i].children, null, true), type, ignore), obj);
             }
 
             if(Object.keys(obj).length <= 0) continue;
@@ -1028,7 +1006,7 @@ var CSSC = (function()
             }
             else if(exportObj[e[i].selector])
             {
-                if(!(typeof exportObj[e[i].selector] === "object" && "length" in exportObj[e[i].selector]))
+                if(helperElemType(exportObj[e[i].selector], 1) !== "A")
                     exportObj[e[i].selector] = [exportObj[e[i].selector]];
 
                 exportObj[e[i].selector].push(obj);
@@ -1052,7 +1030,7 @@ var CSSC = (function()
 
         tmp = Object.keys(sortExpObj).length > 0;
         if(tmp) for(i in exportObj) if(!sortExpObj[i])
-            sortExpObj[i] = exportObj[i];
+                    sortExpObj[i] = exportObj[i];
 
         return tmp ? sortExpObj : exportObj;
     }
@@ -1072,13 +1050,13 @@ var CSSC = (function()
             if(!!e[i].children)
                 getHandler(e[i].children).update();
             else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
-                _set(key, e[i].indexElem.style._update[key](), i);
+                    _set(key, e[i].indexElem.style._update[key](), i);
         }
         return;
     }
     function _delete(index, e, prop)
     {
-        var isUndef = typeof prop === "undefined", i;
+        var isUndef = !!helperElemType(prop,1).match(/[NU]/), i;
 
         if(isUndef) for(i = 0; i < e.length; i++)
         {
@@ -1170,7 +1148,7 @@ var CSSC = (function()
         handler.e = _getE(els);
         handler.selector = _selector(els, sel);
         
-        helperReadOnlyProps(handler, {
+        helperObjectDefineReadOnlyPropertys(handler, {
             'set':    function(prop, val, pos){ createRuleIfNotExists(); _set(index, els, prop, val, pos); return this; },
             'get':    function(prop, retAP){ return _get(index, els, prop, retAP); },
             'update': function(){ _update(els); return this; },
@@ -1201,7 +1179,7 @@ var CSSC = (function()
                 MESSAGES.push(err);
             }
         };
-        helperReadOnlyProps(cntr, {
+        helperObjectDefineReadOnlyPropertys(cntr, {
             version: VERSION,
             //core functions
             'init':   function(toInit){ return initElements(index, toInit); },
@@ -1231,6 +1209,5 @@ var CSSC = (function()
         
         return cntr;
     }
-    
     return getController();
 })();
