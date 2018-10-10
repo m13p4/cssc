@@ -71,7 +71,7 @@ var CSSC = (function()
     {
         if(returnFullValue) return Object.prototype.toString.call(elem);
         var n = Object.prototype.toString.call(elem).replace(/(^\[.+\s|\]$)/g,"");
-        if(n === "Number") n = Math.floor(elem) === elem ? "int" : "float";
+        if(n === "Number") n = Math.floor(elem) === elem ? "integer" : "float";
         if(!len) return n;
         return n.substr(0,len);
     }
@@ -297,8 +297,7 @@ var CSSC = (function()
                 for(i = 0; i < pSelSplit.length; i++)
                     for(j = 0; j < selSplit.length; j++)
                         newSel += pSelSplit[i] + selSplit[j] + ", ";
-            else
-                for(i = 0; i < pSelSplit.length; i++)
+            else for(i = 0; i < pSelSplit.length; i++)
                     newSel += pSelSplit[i] + sel + ", ";
 
             return newSel.replace(/,+\s*$/,"");
@@ -309,8 +308,7 @@ var CSSC = (function()
     {
         var parent = !!cssRule.parentRule ? cssRule.parentRule : cssRule.parentStyleSheet, i;
 
-        for(i = 0; i < parent.cssRules.length; i++)
-            if(parent.cssRules[i] === cssRule)
+        for(i = 0; i < parent.cssRules.length; i++) if(parent.cssRules[i] === cssRule)
                 parent.deleteRule(i);
     }
     function helperParseVars(str, vars)
@@ -630,7 +628,7 @@ var CSSC = (function()
         {
             if(getElements) return _index[sel] ? _index[sel].content : [];
             
-            return ruleHandler(index, (_index[sel] ? _index[sel] : []), sel);
+            return ruleHandler(index, (_index[sel] ? _index[sel].content : []), sel);
         }
         else if(selType === "R")
         {
@@ -835,7 +833,7 @@ var CSSC = (function()
                 }
                 else if(valType === "F")
                 {
-                    var oldVal = _pos(index, e, pos).get(prop), valToSet;
+                    var oldVal = _get(index, [e[pos]], prop), valToSet;
 
                     try
                     {
@@ -1027,7 +1025,7 @@ var CSSC = (function()
 
         return tmp ? sortExpObj : exportObj;
     }
-    function _update(e)
+    function _update(index, e)
     {
         var i, tmp, key;
 
@@ -1037,13 +1035,13 @@ var CSSC = (function()
             {
                 tmp = e[i].indexElem._update();
 
-                for(key in tmp) _set(key, tmp[key], i);
+                for(key in tmp) _set(index, e, key, tmp[key], i);
             }
 
-            if(!!e[i].children)
-                getHandler(e[i].children).update();
+            if(e[i].children)
+                _update(index, getHandler(e[i].children, null, true));
             else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
-                    _set(key, e[i].indexElem.style._update[key](), i);
+                    _set(index, e, key, e[i].indexElem.style._update[key](), i);
         }
         return;
     }
@@ -1053,8 +1051,7 @@ var CSSC = (function()
 
         if(isUndef) for(i = 0; i < e.length; i++)
         {
-            if(e[i].children)
-                getHandler(e[i].children).delete(prop);
+            if(e[i].children) _delete(index, getHandler(e[i].children, null, true));
 
             helperDeleteCSSRule(e[i].indexElem);
             delFromIndex(e[i].parent ? e[i].parent : index, e[i].selector, e[i]);
@@ -1063,9 +1060,8 @@ var CSSC = (function()
         {
             e[i].indexElem.style[prop] = "";
 
-            if(e[i].children) getHandler(e[i].children).delete(prop);
+            if(e[i].children) _delete(index, getHandler(e[i].children, null, true), prop);
         }
-
         return;
     }
     function _pos(index, e, p, sel, parents)
@@ -1075,11 +1071,11 @@ var CSSC = (function()
         return ruleHandler(index, [], sel, false, parents);
     }
 
-    function _getE(e)
+    function _getE(index, e)
     {
         var _e = [];
         for(var i = 0; i < e.length; i++) if(e[i].indexElem)
-            _e.push(e[i].indexElem.placeholder ? e[i].obj : e[i].indexElem);
+                _e.push(e[i].indexElem.placeholder ? _export(index, [e[i]], TYPE_EXPORT_obj) : e[i].indexElem);
         return _e;
     };
 
@@ -1116,7 +1112,7 @@ var CSSC = (function()
                 }
 
                 els = contentElems;
-                handler.e = _getE(els);
+                handler.e = _getE(index, els);
                 handler.selector = _selector(els, sel);
             }
         }
@@ -1137,21 +1133,20 @@ var CSSC = (function()
             }
             return ruleHandler(index, elArr, sel, null, els);
         };
-        handler.e = _getE(els);
+        handler.e = _getE(index, els);
         handler.selector = _selector(els, sel);
         
         helperObjectDefineReadOnlyPropertys(handler, {
             'set':    function(prop, val, pos){ createRuleIfNotExists(); _set(index, els, prop, val, pos); return this; },
             'get':    function(prop, retAP){ return _get(index, els, prop, retAP); },
-            'update': function(){ _update(els); return this; },
+            'update': function(){ _update(index, els); return this; },
             'delete': function(prop){ _delete(index, els, prop); return this; },
             'export': function(type){ return _export(index, els, type); },
-            'parse':  function(min){ return _export(index,els, !min ? TYPE_EXPORT_css : TYPE_EXPORT_min); },
+            'parse':  function(min){ return _export(index, els, !min ? TYPE_EXPORT_css : TYPE_EXPORT_min); },
             'pos':    function(p) { return _pos(index, els, p, sel, parents); },
             'first':  function(){ return _pos(index, els, 0, sel, parents); },
             'last':   function(){ return _pos(index, els, -1, sel, parents); }
         });
-
         return handler;
     }
     
