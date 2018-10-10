@@ -1195,8 +1195,7 @@ var CSSC = (function()
             _conf:      CONF_DEFAULT,
             type:       TYPE,
             exportType: TYPE_EXPORT,
-            messages:   MESSAGES,
-            index: index
+            messages:   MESSAGES
         });
         cntr.defineConf(CONF_DEFAULT);
         
