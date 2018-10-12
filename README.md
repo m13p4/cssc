@@ -112,6 +112,53 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 * *`"objNMD"` - export as not multidimensional object*
 * *`"array"` - export as array*
 
+```javascript
+CSSC({
+    body: {
+        margin: 1
+    },
+    p: {
+        width: 500,
+        margin: "auto",
+        "span.first": { // generate CSS rule "p span.first"
+            "font-size": 25
+        },
+        "@media screen and (max-width: 500px)": { // generate media rule with "p" rule
+            width: "100%"
+        }
+    },
+    ".updatable": function(){ // generate updatable class
+        return {
+            'font-size': 10 + (Math.random() * 10),
+        };
+    }
+});
+
+var exportObject = CSSC.export(); // or CSSC.export("obj") or CSSC.export("object")
+console.log(JSON.stringify(exportObject, true, 4));
+/*
+{
+    "body": {
+        "margin": "1px"
+    },
+    "p": {
+        "width": "500px",
+        "margin": "auto",
+        "span.first": {
+            "font-size": "25px"
+        },
+        "@media screen and (max-width: 500px)": {
+            "width": "100%"
+        }
+    },
+    ".updatable": {
+        "font-size": "18.34px"
+    }
+}
+*/
+
+``` 
+
 #### .parse()
 #### .new()
 
