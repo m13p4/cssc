@@ -338,27 +338,28 @@ newCSSC({
 
 ---
 
-### .defineConf()
+### .setConf()
 ```
-.defineConf(conf)
+.setConf(conf[, value])
 ```
-* `conf` - A configuration object 
+* `conf` - A configuration object or key as String
+* `value` *\[optional\]* - if key a String becomes value to set
 
 **`Return value`** - Controller object (CSSC)
 
 
 **Example**
 ```javascript
-CSSC.defineConf({
+CSSC.setConf({
     styleId: "my-style-sheets", // [String]  Document element ID 
     viewErr: true,              // [Boolean] Show errors in console
     tabLen: 4                   // [Integer] Length of space characters by export
 });
+//or
+CSSC.setConf("viewErr", "cssc-sheet");
+CSSC.setConf("viewErr", false);
+CSSC.setConf("tabLen", 2);
 ```
-
----
-
-### .setConf()
 
 ---
 
@@ -366,11 +367,7 @@ CSSC.defineConf({
 
 ---
 
-### .defineVars()
-
----
-
-### .addVars()
+### .setVars()
 
 ---
 
