@@ -36,6 +36,10 @@ CSSC({
 
 ### Controller functions
 #### init
+```
+CSSC.init(objToInit)
+```
+
 #### import
 #### update
 #### export
