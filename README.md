@@ -157,6 +157,34 @@ console.log(JSON.stringify(exportObject, true, 4));
 }
 */
 
+exportObject = CSSC.export("css");
+console.log(exportObject);
+/*
+body {
+  margin: 1px;
+}
+p {
+  width: 500px;
+  margin: auto;
+}
+p span.first {
+  font-size: 25px;
+}
+@media screen and (max-width: 500px) {
+  p {
+    width: 100%;
+  }
+}
+.updatable {
+  font-size: 18.34px;
+}
+*/
+
+exportObject = CSSC.export("min");
+console.log(exportObject);
+/*
+body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media screen and (max-width:500px){p{width:100%;}}.updatable{font-size:18.34px;}
+*/
 ``` 
 
 #### .parse()
