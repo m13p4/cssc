@@ -339,6 +339,21 @@ newCSSC({
 ---
 
 ### .defineConf()
+```
+.defineConf(conf)
+* `conf` - 
+```
+**`Return value`** - Controller object (CSSC)
+
+
+**Example**
+```javascript
+CSSC.defineConf({
+    styleId: "my-style-sheets", // [String]  Document element ID 
+    viewErr: true,              // [Boolean] Show errors in console
+    tabLen: 4                   // [Integer] Length of space characters by export
+});
+```
 
 ---
 
