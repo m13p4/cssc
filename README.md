@@ -1,5 +1,7 @@
 **Caution:** This version is a BETA.
 
+---
+
 # CSSC
 CSSC is a CSS Controller to manage your Cascading Style Sheets.
 
