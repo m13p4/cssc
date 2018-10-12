@@ -103,7 +103,7 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ```
 .update([selector])
 ```
-* `selector` *\[optional\]* - a selector as String or RegEx or Array of Strings
+* *`selector` \[optional\]* - a selector as String or RegEx or Array of Strings
 
 **`Return value`** - Controller object (CSSC)
 
@@ -121,7 +121,7 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 ```
 .export([exportType])
 ```
-* `exportType` *(optional)* - String with export type (default: "object")
+* *`exportType` \[optional\]* - String with export type (default: "object")
     * *`"css"` - export as CSS String*
     * *`"min"` - export as minified CSS String* 
     * *`"obj"` - export as JS-Object*
@@ -276,7 +276,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 ```
 .parse([min])
 ```
-* `min` *\[optional\]* - Boolean, if true return minified CSS (default: false)
+* *`min` \[optional\]* - Boolean, if true return minified CSS (default: false)
 
 **`Return value`** - String with CSS
 
@@ -364,7 +364,28 @@ CSSC.setConf("tabLen", 2);
 ---
 
 ### .getConf()
+```
+.getConf([key])
+```
+* *`key` \[optional\]* - A key as String
 
+**`Return value`** - Mixed -> if the key given is, return the method the value of key. If not key given, is the return value a Object with key: value pair
+
+
+**Example**
+```javascript
+var cnf = CSSC.getConf();
+console.log(JSON.stringify(cnf, true, 4));
+/*
+{
+    "styleId": "cssc-style",
+    "viewErr": true,
+    "tabLen": 2
+}
+*/
+//or
+CSSC.getConf("tabLen"); //return 2
+```
 ---
 
 ### .setVars()
