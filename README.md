@@ -36,9 +36,7 @@ CSSC({
 
 ### Controller functions
 #### .init()
-```
-.init(initObj)
-```
+`.init(initObj)`
 **initObj** - DOM "<style>" element, StyleSheet object or Array containing it.
 
 ```javascript
