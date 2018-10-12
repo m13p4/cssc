@@ -52,9 +52,8 @@ CSSC.init(document.querySelectorAll("style"));
 ``` 
     
 #### .import()
-```
-.import(importObj)
-```
+
+> .import(importObj)
 **importObj** - a object with style sheets
 
 ```javascript
