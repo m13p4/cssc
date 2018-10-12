@@ -43,8 +43,10 @@ CSSC({
 .init(initObj)
 ```
 * `initObj` - DOM "<style>" element, StyleSheet object or Array containing it.
+
 `Return value` - Controller object
 
+**Example**
 ```javascript
 // init all defined CSS rules in 
 // '<style id="style-sheet">...</style>' element
