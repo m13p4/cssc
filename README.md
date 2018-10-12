@@ -341,8 +341,8 @@ newCSSC({
 ### .defineConf()
 ```
 .defineConf(conf)
-* `conf` - 
 ```
+* `conf` - A configuration object 
 **`Return value`** - Controller object (CSSC)
 
 
