@@ -71,7 +71,7 @@ var importObj = {
         "@media screen and (max-width: 500px)": { // generate media rule with "p" rule
             width: "100%"
         }
-    }
+    },
     ".updatable": function(){ // generate updatable class
         return {
             'font-size': 10 + (Math.random() * 10),
