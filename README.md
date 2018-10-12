@@ -37,9 +37,9 @@ CSSC({
 ### Controller functions
 #### .init()
 ```
-.init(objToInit)
+.init(initObj)
 ```
-**objToInit** - DOM "<style>" element, StyleSheet object or Array containing it.
+**initObj** - DOM "<style>" element, StyleSheet object or Array containing it.
 
 ```javascript
 // init all defined CSS rules in 
@@ -52,6 +52,31 @@ CSSC.init(document.querySelectorAll("style"));
 ``` 
     
 #### .import()
+```
+.import(importObj)
+```
+**importObj** - a object with style sheets
+
+```javascript
+var importObj = {
+    body: {
+        margin: 1
+    },
+    p: {
+        width: 500,
+        margin: "auto",
+        "span.first": { // generate CSS rule "p span.first"
+            "font-size": 25
+        },
+        "@media screen and (max-width: 500px)": { // generate media rule with "p" rule
+            width: "100%"
+        }
+    }
+};
+
+CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
+``` 
+
 #### .update()
 #### .export()
 #### .parse()
