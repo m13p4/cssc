@@ -185,6 +185,68 @@ console.log(exportObject);
 /*
 body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media screen and (max-width:500px){p{width:100%;}}.updatable{font-size:18.34px;}
 */
+
+exportObject = CSSC.export("objNMD");
+console.log(JSON.stringify(exportObject, true, 4));
+/*
+{
+    "body": {
+        "margin": "1px"
+    },
+    "p": {
+        "width": "500px",
+        "margin": "auto"
+    },
+    "p span.first": {
+        "font-size": "25px"
+    },
+    "@media screen and (max-width: 500px)": {
+        "p": {
+            "width": "100%"
+        }
+    },
+    ".updatable": {
+        "font-size": "18.34px"
+    }
+}
+*/
+
+exportObject = CSSC.export("array");
+console.log(JSON.stringify(exportObject, true, 4));
+/*
+[
+    {
+        "body": {
+            "margin": "1px"
+        }
+    },
+    {
+        "p": {
+            "width": "500px",
+            "margin": "auto"
+        }
+    },
+    {
+        "p span.first": {
+            "font-size": "25px"
+        }
+    },
+    {
+        "@media screen and (max-width: 500px)": [
+            {
+                "p": {
+                    "width": "100%"
+                }
+            }
+        ]
+    },
+    {
+        ".updatable": {
+            "font-size": "18.34px"
+        }
+    }
+]
+*/
 ``` 
 
 #### .parse()
