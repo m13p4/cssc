@@ -1,10 +1,10 @@
 **Caution:** This version is a BETA version !
 
 # CSSC
-CSSC is a CSS controller to manage your style sheets.
+CSSC is a CSS Controller to manage your Cascading Style Sheets.
 
 ## General
-CSSC indexed already loaded style sheets.
+CSSC can use to define Cascading Style Sheets (CSS) in your browser, to change/show/delete allready defined CSS.
 
 * Set with key/value
 ```javascript
