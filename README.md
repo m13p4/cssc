@@ -35,21 +35,21 @@ CSSC({
 ```
 
 ### Controller functions
-#### init
+#### .init()
 ```
 CSSC.init(objToInit)
 ```
-* **objToInit** DOM "<style>" element, StyleSheet object or Array containing it 
+* **objToInit** - DOM "<style>" element, StyleSheet object or Array containing it.
     
-#### import
-#### update
-#### export
-#### parse
-#### new
+#### .import()
+#### .update()
+#### .export()
+#### .parse()
+#### .new()
 
-#### defineConf
-#### setConf
-#### getConf
-#### defineVars
-#### addVars
-#### getVars
+#### .defineConf()
+#### .setConf()
+#### .getConf()
+#### .defineVars()
+#### .addVars()
+#### .getVars()
