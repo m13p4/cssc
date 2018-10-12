@@ -12,5 +12,6 @@ The controller object (CSSC) is a function to get handler object or to import ne
 * get handler object
 ```javascript
 var h = CSSC(".className"); //get handler object with all CSS objects are defined as .className
-    h = CSSC([".className", ".otherClass"]); //get handler object with .className and .otherClass
+    h = CSSC([".className1", ".className2"]); //get handler object with .className1 and .className2
+    h = CSSC(/\.className[12]{,1}/); //get handler obejct with objects matched to regular expression
 ```
