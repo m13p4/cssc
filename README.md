@@ -280,6 +280,8 @@ console.log(JSON.stringify(exportObject, true, 4));
 
 **`Return value`** - String with CSS
 
+
+**Example**
 ```javascript
 /*
 this method return the same result as .export("css") or .export("min");
@@ -318,6 +320,21 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 ---
 
 #### .new()
+```
+.new()
+```
+**`Return value`** - New Controller object (CSSC)
+
+
+**Example**
+```javascript
+var newCSSC = CSSC.new();
+newCSSC({
+    ".myClass": {
+        "margin-top": 10
+    }
+});
+```
 
 ---
 
