@@ -6,6 +6,8 @@ CSSC is a CSS Controller to manage your Cascading Style Sheets.
 ## General
 CSSC can use to define Cascading Style Sheets (CSS) in your browser, to change/show/delete allready defined CSS.
 
+
+
 ## Controller object (CSSC)
 The controller object (CSSC) is a function to get handler object or to import new style sheets.
 
@@ -35,6 +37,7 @@ CSSC({
 ```
 
 ### Controller functions
+
 #### .init()
 ```
 .init(initObj)
@@ -50,7 +53,8 @@ CSSC.init(document.getElementById("style-sheet"));
 // '<style>...</style>' elements
 CSSC.init(document.querySelectorAll("style")); 
 ``` 
-    
+
+
 #### .import()
 ```
 .import(importObj)
@@ -82,6 +86,7 @@ var importObj = {
 CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ``` 
 
+
 #### .update()
 ```
 .update([selector])
@@ -93,6 +98,7 @@ CSSC.update(); // update all CSS rules which were defined through functions
 // or
 CSSC.update(".updatable"); // update CSS rule .updatable when it was defined through function
 ``` 
+
 
 #### .export()
 #### .parse()
