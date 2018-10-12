@@ -18,6 +18,7 @@ var h = CSSC(".className"); //get handler object with all CSS objects are define
 ```
 * define CSS (import)
 ```javascript
+//define new style sheets in browser
 CSSC({
     ".className": {
         border: "1px solid #000"
