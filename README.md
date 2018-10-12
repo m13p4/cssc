@@ -36,11 +36,11 @@ CSSC({
 });
 ```
 
-### Controller functions
+## Controller functions
 
 ---
 
-#### .init()
+### .init()
 ```
 .init(initObj)
 ```
@@ -62,7 +62,7 @@ CSSC.init(document.querySelectorAll("style"));
 
 ---
 
-#### .import()
+### .import()
 ```
 .import(importObj)
 ```
@@ -99,7 +99,7 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 
 ---
 
-#### .update()
+### .update()
 ```
 .update([selector])
 ```
@@ -117,7 +117,7 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 
 ---
 
-#### .export()
+### .export()
 ```
 .export([exportType])
 ```
@@ -272,7 +272,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 
 ---
 
-#### .parse()
+### .parse()
 ```
 .parse([min])
 ```
@@ -319,7 +319,7 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 
 ---
 
-#### .new()
+### .new()
 ```
 .new()
 ```
@@ -338,24 +338,24 @@ newCSSC({
 
 ---
 
-#### .defineConf()
+### .defineConf()
 
 ---
 
-#### .setConf()
+### .setConf()
 
 ---
 
-#### .getConf()
+### .getConf()
 
 ---
 
-#### .defineVars()
+### .defineVars()
 
 ---
 
-#### .addVars()
+### .addVars()
 
 ---
 
-#### .getVars()
+### .getVars()
