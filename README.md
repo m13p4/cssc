@@ -343,7 +343,7 @@ newCSSC({
 .setConf(conf[, value])
 ```
 * `conf` - A configuration object or key as String
-* `value` *\[optional\]* - if key a String becomes value to set
+* *`value` \[optional\]* - if key a String becomes value to set
 
 **`Return value`** - Controller object (CSSC)
 
