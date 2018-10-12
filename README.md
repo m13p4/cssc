@@ -350,7 +350,7 @@ newCSSC({
 ```
 .setConf(conf[, value])
 ```
-* `conf` - A configuration object or key as String
+* `conf` - A object with key-value pair or key as String
 * *`value` \[optional\]* - if key a String becomes value to set
 
 **`Return value`** - Controller object (CSSC)
@@ -377,7 +377,7 @@ CSSC.setConf("parse_tab_len", 2);
 ```
 * *`key` \[optional\]* - A key as String
 
-**`Return value`** - Mixed -> if the key given is, return the method the value of key. If not key given, is the return value a Object with key: value pair
+**`Return value`** - Mixed -> if the key given is, return the method the value of key. If not key given, is the return value a Object with key-value pair
 
 
 **Example**
