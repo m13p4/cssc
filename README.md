@@ -358,14 +358,14 @@ newCSSC({
 **Example**
 ```javascript
 CSSC.setConf({
-    styleId: "my-style-sheets", // [String]  Document element ID 
-    viewErr: true,              // [Boolean] Show errors in console
-    tabLen: 4                   // [Integer] Length of space characters by export
+    style_id: "my-style-sheets", // [String]  Document element ID 
+    view_err: true,              // [Boolean] Show errors in console
+    parse_tab_len: 4             // [Integer] Length of space characters by export
 });
 //or
-CSSC.setConf("viewErr", "cssc-sheet");
-CSSC.setConf("viewErr", false);
-CSSC.setConf("tabLen", 2);
+CSSC.setConf("style_id", "cssc-sheet");
+CSSC.setConf("view_err", false);
+CSSC.setConf("parse_tab_len", 2);
 ```
 
 ---
@@ -387,11 +387,12 @@ console.log(JSON.stringify(cnf, true, 4));
 {
     "styleId": "cssc-style",
     "viewErr": true,
-    "tabLen": 2
+    "tabLen": 2,
+    "parse_unit_default": "px"
 }
 */
 //or
-CSSC.getConf("tabLen"); //return 2
+CSSC.getConf("parse_tab_len"); //return 2
 ```
 ---
 
