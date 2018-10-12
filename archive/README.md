@@ -3,7 +3,7 @@
 # CSSC / CSSController
 CSSC is a simple way to make you CSS dynamic with JavaScript
 
-##General
+## General
 CSSC indexed already loaded style sheets.
 
 After the index, you can access the features
