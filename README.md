@@ -42,7 +42,7 @@ CSSC({
 ```
 .init(initObj)
 ```
-`initObj` - DOM "<style>" element, StyleSheet object or Array containing it.
+* `initObj` - DOM "<style>" element, StyleSheet object or Array containing it.
 
 ```javascript
 // init all defined CSS rules in 
@@ -59,7 +59,7 @@ CSSC.init(document.querySelectorAll("style"));
 ```
 .import(importObj)
 ```
-`importObj` - an object with style sheets
+* `importObj` - an object with style sheets
 
 ```javascript
 var importObj = {
@@ -91,7 +91,7 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ```
 .update([selector])
 ```
-`selector` *(optional)* - a selector as String or RegEx or Array of Strings
+* `selector` *(optional)* - a selector as String or RegEx or Array of Strings
 
 ```javascript
 CSSC.update(); // update all CSS rules which were defined through functions
@@ -105,12 +105,12 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 .export([exportType])
 ```
 * `exportType` *(optional)* - String with export type (default: "object")
-** *`"css"` - export as CSS String*
-** *`"min"` - export as minified CSS String* 
-** *`"obj"` - export as JS-Object*
-** *`"object"` - the same as "obj"*
-** *`"objNMD"` - export as not multidimensional object*
-** *`"array"` - export as array*
+    * *`"css"` - export as CSS String*
+    * *`"min"` - export as minified CSS String* 
+    * *`"obj"` - export as JS-Object*
+    * *`"object"` - the same as "obj"*
+    * *`"objNMD"` - export as not multidimensional object*
+    * *`"array"` - export as array*
 
 ```javascript
 CSSC({
