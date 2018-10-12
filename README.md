@@ -26,8 +26,25 @@ CSSC({
     ".className1": {
         border: "1px dotted #000"
     },
-    ".className2": {
-        border: "none"
+    ".className2": function(){ //updatable object
+        return {
+            border: "none"
+        };
     }
 });
 ```
+
+### Controller functions
+#### init
+#### import
+#### update
+#### export
+#### parse
+#### new
+
+#### defineConf
+#### setConf
+#### getConf
+#### defineVars
+#### addVars
+#### getVars
