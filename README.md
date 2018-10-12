@@ -1,4 +1,4 @@
-* Caution: This version is a BETA version !
+**Caution:** This version is a BETA version !
 
 # CSSC
 CSSC is a CSS controller to manage your style sheets.
