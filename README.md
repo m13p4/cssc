@@ -42,8 +42,13 @@ CSSC({
 * **objToInit** - DOM "<style>" element, StyleSheet object or Array containing it.
 
 ```javascript
-    CSSC.init(document.getElementById("style-sheet")); //init all defined CSS rules in '<style id="style-sheet">...</style>' element
-    CSSC.init(document.querySelectorAll("style")); //init all CSS rules in all '<style>...</style>' elements
+// init all defined CSS rules in 
+// '<style id="style-sheet">...</style>' element
+CSSC.init(document.getElementById("style-sheet")); 
+
+// init all CSS rules in all 
+// '<style>...</style>' elements
+CSSC.init(document.querySelectorAll("style")); 
 ``` 
     
 #### .import()
