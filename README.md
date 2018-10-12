@@ -105,12 +105,12 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 .export([exportType])
 ```
 `exportType` *(optional)* - String with export type (default: "object")
-* *`"css"`    - export as CSS String*
-* *"min"    - export as minified CSS String* 
-* *"obj"    - export as JS-Object*
-* *"object" - the same as "obj"*
-* *"objNMD" - export as not multidimensional object*
-* *"array" &nbsp;- export as array*
+* *`"css"` - export as CSS String*
+* *`"min"` - export as minified CSS String* 
+* *`"obj"` - export as JS-Object*
+* *`"object"` - the same as "obj"*
+* *`"objNMD"` - export as not multidimensional object*
+* *`"array"` - export as array*
 
 #### .parse()
 #### .new()
