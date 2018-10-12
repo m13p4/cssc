@@ -46,7 +46,7 @@ CSSC({
 ```
 * `initObj` - DOM "<style>" element, StyleSheet object or Array containing it.
 
-`Return value` - Controller object (CSSC)
+**`Return value`** - Controller object (CSSC)
 
 
 **Example**
@@ -68,7 +68,7 @@ CSSC.init(document.querySelectorAll("style"));
 ```
 * `importObj` - an object with style sheets
 
-`Return value` - Controller object (CSSC)
+**`Return value`** - Controller object (CSSC)
 
 
 **Example**
@@ -105,7 +105,7 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ```
 * `selector` *(optional)* - a selector as String or RegEx or Array of Strings
 
-`Return value` - Controller object (CSSC)
+**`Return value`** - Controller object (CSSC)
 
 
 **Example**
@@ -129,6 +129,10 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
     * *`"objNMD"` - export as not multidimensional object*
     * *`"array"` - export as array*
 
+**`Return value`** - Mixed
+
+
+**Example**
 ```javascript
 CSSC({
     body: {
@@ -273,6 +277,8 @@ console.log(JSON.stringify(exportObject, true, 4));
 .parse([min])
 ```
 * `min` *(optional)* - Boolean, if true return minified CSS (default: false)
+
+**`Return value`** - String with CSS
 
 ```javascript
 /*
