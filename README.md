@@ -75,7 +75,7 @@ var importObj = {
     ".updatable": function(){ // generate updatable class
         return {
             'font-size': 10 + (Math.random() * 10),
-        }
+        };
     }
 };
 
@@ -83,6 +83,17 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ``` 
 
 #### .update()
+```
+.update([selector])
+```
+**selector** *(optional)* - a selector as String or RegEx or Array of Strings
+
+```javascript
+CSSC.update(); // update all CSS rules which were defined through functions
+// or
+CSSC.update(".updatable"); // update CSS rule .updatable when it was defined through function
+``` 
+
 #### .export()
 #### .parse()
 #### .new()
