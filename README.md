@@ -39,7 +39,7 @@ CSSC({
 ```
 .init(objToInit)
 ```
-* **objToInit** - DOM "<style>" element, StyleSheet object or Array containing it.
+**objToInit** - DOM "<style>" element, StyleSheet object or Array containing it.
 
 ```javascript
 // init all defined CSS rules in 
