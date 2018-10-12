@@ -39,7 +39,7 @@ CSSC({
 ```
 .init(initObj)
 ```
-`**initObj**` - DOM "<style>" element, StyleSheet object or Array containing it.
+`initObj` - DOM "<style>" element, StyleSheet object or Array containing it.
 
 ```javascript
 // init all defined CSS rules in 
@@ -55,7 +55,7 @@ CSSC.init(document.querySelectorAll("style"));
 ```
 .import(importObj)
 ```
-   **importObj** - a object with style sheets
+`importObj` - a object with style sheets
 
 ```javascript
 var importObj = {
@@ -86,7 +86,7 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ```
 .update([selector])
 ```
-**selector** *(optional)* - a selector as String or RegEx or Array of Strings
+`selector` *(optional)* - a selector as String or RegEx or Array of Strings
 
 ```javascript
 CSSC.update(); // update all CSS rules which were defined through functions
