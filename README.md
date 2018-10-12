@@ -58,7 +58,7 @@ CSSC.init(document.getElementById("style-sheet"));
 CSSC.init(document.querySelectorAll("style")); 
 ``` 
 
-
+---
 
 #### .import()
 ```
