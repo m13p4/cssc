@@ -250,6 +250,46 @@ console.log(JSON.stringify(exportObject, true, 4));
 ``` 
 
 #### .parse()
+```
+.parse([min])
+```
+* `min` *(optional)* - Boolean, if true return minified CSS (default: false)
+
+```javascript
+/*
+this method return the same result as .export("css") or .export("min");
+*/
+
+exportObject = CSSC.parse(); // or .parse(false)
+console.log(exportObject);
+/*
+body {
+  margin: 1px;
+}
+p {
+  width: 500px;
+  margin: auto;
+}
+p span.first {
+  font-size: 25px;
+}
+@media screen and (max-width: 500px) {
+  p {
+    width: 100%;
+  }
+}
+.updatable {
+  font-size: 18.34px;
+}
+*/
+
+exportObject = CSSC.parse(true);
+console.log(exportObject);
+/*
+body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media screen and (max-width:500px){p{width:100%;}}.updatable{font-size:18.34px;}
+*/
+```
+
 #### .new()
 
 #### .defineConf()
