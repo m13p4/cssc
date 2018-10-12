@@ -101,6 +101,12 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 
 
 #### .export()
+```
+.export([exportType])
+```
+`exportType` *(optional)* - String with export type (default: "object")
+                            "css" - export as CSS String
+
 #### .parse()
 #### .new()
 
