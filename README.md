@@ -55,7 +55,7 @@ CSSC.init(document.querySelectorAll("style"));
 ```
 .import(importObj)
 ```
-<span style="font-size: 12px;">**importObj** - a object with style sheets</span>
+   **importObj** - a object with style sheets
 
 ```javascript
 var importObj = {
