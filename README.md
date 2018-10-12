@@ -132,9 +132,10 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
     * *`"css"` - export as CSS String*
     * *`"min"` - export as minified CSS String* 
     * *`"obj"` - export as JS-Object*
+    * *`"arr"` - export as array*
     * *`"object"` - the same as "obj"*
     * *`"objNMD"` - export as not multidimensional object*
-    * *`"array"` - export as array*
+    * *`"array"` - the same as "arr"*
 
 **`Return value`** - Mixed
 
