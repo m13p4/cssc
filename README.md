@@ -38,6 +38,8 @@ CSSC({
 
 ### Controller functions
 
+---
+
 #### .init()
 ```
 .init(initObj)
@@ -95,7 +97,7 @@ var importObj = {
 CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ``` 
 
-
+---
 
 #### .update()
 ```
@@ -113,7 +115,7 @@ CSSC.update(); // update all CSS rules which were defined through functions
 CSSC.update(".updatable"); // update CSS rule .updatable when it was defined through function
 ``` 
 
-
+---
 
 #### .export()
 ```
@@ -264,6 +266,8 @@ console.log(JSON.stringify(exportObject, true, 4));
 */
 ``` 
 
+---
+
 #### .parse()
 ```
 .parse([min])
@@ -305,11 +309,30 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 */
 ```
 
+---
+
 #### .new()
 
+---
+
 #### .defineConf()
+
+---
+
 #### .setConf()
+
+---
+
 #### .getConf()
+
+---
+
 #### .defineVars()
+
+---
+
 #### .addVars()
+
+---
+
 #### .getVars()
