@@ -103,7 +103,7 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ```
 .update([selector])
 ```
-* `selector` *(optional)* - a selector as String or RegEx or Array of Strings
+* `selector` *\[optional\]* - a selector as String or RegEx or Array of Strings
 
 **`Return value`** - Controller object (CSSC)
 
@@ -276,7 +276,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 ```
 .parse([min])
 ```
-* `min` *(optional)* - Boolean, if true return minified CSS (default: false)
+* `min` *\[optional\]* - Boolean, if true return minified CSS (default: false)
 
 **`Return value`** - String with CSS
 
