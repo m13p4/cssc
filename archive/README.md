@@ -68,8 +68,8 @@ CSSC({
     },
 });
 ```
-##Methods: get / set / delete / destroy
-###get
+## Methods: get / set / delete / destroy
+### get
 return value as string
 ```javascript
 CSSC(".myCSSClass").get("width");
@@ -87,7 +87,7 @@ if the css class as function defined is the return value a function.
 ```javascript
 CSSC(".myCSSClass").get(true);
 ```
-###set
+### set
 set with key/value
 ```javascript
 CSSC(".myCSSClass").set("width", "50px");
@@ -119,7 +119,7 @@ CSSC(".myCSSClass").set(function()
 });
 ```
 
-###delete
+### delete
 delete a css property
 ```javascript
 CSSC(".myCSSClass").delete("width");
@@ -133,33 +133,33 @@ CSSC(".myCSSClass").delete(["width","height"]);
 CSSC(".myCSSClass").delete({width:"foo",height:"bar"});
 ```
 
-###destroy
+### destroy
 the complete definition of ".myCSSClass" will be deleted
 ```javascript
 CSSC(".myCSSClass").destroy();
 ```
 
-##Methods: pos / first / last
+## Methods: pos / first / last
 If you selector finds more as one css rule objects, you can select one of them with this methods.
 ###pos
 if you know the position of the element what you need, use the method ".pos".
 ```javascript
 CSSC(".myCSSClass").pos(3).set("width", "50px");
 ```
-###first
+### first
 If you need first element, use the method ".first".
 ```javascript
 CSSC(".myCSSClass").first().set("width", "50px");
 //it's the same as
 CSSC(".myCSSClass").pos(0).set("width", "50px");
 ```
-###last
+### last
 if you need last element, use the method ".last".
 ```javascript
 CSSC(".myCSSClass").last().set("width", "50px");
 ```
 
-##Events
+## Events
 Events can be used to react on changes in your css class.
 ```javascript
 CSSC(".myCSSClass").event("change", function(property, value)
@@ -179,10 +179,10 @@ List of supported events:
 * "beforedestroy"
 * "destroy"
 
-##Animate (keyframes)
+## Animate (keyframes)
 coming soon..
 
-##Updatable
+## Updatable
 The update method must be called in order to use the advantages of updatable setter.
 ```javascript
 CSSC.update();
@@ -199,8 +199,8 @@ window.addEventListener("resize", function()
 });
 ```
 
-##conf
+## conf
 coming soon..
 
-##Import / Export
+## Import / Export
 coming soon..
