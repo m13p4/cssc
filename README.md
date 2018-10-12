@@ -44,7 +44,8 @@ CSSC({
 ```
 * `initObj` - DOM "<style>" element, StyleSheet object or Array containing it.
 
-`Return value` - Controller object
+`Return value` - Controller object (CSSC)
+
 
 **Example**
 ```javascript
@@ -58,12 +59,17 @@ CSSC.init(document.querySelectorAll("style"));
 ``` 
 
 
+
 #### .import()
 ```
 .import(importObj)
 ```
 * `importObj` - an object with style sheets
 
+`Return value` - Controller object (CSSC)
+
+
+**Example**
 ```javascript
 var importObj = {
     body: {
@@ -90,17 +96,23 @@ CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
 ``` 
 
 
+
 #### .update()
 ```
 .update([selector])
 ```
 * `selector` *(optional)* - a selector as String or RegEx or Array of Strings
 
+`Return value` - Controller object (CSSC)
+
+
+**Example**
 ```javascript
 CSSC.update(); // update all CSS rules which were defined through functions
 // or
 CSSC.update(".updatable"); // update CSS rule .updatable when it was defined through function
 ``` 
+
 
 
 #### .export()
