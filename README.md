@@ -72,6 +72,11 @@ var importObj = {
             width: "100%"
         }
     }
+    ".updatable": function(){ // generate updatable class
+        return {
+            'font-size': 10 + (Math.random() * 10),
+        }
+    }
 };
 
 CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
