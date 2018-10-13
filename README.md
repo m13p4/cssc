@@ -426,6 +426,8 @@ CSSC.setVars({
     MT: "$box.m$T", // use vars in vars
 });
 
+
+// begin the var with "$" character
 CSSC({
     body: {
         "$box.m": 10,
