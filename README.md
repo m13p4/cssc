@@ -354,7 +354,7 @@ newCSSC({
 * *`conf` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
 * *`value` \[optional\]* - if conf a String becomes value to set
 
-**`Return value`** - Mixed -> Controller object (CSSC)
+**`Return value`** - Mixed -> Controller object (CSSC) or object key-value pair or a configuration value
 
 
 **Example**
@@ -365,9 +365,10 @@ CSSC.conf({ // set as object
     parse_tab_len: 4             // [Integer] Length of space characters by export
 });
 
-CSSC.conf("style_id", "cssc-sheet"); // set with key String
-CSSC.conf("style_id"); // get with String key
+CSSC.conf("style_id", "cssc-sheet");      // set with key String
+CSSC.conf("style_id");                    // get with String key
 CSSC.conf(["style_id", "parse_tab_len"]); // get with Array of strings, return a object as key-value pair
+CSSC.conf();                              // get all defined configurations
 ```
 
 ---
@@ -380,7 +381,7 @@ CSSC.conf(["style_id", "parse_tab_len"]); // get with Array of strings, return a
 * *`var` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
 * *`value` \[optional\]* - if conf a String becomes value to set
 
-**`Return value`** - Controller object (CSSC)
+**`Return value`** - Mixed -> Controller object (CSSC) or object key-value pair or a variable value
 
 
 **Example**
