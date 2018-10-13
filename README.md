@@ -518,7 +518,7 @@ this method is a helper function, can use to generate an object from a css strin
 **Example**
 ```javascript
 var cssObj = CSSC.objFromCss("body{margin:20px;}");
-console.log(JSON.stringify(cssObj, !0, 4));
+console.log(JSON.stringify(cssObj, true, 4));
 /*
 {
     "margin": "20px"
