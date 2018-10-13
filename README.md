@@ -465,3 +465,42 @@ this is my temporarily overwritten text
 ```
 
 ---
+
+### .cssFromObj()
+this method is a helper function, can use to parse CSS from simply object
+```
+.cssFromObj(obj[, min[, tabLen]])
+```
+* `obj` - A simply object to parse
+* *`min` \[optional\]* - a Boolean if the value true is return value a minified CSS String
+* *`tabLen` \[optional\]* - a Integer to define the lenth of tab (default: 2)
+
+**`Return value`** - Parsed string 
+
+
+**Example**
+```javascript
+var cssString = CSSC.cssFromObj({body:{margin: "20px"}});
+console.log(cssString);
+/*
+body {
+  margin: 20px;
+}
+*/
+
+cssString = CSSC.cssFromObj({body:{margin: "20px"}}, true);
+console.log(cssString);
+/*
+body{margin:20px;}
+*/
+
+cssString = CSSC.cssFromObj({body:{margin: "20px"}}, false, 8);
+console.log(cssString);
+/*
+body {
+        margin: 20px;
+}
+*/
+```
+
+---
