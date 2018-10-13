@@ -376,7 +376,7 @@ CSSC.conf();                              // get all defined configurations
 ### .vars()
 **vars** is a method to set or get variables. If you need to use variable keys, you can use this method.
 ```
-.setVars([var[, value]])
+.vars([var[, value]])
 ```
 * *`var` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
 * *`value` \[optional\]* - if conf a String becomes value to set
