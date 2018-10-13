@@ -398,6 +398,55 @@ CSSC.getConf("parse_tab_len"); //return 2
 ---
 
 ### .setVars()
+If you need to use variable keys, you can use this method.
+```
+.setVars(var[, value])
+```
+* `var` - A object with key-value pair or key as String
+* *`value` \[optional\]* - if key a String becomes value to set
+
+**`Return value`** - Controller object (CSSC)
+
+
+**Example**
+```javascript
+CSSC.setVars({
+    T: "-top",
+    R: "-right",
+    B: "-bottom",
+    L: "-left",
+    box: {
+        m: "margin",
+        p: "padding"
+    },
+    media: function(a, b)
+    {
+        return "@media "+a+" and (max-width: "+b+"px)";
+    }
+});
+
+CSSC({
+    body: {
+        "$box.m": 10,
+        "$box.p$T": 15,
+        "$media(screen, 500)": {
+            "$box.m$B": 20
+        }
+    }
+});
+
+console.log(CSSC.parse());
+/*
+body {
+  margin: 10px;
+  padding-top: 15px;
+}
+@media screen and (max-width: 500px) {
+  body {
+    margin-bottom: 20px;
+  }
+}
+*/
 
 ---
 
