@@ -504,3 +504,24 @@ body {
 ```
 
 ---
+
+### .objFromCss()
+this method is a helper function, can use to generate an object from a css string.
+```
+.objFromCss(css)
+```
+* `css` - A CSS String
+
+**`Return value`** - Generated object
+
+
+**Example**
+```javascript
+var cssObj = CSSC.objFromCss("body{margin:20px;}");
+console.log(JSON.stringify(cssObj, !0, 4));
+/*
+{
+    "margin": "20px"
+}
+*/
+```
