@@ -411,18 +411,19 @@ If you need to use variable keys, you can use this method.
 **Example**
 ```javascript
 CSSC.setVars({
-    T: "-top",
+    T: "-top", // use String / Integer / Float
     R: "-right",
     B: "-bottom",
     L: "-left",
-    box: {
+    box: { // use Objects or Arrays
         m: "margin",
         p: "padding"
     },
-    media: function(a, b)
+    media: function(a, b) // use Functions
     {
         return "@media "+a+" and (max-width: "+b+"px)";
-    }
+    },
+    MT: "$box.m$T", // use vars in vars
 });
 
 CSSC({
@@ -430,7 +431,8 @@ CSSC({
         "$box.m": 10,
         "$box.p$T": 15,
         "$media(screen, 500)": {
-            "$box.m$B": 20
+            "$box.m$B": 20,
+            $MT: 25
         }
     }
 });
@@ -444,6 +446,7 @@ body {
 @media screen and (max-width: 500px) {
   body {
     margin-bottom: 20px;
+    margin-top: 25px;
   }
 }
 */
