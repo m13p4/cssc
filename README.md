@@ -433,3 +433,35 @@ body {
 ```
 
 ---
+
+### .parseVars()
+this method is a helper function, can use to test your vars.
+```
+.parseVars(text[, vars])
+```
+* `text` - A String, the text to parse
+* *`vars` \[optional\]* - A object with key-value pair
+
+**`Return value`** - Parsed string 
+
+
+**Example**
+```javascript
+CSSC.vars({
+    myVar: "my variable text",
+});
+
+var val = CSSC.parseVars("this is $myVar");
+console.log(val);
+/*
+this is my variable text
+*/
+
+var val = CSSC.parseVars("this is $myVar", {myVar: "my temporarily overwritten text"});
+console.log(val);
+/*
+this is my temporarily overwritten text
+*/
+```
+
+---
