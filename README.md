@@ -346,71 +346,48 @@ newCSSC({
 
 ---
 
-### .setConf()
+### .conf()
+**conf** is a method to set or get configurations.
 ```
-.setConf(conf[, value])
+.conf([conf[, value]])
 ```
-* `conf` - A object with key-value pair or key as String
-* *`value` \[optional\]* - if key a String becomes value to set
+* *`conf` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
+* *`value` \[optional\]* - if conf a String becomes value to set
 
-**`Return value`** - Controller object (CSSC)
+**`Return value`** - Mixed -> Controller object (CSSC)
 
 
 **Example**
 ```javascript
-CSSC.setConf({
+CSSC.conf({ // set as object
     style_id: "my-style-sheets", // [String]  Document element ID 
     view_err: true,              // [Boolean] Show errors in console
     parse_tab_len: 4             // [Integer] Length of space characters by export
 });
-//or
-CSSC.setConf("style_id", "cssc-sheet");
-CSSC.setConf("view_err", false);
-CSSC.setConf("parse_tab_len", 2);
+
+CSSC.conf("style_id", "cssc-sheet"); // set with key String
+CSSC.conf("style_id"); // get with String key
+CSSC.conf(["style_id", "parse_tab_len"]); // get with Array of strings, return a object as key-value pair
 ```
 
 ---
 
-### .getConf()
+### .vars()
+**vars** is a method to set or get variables. If you need to use variable keys, you can use this method.
 ```
-.getConf([key])
+.setVars([var[, value]])
 ```
-* *`key` \[optional\]* - A key as String
-
-**`Return value`** - Mixed -> if the key given is, return the method the value of key. If not key given, is the return value a Object with key-value pair
-
-
-**Example**
-```javascript
-var cnf = CSSC.getConf();
-console.log(JSON.stringify(cnf, true, 4));
-/*
-{
-    "styleId": "cssc-style",
-    "viewErr": true,
-    "tabLen": 2,
-    "parse_unit_default": "px"
-}
-*/
-//or
-CSSC.getConf("parse_tab_len"); //return 2
-```
----
-
-### .setVars()
-If you need to use variable keys, you can use this method.
-```
-.setVars(var[, value])
-```
-* `var` - A object with key-value pair or key as String
-* *`value` \[optional\]* - if key a String becomes value to set
+* *`var` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
+* *`value` \[optional\]* - if conf a String becomes value to set
 
 **`Return value`** - Controller object (CSSC)
 
 
 **Example**
 ```javascript
-CSSC.setVars({
+//The principle of set and get vars is the same as with conf method.
+
+CSSC.vars({
     T: "-top", // use String / Integer / Float
     R: "-right",
     B: "-bottom",
@@ -455,5 +432,3 @@ body {
 ```
 
 ---
-
-### .getVars()
