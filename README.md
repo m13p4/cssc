@@ -101,7 +101,7 @@ var importObj = {
     }
 };
 
-CSSC.import(importObj); //alternativ can use simply CSSC(importObj);
+CSSC.import(importObj); //alternativly can be used simply CSSC(importObj);
 ``` 
 
 ---
@@ -284,7 +284,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 ```
 .parse([min])
 ```
-* *`min` \[optional\]* - Boolean, if true return minified CSS (default: false)
+* *`min` \[optional\]* - Boolean, if true return a minified CSS (default: false)
 
 **`Return value`** - String with CSS
 
@@ -292,7 +292,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 **Example**
 ```javascript
 /*
-this method return the same result as .export("css") or .export("min");
+this method returns the same result as .export("css") or .export("min");
 */
 
 exportObject = CSSC.parse(); // or .parse(false)
@@ -351,10 +351,10 @@ newCSSC({
 ```
 .conf([conf[, value]])
 ```
-* *`conf` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
+* *`conf` \[optional\]* - An object with key-value pair to set, Array of Strings to get or key as String to set/get
 * *`value` \[optional\]* - if conf a String becomes value to set
 
-**`Return value`** - Mixed -> Controller object (CSSC) or object key-value pair or a configuration value
+**`Return value`** - Mixed -> Controller object (CSSC) if set or object key-value pair or configuration value
 
 
 **Example**
@@ -366,8 +366,8 @@ CSSC.conf({ // set as object
 });
 
 CSSC.conf("style_id", "cssc-sheet");      // set with key String
-CSSC.conf("style_id");                    // get with String key
-CSSC.conf(["style_id", "parse_tab_len"]); // get with Array of strings, return a object as key-value pair
+CSSC.conf("style_id");                    // get with key String 
+CSSC.conf(["style_id", "parse_tab_len"]); // get with Array of strings, return an object as key-value pair
 CSSC.conf();                              // get all defined configurations
 ```
 
@@ -378,10 +378,10 @@ CSSC.conf();                              // get all defined configurations
 ```
 .vars([var[, value]])
 ```
-* *`var` \[optional\]* - A object with key-value pair to set, Array of Strings to get or key as String to set/get
+* *`var` \[optional\]* - An object with key-value pair to set, Array of Strings to get or key as String to set/get
 * *`value` \[optional\]* - if conf a String becomes value to set
 
-**`Return value`** - Mixed -> Controller object (CSSC) or object key-value pair or a variable value
+**`Return value`** - Mixed -> Controller object (CSSC) if set or object key-value pair or variable value
 
 
 **Example**
@@ -435,12 +435,12 @@ body {
 ---
 
 ### .parseVars()
-this method is a helper function, can use to test your vars.
+this method is a helper function, can be used to test your vars.
 ```
 .parseVars(text[, vars])
 ```
 * `text` - A String, the text to parse
-* *`vars` \[optional\]* - A object with key-value pair
+* *`vars` \[optional\]* - An object with variables as key-value pair
 
 **`Return value`** - Parsed string 
 
@@ -467,12 +467,12 @@ this is my temporarily overwritten text
 ---
 
 ### .cssFromObj()
-this method is a helper function, can use to parse CSS from simply object
+this method is a helper function, can be used to parse CSS from simple object
 ```
 .cssFromObj(obj[, min[, tabLen]])
 ```
-* `obj` - A simply object to parse
-* *`min` \[optional\]* - a Boolean if the value true is return value a minified CSS String (default: false)
+* `obj` - A simple object to parse
+* *`min` \[optional\]* - a Boolean if the value true, return value is a minified CSS String (default: false)
 * *`tabLen` \[optional\]* - a Integer to define the lenth of tab (default: 2)
 
 **`Return value`** - Parsed string 
@@ -506,7 +506,7 @@ body {
 ---
 
 ### .objFromCss()
-this method is a helper function, can use to generate an object from a css string.
+this method is a helper function, can be used to generate an object from a css string.
 ```
 .objFromCss(css)
 ```
