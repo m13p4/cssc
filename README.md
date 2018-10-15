@@ -536,3 +536,33 @@ console.log(JSON.stringify(cssObj, true, 4));
 }
 */
 ```
+
+## Controller properties
+
+---
+
+### .type
+**type** is a object with CSS type definition
+
+```javascript
+console.log(JSON.stringify(CSSC.type, true, 4));
+/*
+{
+    "rule": 1,
+    "charset": 2,
+    "import": 3,
+    "media": 4,
+    "fontFace": 5,
+    "page": 6,
+    "keyframes": 7,
+    "keyframe": 8,
+    "namespace": 10,
+    "counterStyle": 11,
+    "supports": 12,
+    "fontFeatureValues": 14,
+    "viewport": 15
+}
+*/
+``` 
+
+---
