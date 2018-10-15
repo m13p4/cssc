@@ -537,7 +537,11 @@ console.log(JSON.stringify(cssObj, true, 4));
 */
 ```
 
+---
+
 ## Controller properties
+
+---
 
 ### .version
 **version** is a String with version number of CSS Controller
@@ -548,8 +552,6 @@ console.log(CSSC.version);
 1.0b
 */
 ``` 
-
----
 
 ---
 
