@@ -630,3 +630,53 @@ var h = CSSC(".className"); //get handler object with all CSS objects are define
 ```
 
 ## Handler functions
+
+---
+
+### .get()
+
+---
+
+### .set()
+
+---
+
+### .delete()
+
+---
+
+### .update()
+
+---
+
+### .export()
+
+---
+
+### .parse()
+
+---
+
+### .pos()
+
+---
+
+### .first()
+
+---
+
+### .last()
+
+---
+
+## Handler properties
+
+---
+
+### .e
+
+---
+
+### .selector
+
+---
