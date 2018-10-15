@@ -620,7 +620,7 @@ console.log(JSON.stringify(CSSC._conf, true, 4));
 ---
 
 ## Handler object
-The Handler object is an object to get / set / delete / update / export defined CSS propertys. You get this object from the controller object
+The Handler object is an object to get, set, delete, update and export defined CSS propertys. You get this object from the controller object
 
 ```javascript
 var h = CSSC(".className"); //get handler object with all CSS objects are defined as .className
