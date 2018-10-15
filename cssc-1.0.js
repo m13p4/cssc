@@ -58,13 +58,15 @@ var CSSC = (function()
         }),
         CONF_DEFAULT_style_id = "cssc-style",
         CONF_DEFAULT_view_err = true,
-        CONF_DEFAULT_parse_tab_len  = 2,
+        CONF_DEFAULT_parse_tab_len = 2,
         CONF_DEFAULT_parse_unit_default = "px",
+        CONF_DEFAULT_parse_vars_limit = 100,
         CONF_DEFAULT = helperObjectFreeze({
             style_id: CONF_DEFAULT_style_id,
             view_err: CONF_DEFAULT_view_err,
             parse_tab_len: CONF_DEFAULT_parse_tab_len,
-            parse_unit_default: CONF_DEFAULT_parse_unit_default
+            parse_unit_default: CONF_DEFAULT_parse_unit_default,
+            parse_vars_limit: CONF_DEFAULT_parse_vars_limit
         }),
         MESSAGES = [];
         
@@ -305,16 +307,16 @@ var CSSC = (function()
                 break;
             }
     }
-    function helperParseVars(str, vars)
+    function helperParseVars(str, vars, limit)
     {
-        if(!vars) vars = {};
-        
-        if(!str) str = "";
+        if(!limit) limit = CONF_DEFAULT_parse_vars_limit;
+        if(!vars)  vars = {};
+        if(!str)   str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
             c = 0, v, i, xyz, tmp, key, keySplit, type;
 
-        while(varStart >= 0 && c < 100)
+        while(varStart >= 0 && c < limit)
         { c++; v = null;
             
             tmp    = str.substr(varStart+1);
@@ -343,8 +345,7 @@ var CSSC = (function()
                 if(helperElemType(v,1) === "F")
                 {
                     if(str.charAt(varEnd+1) === "(")
-                    {
-                        varEnd++;
+                    { varEnd++;
 
                         tmp = varEnd;
                         xyz = varEnd;
@@ -360,14 +361,12 @@ var CSSC = (function()
 
                         tmp = str.substr(tmp+1, varEnd-tmp-1);
                         tmp = tmp.trim().split(/\s*,\s*/);
-
                         v   = v.apply(null, tmp);
                     }
                     else v = v();
                     
                     if(str.charAt(varEnd+1) === ".")
-                    {
-                        varEnd++;
+                    { varEnd++;
 
                         xyz    = varEnd;
                         tmp    = str.substr(varEnd+1);
@@ -677,7 +676,7 @@ var CSSC = (function()
             else
                 importElem = [importObj[key]];
 
-            key = helperParseVars(key, index[3]);
+            key = helperParseVars(key, index[3], index[4].parse_vars_limit);
 
             for(i = 0; i < importElem.length; i++)
             {
@@ -758,7 +757,7 @@ var CSSC = (function()
 
                 return;
             }
-            prop = helperParseVars(prop, index[3]);
+            prop = helperParseVars(prop, index[3], index[4].parse_vars_limit);
 
             if(e[pos].children)
                 _set(index, getHandler(e[pos].children, null, true), prop, val);
@@ -1170,7 +1169,7 @@ var CSSC = (function()
             conf:       function(cnf, val){ return __confVars(index[4], cnf, val, cntr); },
             vars:       function(vars, val){ return __confVars(index[3], vars, val, cntr); },
             //helper functions
-            parseVars:  function(txt, vars){ return helperParseVars(txt, vars?helperObjectAssign({}, index[3], vars):index[3]); },
+            parseVars:  function(txt, vars){ return helperParseVars(txt, vars?helperObjectAssign({}, index[3], vars):index[3], index[4].parse_vars_limit); },
             objFromCss: function(css){ return helperObjFromCssText(css); },
             cssFromObj: function(obj, min, tabLen){ return helperCssTextFromObj(obj, min, tabLen); },
             //config & defs
