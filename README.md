@@ -556,7 +556,7 @@ console.log(CSSC.version);
 ---
 
 ### .type
-**type** is a object with CSS type definitions
+**type** is an object with CSS type definitions
 
 ```javascript
 console.log(JSON.stringify(CSSC.type, true, 4));
@@ -582,7 +582,7 @@ console.log(JSON.stringify(CSSC.type, true, 4));
 ---
 
 ### .type_export
-**type_export** is a object with CSS Controller export-type definitions
+**type_export** is an object with CSS Controller export-type definitions
 
 ```javascript
 console.log(JSON.stringify(CSSC.type_export, true, 4));
@@ -602,7 +602,7 @@ console.log(JSON.stringify(CSSC.type_export, true, 4));
 ---
 
 ### ._conf
-**_conf** is a object with default CSSC configurations
+**_conf** is an object with default CSSC configurations
 
 ```javascript
 console.log(JSON.stringify(CSSC._conf, true, 4));
