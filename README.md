@@ -468,10 +468,16 @@ console.log(val);
 this is my variable text
 */
 
-var val = CSSC.parseVars("this is $myVar", {myVar: "my temporarily overwritten text"});
+val = CSSC.parseVars("this is $myVar", {myVar: "my temporarily overwritten text"});
 console.log(val);
 /*
 this is my temporarily overwritten text
+*/
+
+val = CSSC.parseVars("this var $notExists");
+console.log(val);
+/*
+this var $notExists
 */
 ```
 
