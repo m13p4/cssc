@@ -180,7 +180,7 @@ var CSSC = (function()
     function helperCssTextFromObj(obj, min, tabLen, addTab, fromArrayParse)
     {
         var tab = (new Array((parseInt(tabLen)||CONF_DEFAULT_parse_tab_len)+1).join(" ")), 
-            cssText = "", key, obKey, elType = helperElemType(obj, 1), i, tmp;
+            cssText = "", key, val, elType = helperElemType(obj, 1), i, tmp;
 
         addTab = addTab || "";
 
@@ -192,7 +192,7 @@ var CSSC = (function()
         {
             for(key in obj)
             {
-                obKey = obj[key];
+                val = ""+obj[key];
                 elType = helperElemType(obj[key], 1);
 
                 if(elType === "O" || elType === "A")
@@ -209,17 +209,17 @@ var CSSC = (function()
                         continue;
                     }
                         
-                    if(elType === "O") obKey = [obj[key]];
+                    if(elType === "O") val = [obj[key]];
 
-                    for(i = 0; i < obKey.length; i++)
+                    for(i = 0; i < val.length; i++)
                     {
                         if(key === "@namespace" || key === "@import" || key === "@charset")
                         {
-                            cssText += key+" "+obKey[i]+";"+(min?'':"\n");
+                            cssText += key+" "+val[i]+";"+(min?'':"\n");
                             continue;
                         }
 
-                        tmp = helperCssTextFromObj(obKey[i], min, tabLen, addTab+tab, fromArrayParse);
+                        tmp = helperCssTextFromObj(val[i], min, tabLen, addTab+tab, fromArrayParse);
 
                         if(tmp === "") continue;
                         
@@ -228,9 +228,9 @@ var CSSC = (function()
                     }
                 }
                 else if(key === "@namespace" || key === "@import" || key === "@charset")
-                             cssText += key+" "+obKey+";"+(min?'':"\n");
-                else if(min) cssText += key+":"+obKey.trim().replace(/\s*,\s*/g,",")+";";
-                else         cssText += (addTab.length < tab.length ? tab : addTab)+key+": "+obKey+";\n";
+                             cssText += key+" "+val+";"+(min?'':"\n");
+                else if(min) cssText += key+":"+val.trim().replace(/\s*,\s*/g,",")+";";
+                else         cssText += (addTab.length < tab.length ? tab : addTab)+key+": "+val+";\n";
             }
         }
         return cssText;
@@ -306,13 +306,12 @@ var CSSC = (function()
     }
     function helperParseVars(str, vars)
     {
-        if(!vars) vars = [{}];
-        else if(helperElemType(vars, 1) !== "A") vars = [vars];
+        if(!vars) vars = {};
         
         if(!str) str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
-            c = 0, v, i, j, xyz, tmp, key, keySplit, type;
+            c = 0, v, i, xyz, tmp, key, keySplit, type;
 
         while(varStart >= 0 && c < 100)
         { c++; v = null;
@@ -331,20 +330,7 @@ var CSSC = (function()
                 if(keySplit[i].length < 1) continue;
                 type = helperElemType(v,1);
 
-                if(i === 0)
-                {
-                    for(j = vars.length-1; j > -1; j--)
-                        if(keySplit[i] in vars[j])
-                        {
-                            v = vars[j][keySplit[i]];
-                            break;
-                        }
-                    if(v === null)
-                    {
-                        v = "$"+key;
-                        break;
-                    }
-                }
+                if(i === 0 && keySplit[i] in vars)                            v = vars[keySplit[i]];
                 else if(v !== null && type.match(/[OA]/) && keySplit[i] in v) v = v[keySplit[i]];
                 else if(type === "S" && keySplit[i].match(/^[0-9]+$/))        v = v.charAt(keySplit[i]);
                 else
@@ -1183,14 +1169,14 @@ var CSSC = (function()
             conf:       function(cnf, val){ return __confVars(index[4], cnf, val, cntr); },
             vars:       function(vars, val){ return __confVars(index[3], vars, val, cntr); },
             //helper functions
-            parseVars:  function(txt, vars){ return helperParseVars(txt, vars?vars:index[3]); },
+            parseVars:  function(txt, vars){ return helperParseVars(txt, vars?helperObjectAssign({}, index[3], vars):index[3]); },
             objFromCss: function(css){ return helperObjFromCssText(css); },
             cssFromObj: function(obj, min, tabLen){ return helperCssTextFromObj(obj, min, tabLen); },
             //config & defs
-            _conf:      CONF_DEFAULT,
-            type:       TYPE,
-            exportType: TYPE_EXPORT,
-            messages:   MESSAGES
+            _conf:       CONF_DEFAULT,
+            type:        TYPE,
+            type_export: TYPE_EXPORT,
+            messages:    MESSAGES
         });
         cntr.conf(CONF_DEFAULT);
         
