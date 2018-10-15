@@ -47,7 +47,7 @@ CSSC({
 });
 ```
 
-## Controller functions
+## Controller methods
 
 ---
 
@@ -629,7 +629,7 @@ var h = CSSC(".className"); //get handler object with all CSS objects are define
     h = CSSC(); //get handler object with all defined CSS objects
 ```
 
-## Handler functions
+## Handler methods
 
 ---
 
