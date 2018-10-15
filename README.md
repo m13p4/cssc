@@ -52,6 +52,7 @@ CSSC({
 ---
 
 ### .init()
+**init** is a method to initialize allready defined CSS. After **init** you can change, show or delete CSS.
 ```
 .init(initObj)
 ```
@@ -74,6 +75,7 @@ CSSC.init(document.querySelectorAll("style"));
 ---
 
 ### .import()
+**import** is a method to import JS objects to the CSS Controller.
 ```
 .import(importObj)
 ```
@@ -111,6 +113,7 @@ CSSC.import(importObj); //alternativly can be used simply CSSC(importObj);
 ---
 
 ### .update()
+**update** is a method for updating CSS properties which have been defined via functions
 ```
 .update([selector])
 ```
@@ -129,6 +132,7 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 ---
 
 ### .export()
+**export** is a method to export defined CSS as String, Object or Array
 ```
 .export([exportType])
 ```
@@ -285,6 +289,8 @@ console.log(JSON.stringify(exportObject, true, 4));
 ---
 
 ### .parse()
+**parse** is a method to parse defined CSS. This method is identical to .export(CSSC.type_export.css) or export(CSSC.type_export.min)
+
 ```
 .parse([min])
 ```
@@ -332,6 +338,7 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 ---
 
 ### .new()
+**new** is a method to get a new CSS Controller (CSSC)
 ```
 .new()
 ```
