@@ -135,12 +135,13 @@ var CSSC = (function()
 
         index[1] = styleElem;
     }
-    function helperParseValue(value)
+    function helperParseValue(value, defUnit)
     {
+        if(!defUnit) defUnit = CONF_DEFAULT_parse_unit_default;
         if(isFinite(value))
         {
-            if(value%1 === 0) return value + "px";
-            return (Math.floor(value * 100) / 100) + "px";
+            if(value%1 === 0) return ""+value+defUnit;
+            return ""+(Math.floor(value*100)/100)+defUnit;
         }
         else if(helperElemType(value, 1) === "S")
         {
@@ -149,7 +150,7 @@ var CSSC = (function()
             if(v.length > 1)
             {
                 for(var i = 0; i < v.length; i++) 
-                    v[i] = helperParseValue(v[i]);
+                    v[i] = helperParseValue(v[i], defUnit);
                 return v.join(" ");
             }
         }
@@ -824,7 +825,7 @@ var CSSC = (function()
                 }
                 else
                 {
-                    prsVal = helperParseValue(val);
+                    prsVal = helperParseValue(val, index[4].parse_unit_default);
 
                     e[pos].indexElem.style[prop] = prsVal;
                     e[pos].obj[prop] = prsVal;
