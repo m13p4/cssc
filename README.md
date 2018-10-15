@@ -539,10 +539,22 @@ console.log(JSON.stringify(cssObj, true, 4));
 
 ## Controller properties
 
+### .version
+**version** is a String with version number of CSS Controller
+
+```javascript
+console.log(CSSC.version);
+/*
+1.0b
+*/
+``` 
+
+---
+
 ---
 
 ### .type
-**type** is a object with CSS type definition
+**type** is a object with CSS type definitions
 
 ```javascript
 console.log(JSON.stringify(CSSC.type, true, 4));
@@ -561,6 +573,44 @@ console.log(JSON.stringify(CSSC.type, true, 4));
     "supports": 12,
     "fontFeatureValues": 14,
     "viewport": 15
+}
+*/
+``` 
+
+---
+
+### .type_export
+**type_export** is a object with CSS Controller export-type definitions
+
+```javascript
+console.log(JSON.stringify(CSSC.type_export, true, 4));
+/*
+{
+    "css": "css",
+    "min": "min",
+    "obj": "obj",
+    "arr": "arr",
+    "object": "object",
+    "notMDObject": "objNMD",
+    "array": "array"
+}
+*/
+``` 
+
+---
+
+### ._conf
+**_conf** is a object with default CSSC configurations
+
+```javascript
+console.log(JSON.stringify(CSSC._conf, true, 4));
+/*
+{
+    "style_id": "cssc-style",   // [String]  ID of the "<style>" element
+    "view_err": true,           // [Boolean] if true, the errors are displayed in console
+    "parse_tab_len": 2,         // [Integer] Length of space characters by export
+    "parse_unit_default": "px", // [String]  default unit to set on values if integer or float given
+    "parse_vars_limit": 100     // [Integer] limit to max parse variables
 }
 */
 ``` 
