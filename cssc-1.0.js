@@ -114,6 +114,14 @@ var CSSC = (function()
         if(Object.preventExtensions) Object.preventExtensions(obj);
         return obj;
     }
+    function helperObjectKeysValues(obj,getValues)
+    {
+        if(!getValues && Object.keys)  return Object.keys(obj);
+        if(getValues && Object.values) return Object.values(obj);
+        var ret = [], key;
+        for(key in obj) ret.push(getValues ? obj[key] : key);
+        return ret;
+    }
     function helperCreateNewStyleElem(index)
     {
         if(document.getElementById(index[4].style_id))
@@ -664,7 +672,7 @@ var CSSC = (function()
             if("@namespace" in importObj) preImport["@namespace"] = importObj["@namespace"];
             if("@font-face" in importObj) preImport["@font-face"] = importObj["@font-face"];
 
-            if(Object.keys(preImport).length > 0) handleImport(index, preImport, parent, true);
+            if(helperObjectKeysValues(preImport).length > 0) handleImport(index, preImport, parent, true);
         }
         
         for(key in importObj)
@@ -836,7 +844,7 @@ var CSSC = (function()
             var i, propLen, key, props,
                 propType = helperElemType(prop, 1);
 
-            if(propType === "O")      propLen = Object.keys(prop).length;
+            if(propType === "O")      propLen = helperObjectKeysValues(prop).length;
             else if(propType === "F") props = prop();
 
             if(propType === "A" || (propType === "F" && helperElemType(props, 1) === "A"))
@@ -944,7 +952,7 @@ var CSSC = (function()
 
                             ignore.push(e[i].obj[key][j]);
 
-                            if(!tmp || Object.keys(tmp).length <= 0) continue;
+                            if(!tmp || helperObjectKeysValues(tmp).length <= 0) continue;
 
                             obj[key][j] = tmp;
                         }
@@ -960,7 +968,7 @@ var CSSC = (function()
                 obj = helperObjectAssign(_export(index, getHandler(e[i].children, null, true), type, ignore), obj);
             }
 
-            if(Object.keys(obj).length <= 0) continue;
+            if(helperObjectKeysValues(obj).length < 1) continue;
 
             if(type === TYPE_EXPORT_array)
             {
@@ -981,7 +989,7 @@ var CSSC = (function()
 
         if(type === TYPE_EXPORT_array) 
         {   
-            exportObj = Object.values(exportObj);
+            exportObj = helperObjectKeysValues(exportObj, !0);
             return type === _type || _type === TYPE_EXPORT_arr ? exportObj
                    : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min, index[4].parse_tab_len);
         }
@@ -992,7 +1000,7 @@ var CSSC = (function()
         if(exportObj['@namespace']) sortExpObj['@namespace'] = exportObj['@namespace'];
         if(exportObj['@font-face']) sortExpObj['@font-face'] = exportObj['@font-face'];
 
-        tmp = Object.keys(sortExpObj).length > 0;
+        tmp = helperObjectKeysValues(sortExpObj).length > 0;
         if(tmp) for(i in exportObj) if(!sortExpObj[i])
                     sortExpObj[i] = exportObj[i];
 
