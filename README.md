@@ -4,7 +4,7 @@
 
 **Caution:** This version is a BETA.
 
-*Checklist to stable version:*
+*Stable version checklist:*
 - [ ] *Support all modern Browser and IE 9+*
 - [ ] *Support CSS parse on server side*
 - [ ] *no malfunction of the code*
