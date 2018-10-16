@@ -490,7 +490,7 @@ this method is a helper function, can be used to parse CSS from simple object
 ```
 * `obj` - A simple object to parse
 * *`min` \[optional\]* - a Boolean if the value true, return value is a minified CSS String (default: false)
-* *`tabLen` \[optional\]* - a Integer to define the lenth of tab (default: 2)
+* *`tabLen` \[optional\]* - an Integer to define the length of tab (default: 2)
 
 **`Return value`** - Parsed string 
 
@@ -626,7 +626,7 @@ console.log(JSON.stringify(CSSC._conf, true, 4));
 ---
 
 ## Handler object
-The Handler object is an object to get, set, delete, update and export defined CSS propertys. You get this object from the controller object
+The Handler object is an object to get, set, delete, update and export defined CSS properties. You get this object from the controller object
 
 ```javascript
 var h = CSSC(".className"); //get handler object with all CSS objects are defined as .className
