@@ -629,10 +629,10 @@ console.log(JSON.stringify(CSSC._conf, true, 4));
 The Handler object is an object to get, set, delete, update and export defined CSS properties. You get this object from the controller object
 
 ```javascript
-var h = CSSC(".className"); //get handler object with all CSS objects are defined as .className
-    h = CSSC([".className1", ".className2"]); //get handler object with .className1 and .className2
-    h = CSSC(/\.className[0-9]{,1}/); //get handler obejct with objects matched to regular expression
-    h = CSSC(); //get handler object with all defined CSS objects
+var h = CSSC(".className"); //get a handler object with all CSS objects are defined as .className
+    h = CSSC([".className1", ".className2"]); //get a handler object with .className1 and .className2
+    h = CSSC(/\.className[0-9]{,1}/); //get a handler obejct with objects matched to regular expression
+    h = CSSC(); //get a handler object with all defined CSS objects
 ```
 
 ## Handler methods
