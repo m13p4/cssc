@@ -774,6 +774,20 @@ body .newClass.class1 {
 ---
 
 ### .delete()
+**delete** is a method to delete a CSS property or a CSS rule
+```
+.delete([property])
+```
+* *`property` \[optional\]* - A property name to delete. If this value not given, the method deletes the complete rule(s)
+
+**`Return value`** - Handler object.
+
+
+**Example**
+```javascript
+
+```
+
 
 ---
 
