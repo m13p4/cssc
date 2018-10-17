@@ -649,6 +649,53 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 
 **`Return value`** - Mixed -> Object, String or Array of Strings, depending on how the parameters were set
 
+
+**Example**
+```javascript
+CSSC({
+    body: [{
+        margin: 10,
+        padding: 5,
+    },{
+        border: "1 solid #ccc",
+        padding: 7
+    }]
+});
+
+var val = CSSC("body").get("padding");
+console.log(val);
+/*
+7px
+*/
+
+val = CSSC("body").get("padding", true);
+console.log(JSON.stringify(val, true, 4));
+/*
+[
+    "5px",
+    "7px"
+]
+*/
+
+val = CSSC("body").get();
+console.log(JSON.stringify(val, true, 4));
+/*
+{
+    "body": [
+        {
+            "margin": "10px",
+            "padding": "5px"
+        },
+        {
+            "border": "1px solid #ccc",
+            "padding": "7px"
+        }
+    ]
+}
+*/
+```
+
+
 ---
 
 ### .set()
