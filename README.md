@@ -640,7 +640,7 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 ---
 
 ### .get()
-**get** is a method to get a CSS properties
+**get** is a method to get CSS properties
 ```
 .get([propertie[, returnAll]])
 ```
@@ -699,6 +699,77 @@ console.log(JSON.stringify(val, true, 4));
 ---
 
 ### .set()
+**set** is a method to set CSS properties
+```
+.set(toSet[, value])
+```
+* `toSet` - A propertie to set as String, a object to set with key-value pair, a function that returns the values to set or Array containing it. 
+* *`value` \[optional\]* - use this when `toSet` a String. A value to set as String/Integer/Float, a function that returns the values to set, an object to create a new CSS rule or an Array with objects to create new rules.
+
+**`Return value`** - Handler object.
+
+
+**Example**
+```javascript
+CSSC({
+    body: {
+        margin: 10,
+        padding: 5,
+    }
+});
+
+CSSC("body").set("border", "1 solid red");
+console.log(CSSC.parse());
+/*
+body {
+  margin: 10px;
+  padding: 5px;
+  border: 1px solid red;
+}
+*/
+
+CSSC("body").set({margin: 20, padding: 0});
+console.log(CSSC.parse());
+/*
+body {
+  margin: 20px;
+  padding: 0px;
+  border: 1px solid red;
+}
+*/
+
+CSSC("body").set(".newClass",{margin: "5 0 0 10", float: "left"});
+console.log(CSSC.parse());
+/*
+body {
+  margin: 20px;
+  padding: 0px;
+  border: 1px solid red;
+}
+body .newClass {
+  margin: 5px 0px 0px 10px;
+  float: left;
+}
+*/
+
+CSSC("body .newClass").set({border: "1 solid #ccc", "/.class1":{float: "none"}});
+console.log(CSSC.parse());
+/*
+body {
+  margin: 20px;
+  padding: 0px;
+  border: 1px solid red;
+}
+body .newClass {
+  margin: 5px 0px 0px 10px;
+  float: left;
+  border: 1px solid #ccc;
+}
+body .newClass.class1 {
+  float: none;
+}
+*/
+```
 
 ---
 
