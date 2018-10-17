@@ -644,8 +644,8 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 ```
 .get([propertie[, returnAll]])
 ```
-* *`propertie` \[optional\]* - A String with propertie name. If this value not given, return this method an object with all properies of the Handler object
-* *`returnAll` \[optional\]* - A Boolean. If true is the return value a Array with all found properties, if false is the return value the last definition of propertie in the Handler object (default: false)
+* *`propertie` \[optional\]* - A String with property name. If this value is not given, return this method an object with all properies of the Handler object
+* *`returnAll` \[optional\]* - A Boolean. If true, the return value is an Array with all found properties; if false, the return value is the last definition of property in the Handler object (default: false)
 
 **`Return value`** - Mixed -> Object, String or Array of Strings, depending on how the parameters were set
 
@@ -703,7 +703,7 @@ console.log(JSON.stringify(val, true, 4));
 ```
 .set(toSet[, value])
 ```
-* `toSet` - A propertie to set as String, a object to set with key-value pair, a function that returns the values to set or Array containing it. 
+* `toSet` - A property to set as String, an object to set with key-value pair, a function that returns the values to set, or Array containing an object or function with key-value. 
 * *`value` \[optional\]* - use this when `toSet` a String. A value to set as String/Integer/Float, a function that returns the values to set, an object to create a new CSS rule or an Array with objects to create new rules.
 
 **`Return value`** - Handler object.
