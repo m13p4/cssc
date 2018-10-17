@@ -644,10 +644,10 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 ```
 .get([propertie[, returnAll]])
 ```
-* *`propertie` \[optional\]* - A String with propertie name
+* *`propertie` \[optional\]* - A String with propertie name. If this value not given, return this method an object with all properies of the Handler object
 * *`returnAll` \[optional\]* - A Boolean. If true is the return value a Array with all found properties, if false is the return value the last definition of propertie in the Handler object (default: false)
 
-**`Return value`** - Mixed -> String or Array of Strings, depending on whether *`returnAll`* is true or false
+**`Return value`** - Mixed -> Object, String or Array of Strings, depending on how the parameters were set
 
 ---
 
