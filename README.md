@@ -56,7 +56,7 @@ CSSC({
 ```
 .init(initObj)
 ```
-* `initObj` - DOM "<style>", "\<link\>" element, an other CSSC object, StyleSheet object or Array containing it.
+* `initObj` - DOM "\<style\>", "\<link\>" element, an other CSSC object, StyleSheet object or Array containing it.
 
 **`Return value`** - Controller object (CSSC)
 
