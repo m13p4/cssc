@@ -1077,10 +1077,56 @@ p {
 ---
 
 ### .first()
+**first** is a method to get a Handler object with first style element
+```
+.first()
+```
+
+**`Return value`** - Handler object with first style element
+
+&nbsp;
+
+**Example**
+```javascript
+// '.first()' is equivalent to '.pos(0)'
+CSSC({
+    p: [{ height: 100 },{ width: 500 },{ color: 0xff00 }]
+});
+
+console.log(CSSC("p").first().parse());
+/*
+p {
+  height: 100px;
+}
+*/
+```
 
 ---
 
 ### .last()
+**last** is a method to get a Handler object with last style element
+```
+.last()
+```
+
+**`Return value`** - Handler object with last style element
+
+&nbsp;
+
+**Example**
+```javascript
+// '.last()' is equivalent to '.pos(-1)'
+CSSC({
+    p: [{ height: 100 },{ width: 500 },{ color: 0xff00 }]
+});
+
+console.log(CSSC("p").last().parse());
+/*
+p {
+  color: rgb(0, 255, 0);
+}
+*/
+```
 
 ---
 
