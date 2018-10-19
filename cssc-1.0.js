@@ -608,6 +608,8 @@ var CSSC = (function()
 
         if(selType === "S")
         {
+            sel = helperParseVars(sel, index[3], index[4].parse_vars_limit);
+            
             if(getElements) return _index[sel] ? _index[sel].content : [];
             
             return ruleHandler(index, (_index[sel] ? _index[sel].content : []), sel);
@@ -617,7 +619,7 @@ var CSSC = (function()
             var matches = [], key;
 
             for(key in _index)
-                if(!!key.match(sel))
+                if(key.match(sel))
                     for(i = 0; i < _index[key].content.length; i++)
                         matches.push(_index[key].content[i]);
 
@@ -627,12 +629,14 @@ var CSSC = (function()
         }
         else if(selType === "A")
         {
-            var matches = [], i, j;
+            var matches = [], i, j, s;
 
             for(i = 0; i < sel.length; i++)
-                if(_index[sel])
-                    for(j = 0; j < _index[sel].content.length; j++)
-                        matches.push(_index[sel].content[j]);
+            {
+                s = helperParseVars(sel[i], index[3], index[4].parse_vars_limit);
+                if(_index[s]) for(j = 0; j < _index[s].content.length; j++)
+                        matches.push(_index[s].content[j]);
+            }
 
             if(getElements) return matches;
 
