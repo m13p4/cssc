@@ -23,29 +23,29 @@ CSSC can be used to define Cascading Style Sheets (CSS) in your browser, to chan
 The controller object (CSSC) is a function to get handler object or to import new style sheets.
 
 * get handler object
-```javascript
-var h = CSSC(".className"); //get handler object with all CSS objects are defined as .className
-    h = CSSC([".className1", ".className2"]); //get handler object with .className1 and .className2
-    h = CSSC(/\.className[0-9]{,1}/); //get handler obejct with objects matched to regular expression
-    h = CSSC(); //get handler object with all defined CSS objects
-```
+    ```javascript
+    var h = CSSC(".className"); //get handler object with all CSS objects are defined as .className
+        h = CSSC([".className1", ".className2"]); //get handler object with .className1 and .className2
+        h = CSSC(/\.className[0-9]{,1}/); //get handler obejct with objects matched to regular expression
+        h = CSSC(); //get handler object with all defined CSS objects
+    ```
 * define CSS (import)
-```javascript
-//define new style sheets in browser
-CSSC({
-    ".className": {
-        border: "1px solid #000"
-    },
-    ".className1": {
-        border: "1px dotted #000"
-    },
-    ".className2": function(){ //updatable object
-        return {
-            border: "none"
-        };
-    }
-});
-```
+    ```javascript
+    //define new style sheets in browser
+    CSSC({
+        ".className": {
+            border: "1px solid #000"
+        },
+        ".className1": {
+            border: "1px dotted #000"
+        },
+        ".className2": function(){ //updatable object
+            return {
+                border: "none"
+            };
+        }
+    });
+    ```
 
 ## Controller methods
 
@@ -56,10 +56,11 @@ CSSC({
 ```
 .init(initObj)
 ```
-* `initObj` - DOM "\<style\>", "\<link\>" element, an other CSSC object, StyleSheet object or Array containing it.
+* `initObj` - DOM "<style\>", "<link\>" element, an other CSSC object, StyleSheet object or Array containing it.
 
 **`Return value`** - Controller object (CSSC)
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -83,6 +84,7 @@ CSSC.init(document.querySelectorAll("style"));
 
 **`Return value`** - Controller object (CSSC)
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -121,6 +123,7 @@ CSSC.import(importObj); //alternativly can be used simply CSSC(importObj);
 
 **`Return value`** - Controller object (CSSC)
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -147,6 +150,7 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 
 **`Return value`** - Mixed
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -298,6 +302,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 
 **`Return value`** - String with CSS
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -344,6 +349,7 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 ```
 **`Return value`** - New Controller object (CSSC)
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -367,6 +373,7 @@ newCSSC({
 
 **`Return value`** - Mixed -> Controller object (CSSC) if set or object key-value pair or configuration value
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -394,6 +401,7 @@ CSSC.conf();                              // get all defined configurations
 
 **`Return value`** - Mixed -> Controller object (CSSC) if set or object key-value pair or variable value
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -455,6 +463,7 @@ this method is a helper function, can be used to test your vars.
 
 **`Return value`** - Parsed string 
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -494,6 +503,7 @@ this method is a helper function, can be used to parse CSS from simple object
 
 **`Return value`** - Parsed string 
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -531,6 +541,7 @@ this method is a helper function, can be used to generate an object from a css s
 
 **`Return value`** - Generated object
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -649,6 +660,7 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 
 **`Return value`** - Mixed -> Object, String or Array of Strings, depending on how the parameters were set
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -708,6 +720,7 @@ console.log(JSON.stringify(val, true, 4));
 
 **`Return value`** - Handler object.
 
+&nbsp;
 
 **Example**
 ```javascript
@@ -782,28 +795,284 @@ body .newClass.class1 {
 
 **`Return value`** - Handler object.
 
+&nbsp;
 
 **Example**
 ```javascript
+CSSC({
+    body: [{
+        margin: 10,
+        padding: 5,
+    },{
+        border: "1 solid #ccc",
+        padding: 7
+    }]
+});
 
+var parsed = CSSC.parse();
+console.log(parsed);
+/*
+body {
+  margin: 10px;
+  padding: 5px;
+}
+body {
+  border: 1px solid #ccc;
+  padding: 7px;
+}
+*/
+
+// delete property
+CSSC("body").delete("padding");
+parsed = CSSC.parse();
+console.log(parsed);
+/*
+body {
+  margin: 10px;
+}
+body {
+  border: 1px solid #ccc;
+}
+*/
+
+//delete rule
+CSSC("body").first().delete();
+parsed = CSSC.parse();
+console.log(parsed);
+/*
+body {
+  border: 1px solid #ccc;
+}
+*/
 ```
 
 
 ---
 
 ### .update()
+**update** is a method to update updatable properties or rules
+
+```
+.update()
+```
+
+**`Return value`** - Handler object. 
+
+&nbsp;
+
+**Example**
+```javascript
+CSSC({
+    '.updatable1': function(){
+        return {
+            width: Math.random()*100+100,
+            height: Math.random()*100+100,
+        };
+    },
+    '.updatable2': {
+        width: 20,
+        height: function(){ return Math.random()*10+10; }
+    }
+});
+
+var parsed = CSSC.parse();
+console.log(parsed);
+/*
+.updatable1 {
+  width: 166.16px;
+  height: 147.66px;
+}
+.updatable2 {
+  width: 20px;
+  height: 16.13px;
+}
+*/
+
+CSSC(".updatable1").update();
+parsed = CSSC.parse();
+console.log(parsed);
+/*
+.updatable1 {
+  width: 101.4px;
+  height: 143.95px;
+}
+.updatable2 {
+  width: 20px;
+  height: 16.13px;
+}
+*/
+
+CSSC(/\.updatable[12]/).update();
+parsed = CSSC.parse();
+console.log(parsed);
+/*
+.updatable1 {
+  width: 117.66px;
+  height: 198.24px;
+}
+.updatable2 {
+  width: 20px;
+  height: 10.94px;
+}
+*/
+```
 
 ---
 
 ### .export()
+**export** is a method to export defined CSS as String, Object or Array
+```
+.export([exportType])
+```
+* *`exportType` \[optional\]* - String with export type (default: "object")
+    * *`"css"` - export as CSS String*
+    * *`"min"` - export as minified CSS String* 
+    * *`"obj"` - export as JS-Object*
+    * *`"arr"` - export as array*
+    * *`"object"` - the same as "obj"*
+    * *`"objNMD"` - export as not multidimensional object*
+    * *`"array"` - the same as "arr"*
+
+**`Return value`** - Mixed
+
+&nbsp;
+
+**Example**
+```javascript
+CSSC({
+    body: {
+        margin: 1
+    },
+    p: {
+        width: 500,
+        margin: "auto",
+        "span.first": {
+            "font-size": 25
+        },
+        "@media screen and (max-width: 500px)": { 
+            width: "100%"
+        }
+    }
+});
+
+var exportObject = CSSC("p").export(); // or CSSC.export("obj") or CSSC.export("object")
+console.log(JSON.stringify(exportObject, true, 4));
+/*
+{
+    "p": {
+        "width": "500px",
+        "margin": "auto",
+        "span.first": {
+            "font-size": "25px"
+        },
+        "@media screen and (max-width: 500px)": {
+            "width": "100%"
+        }
+    }
+}
+*/
+
+exportObject = CSSC("p").export("css");
+console.log(exportObject);
+/*
+p {
+  width: 500px;
+  margin: auto;
+}
+*/
+
+```
 
 ---
 
-### .parse()
+### .parse() 
+**parse** is a method to parse defined CSS. This method is identical to .export(CSSC.type_export.css) or .export(CSSC.type_export.min)
+```
+.parse([min])
+```
+* *`min` \[optional]\* - Boolean, if true return a minified CSS (default: false)
+
+**`Return value`** - String with CSS
+
+&nbsp;
+
+**Example**
+```javascript
+/*
+this method returns the same result as .export("css") or .export("min");
+*/
+
+exportObject = CSSC("p").parse(true);
+console.log(exportObject);
+/*
+p{width:500px;margin:auto;}
+*/
+```
 
 ---
 
 ### .pos()
+**pos** is a method to get a Handler object with style element of the given position
+```
+.pos(position)
+```
+* `position` - Integer, the position of found style elements. If the position is negative, count the position from last.
+
+**`Return value`** - Handler object with style element of the given position
+
+&nbsp;
+
+**Example**
+```javascript
+CSSC({
+    p: [{
+        height: 100
+    },{
+        width: 500
+    },{
+        color: "green"
+    }]
+});
+
+var handler = CSSC("p");
+console.log(handler.e.length);
+/*
+3
+*/
+console.log(handler.parse());
+/*
+p {
+  height: 100px;
+}
+p {
+  width: 500px;
+}
+p {
+  color: green;
+}
+*/
+
+console.log(handler.pos(0).parse());
+/*
+p {
+  height: 100px;
+}
+*/
+
+console.log(handler.pos(1).parse());
+/*
+p {
+  width: 500px;
+}
+*/
+
+console.log(handler.pos(-1).parse());
+/*
+p {
+  color: green;
+}
+*/
+```
 
 ---
 
