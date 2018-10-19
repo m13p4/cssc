@@ -1077,7 +1077,7 @@ p {
 ---
 
 ### .first()
-**first** is a method to get a Handler object with first style element
+**first** is a method to get a Handler object with first style element. This method is equivalent to `.pos(0)`.
 ```
 .first()
 ```
@@ -1104,7 +1104,7 @@ p {
 ---
 
 ### .last()
-**last** is a method to get a Handler object with last style element
+**last** is a method to get a Handler object with last style element. This method is equivalent to `.pos(-1)`.
 ```
 .last()
 ```
@@ -1115,7 +1115,6 @@ p {
 
 **Example**
 ```javascript
-// '.last()' is equivalent to '.pos(-1)'
 CSSC({
     p: [{ height: 100 },{ width: 500 },{ color: 0xff00 }]
 });
