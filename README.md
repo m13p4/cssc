@@ -60,8 +60,6 @@ The controller object (CSSC) is a function to get handler object or to import ne
 
 **`Return value`** - Controller object (CSSC)
 
-&nbsp;
-
 #### Example
 ```javascript
 // init all defined CSS rules in 
@@ -83,8 +81,6 @@ CSSC.init(document.querySelectorAll("style"));
 * `importObj` - an object with style sheets
 
 **`Return value`** - Controller object (CSSC)
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -123,8 +119,6 @@ CSSC.import(importObj); //alternativly can be used simply CSSC(importObj);
 
 **`Return value`** - Controller object (CSSC)
 
-&nbsp;
-
 #### Example
 ```javascript
 CSSC.update(); // update all CSS rules which were defined through functions
@@ -149,8 +143,6 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
     * *`"array"` - the same as "arr"*
 
 **`Return value`** - Mixed
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -302,8 +294,6 @@ console.log(JSON.stringify(exportObject, true, 4));
 
 **`Return value`** - String with CSS
 
-&nbsp;
-
 #### Example
 ```javascript
 /*
@@ -349,8 +339,6 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 ```
 **`Return value`** - New Controller object (CSSC)
 
-&nbsp;
-
 #### Example
 ```javascript
 var newCSSC = CSSC.new();
@@ -372,8 +360,6 @@ newCSSC({
 * *`value` \[optional\]* - if conf a String becomes value to set
 
 **`Return value`** - Mixed -> Controller object (CSSC) if set or object key-value pair or configuration value
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -400,8 +386,6 @@ CSSC.conf();                              // get all defined configurations
 * *`value` \[optional\]* - if conf a String becomes value to set
 
 **`Return value`** - Mixed -> Controller object (CSSC) if set or object key-value pair or variable value
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -463,8 +447,6 @@ this method is a helper function, can be used to test your vars.
 
 **`Return value`** - Parsed string 
 
-&nbsp;
-
 #### Example
 ```javascript
 CSSC.vars({
@@ -503,8 +485,6 @@ this method is a helper function, can be used to parse CSS from simple object
 
 **`Return value`** - Parsed string 
 
-&nbsp;
-
 #### Example
 ```javascript
 var cssString = CSSC.cssFromObj({body:{margin: "20px"}});
@@ -540,8 +520,6 @@ this method is a helper function, can be used to generate an object from a css s
 * `css` - A CSS String
 
 **`Return value`** - Generated object
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -660,8 +638,6 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 
 **`Return value`** - Mixed -> Object, String or Array of Strings, depending on how the parameters were set
 
-&nbsp;
-
 #### Example
 ```javascript
 CSSC({
@@ -719,8 +695,6 @@ console.log(JSON.stringify(val, true, 4));
 * *`value` \[optional\]* - use this when `toSet` a String. A value to set as String/Integer/Float, a function that returns the values to set, an object to create a new CSS rule or an Array with objects to create new rules.
 
 **`Return value`** - Handler object.
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -795,8 +769,6 @@ body .newClass.class1 {
 
 **`Return value`** - Handler object.
 
-&nbsp;
-
 #### Example
 ```javascript
 CSSC({
@@ -857,8 +829,6 @@ body {
 ```
 
 **`Return value`** - Handler object. 
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -935,8 +905,6 @@ console.log(parsed);
 
 **`Return value`** - Mixed
 
-&nbsp;
-
 #### Example
 ```javascript
 CSSC({
@@ -994,8 +962,6 @@ p {
 
 **`Return value`** - String with CSS
 
-&nbsp;
-
 #### Example
 ```javascript
 /*
@@ -1019,8 +985,6 @@ p{width:500px;margin:auto;}
 * `position` - Integer, the position of found style elements. If the position is negative, count the position from last.
 
 **`Return value`** - Handler object with style element of the given position
-
-&nbsp;
 
 #### Example
 ```javascript
@@ -1084,8 +1048,6 @@ p {
 
 **`Return value`** - Handler object with first style element
 
-&nbsp;
-
 #### Example
 ```javascript
 // '.first()' is equivalent to '.pos(0)'
@@ -1110,8 +1072,6 @@ p {
 ```
 
 **`Return value`** - Handler object with last style element
-
-&nbsp;
 
 #### Example
 ```javascript
