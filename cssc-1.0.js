@@ -145,23 +145,32 @@ var CSSC = (function()
 
         index[1] = styleElem;
     }
-    function helperParseValue(value, defUnit)
+    function helperParseValue(value, key, defUnit)
     {
-        if(!defUnit) defUnit = CONF_DEFAULT_parse_unit_default;
+        var isString = helperElemType(value, 1) === "S";
+        
         if(isFinite(value))
         {
-            if(value%1 === 0) return ""+value+defUnit;
-            return ""+(Math.floor(value*100)/100)+defUnit;
+            defUnit = defUnit || CONF_DEFAULT_parse_unit_default;
+            var _vInt = parseInt(value);
+            if(_vInt == value)
+            {
+                if(key.match(/(^|-)color$/i) || (isString && value.match(/^0x[0-9a-f]+$/i)))
+                {
+                    value = "rgb("+([(_vInt&0xff0000)>>16,(_vInt&0xff00)>>8,_vInt&0xff].join(","))+")";
+                }
+                else value = ""+value+defUnit;
+            }
+            else value = ""+(Math.floor(value*100)/100)+defUnit;
         }
-        else if(helperElemType(value, 1) === "S")
+        else if(isString && value.indexOf(" ") > -1)
         {
             var v = value.split(" ");
-
             if(v.length > 1)
             {
                 for(var i = 0; i < v.length; i++) 
-                    v[i] = helperParseValue(v[i], defUnit);
-                return v.join(" ");
+                    v[i] = helperParseValue(v[i], key, defUnit);
+                value = v.join(" ");
             }
         }
         return value;
@@ -170,21 +179,16 @@ var CSSC = (function()
     {
         if(cssText.match(/^@(namespace|import|charset)/))
             return cssText.replace(/(^@(namespace|import|charset)\s*|\s*;\s*$)/g, "");
-
         var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
             split = str.split(';'), i, kv, obj = {};
 
-        if(str !== "")
-        {
-            for(i = 0; i < split.length; i++)
+        if(str !== "") for(i = 0; i < split.length; i++)
             {
                 if(split[i] === "") continue;
 
                 kv = split[i].split(':');
-
                 obj[kv[0].trim()] = kv.slice(1).join(':').trim();
             }
-        }
 
         return obj;
     }
@@ -251,7 +255,7 @@ var CSSC = (function()
         var regExp = new RegExp(prop+"\s*:\s*(.+?);"),
             find = cssText.match(regExp);
 
-        return !!find ? find[1].trim() : "";
+        return find ? find[1].trim() : "";
     }
     function helperSelectorType(sel)
     {
@@ -705,7 +709,6 @@ var CSSC = (function()
                         if(parent && !key.match(/^@(media|keyframes|supports)/))
                         {
                             key = helperGenSelector(parent.csscSelector, key);
-
                             tmp = parent.parent;
                         }
 
@@ -731,22 +734,25 @@ var CSSC = (function()
                             };
 
                             rule = addToIndex(index, tmp, tmp.parent, key);
-
                             handleImport(index, importElem[i], rule);
                         }
 
                         if(!!parent)
                         {
                             if(!parent.obj[handlerObj]) parent.obj[handlerObj] = [];
-
                             parent.obj[handlerObj].push(rule);
                         }
                     }
                 }
+                else if(helperElemType(importElem[i],1).match(/[Sfi]/))
+                { 
+                    tmp = parent ? parent.children : index[0];
+                    if(!tmp["*"]) createRule(index, "*", null, null, parent);
+                    _set(index, [tmp["*"].content[0]], key, importElem[i]);
+                }
                 else
                 {
                     rule = createRule(index, key, null, null, parent);
-
                     if(rule) _set(index, [rule], importElem[i]);
                 }
             }
@@ -832,7 +838,7 @@ var CSSC = (function()
                 }
                 else
                 {
-                    prsVal = helperParseValue(val, index[4].parse_unit_default);
+                    prsVal = helperParseValue(val, prop, index[4].parse_unit_default);
 
                     e[pos].indexElem.style[prop] = prsVal;
                     e[pos].obj[prop] = prsVal;
@@ -1053,7 +1059,6 @@ var CSSC = (function()
                 }
             }
         }
-        
         if(_this) _this.e = _getE(index, _e);
     }
     function _pos(index, e, p, sel, parents)
@@ -1065,8 +1070,7 @@ var CSSC = (function()
     function _getE(index, e)
     {
         var _e = [];
-        for(var i = 0; i < e.length; i++) 
-            if(e[i].indexElem)
+        for(var i = 0; i < e.length; i++) if(e[i].indexElem)
                 _e.push(e[i].indexElem.placeholder ? _export(index, [e[i]], TYPE_EXPORT_obj) : e[i].indexElem);
         return _e;
     }
@@ -1116,7 +1120,7 @@ var CSSC = (function()
         handler.selector = _selector(els, sel);
         
         helperObjectDefineReadOnlyPropertys(handler, {
-            'set':    function(prop, val, pos){ createRuleIfNotExists(); _set(index, els, prop, val, pos); return handler; },
+            'set':    function(prop, val){ createRuleIfNotExists(); _set(index, els, prop, val); return handler; },
             'get':    function(prop, retAP){ return _get(index, els, prop, retAP); },
             'update': function(){ _update(index, els); return handler; },
             'delete': function(prop){ _delete(index, els, prop, handler); return handler; },
