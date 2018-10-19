@@ -62,7 +62,7 @@ The controller object (CSSC) is a function to get handler object or to import ne
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 // init all defined CSS rules in 
 // '<style id="style-sheet">...</style>' element
@@ -86,7 +86,7 @@ CSSC.init(document.querySelectorAll("style"));
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 var importObj = {
     body: {
@@ -125,7 +125,7 @@ CSSC.import(importObj); //alternativly can be used simply CSSC(importObj);
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC.update(); // update all CSS rules which were defined through functions
 // or
@@ -152,7 +152,7 @@ CSSC.update(".updatable"); // update CSS rule .updatable when it was defined thr
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     body: {
@@ -304,7 +304,7 @@ console.log(JSON.stringify(exportObject, true, 4));
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 /*
 this method returns the same result as .export("css") or .export("min");
@@ -351,7 +351,7 @@ body{margin:1px;}p{width:500px;margin:auto;}p span.first{font-size:25px;}@media 
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 var newCSSC = CSSC.new();
 newCSSC({
@@ -375,7 +375,7 @@ newCSSC({
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC.conf({ // set as object
     style_id: "my-style-sheets", // [String]  Document element ID 
@@ -403,7 +403,7 @@ CSSC.conf();                              // get all defined configurations
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 //The principle of set and get vars is the same as with conf method.
 
@@ -465,7 +465,7 @@ this method is a helper function, can be used to test your vars.
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC.vars({
     myVar: "my variable text",
@@ -505,7 +505,7 @@ this method is a helper function, can be used to parse CSS from simple object
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 var cssString = CSSC.cssFromObj({body:{margin: "20px"}});
 console.log(cssString);
@@ -543,7 +543,7 @@ this method is a helper function, can be used to generate an object from a css s
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 var cssObj = CSSC.objFromCss("body{margin:20px;}");
 console.log(JSON.stringify(cssObj, true, 4));
@@ -662,7 +662,7 @@ var h = CSSC(".className"); //get a handler object with all CSS objects are defi
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     body: [{
@@ -722,7 +722,7 @@ console.log(JSON.stringify(val, true, 4));
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     body: {
@@ -797,7 +797,7 @@ body .newClass.class1 {
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     body: [{
@@ -860,7 +860,7 @@ body {
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     '.updatable1': function(){
@@ -937,7 +937,7 @@ console.log(parsed);
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     body: {
@@ -996,7 +996,7 @@ p {
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 /*
 this method returns the same result as .export("css") or .export("min");
@@ -1022,7 +1022,7 @@ p{width:500px;margin:auto;}
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     p: [{
@@ -1086,7 +1086,7 @@ p {
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 // '.first()' is equivalent to '.pos(0)'
 CSSC({
@@ -1113,7 +1113,7 @@ p {
 
 &nbsp;
 
-**Example**
+#### Example
 ```javascript
 CSSC({
     p: [{ height: 100 },{ width: 500 },{ color: 0xff00 }]
