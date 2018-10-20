@@ -68,6 +68,8 @@ var CSSC = (function()
             parse_unit_default: CONF_DEFAULT_parse_unit_default,
             parse_vars_limit: CONF_DEFAULT_parse_vars_limit
         }),
+        PRE_IMPORT_KEYS = ["@charset", "@import", "@namespace", "@font-face"],
+        SINGLE_ROW_KEYS = PRE_IMPORT_KEYS.slice(0, 3), //["@charset", "@import", "@namespace"]
         MESSAGES = [];
         
     function helperElemType(elem, len, returnFullValue)
@@ -91,7 +93,6 @@ var CSSC = (function()
     function helperObjectDefineReadOnlyPropertys(obj, propsObj)
     {
         var key;
-        
         if(Object.defineProperty) for(key in propsObj)
             Object.defineProperty(obj, key, {
                 enumerable: true,
@@ -132,7 +133,6 @@ var CSSC = (function()
                     index[4].style_id = index[4].style_id+'-'+i;
                     break;
                 }
-
             if(document.getElementById(index[4].style_id))
                 throw new Error("cann not create new element..");
         }
@@ -147,31 +147,54 @@ var CSSC = (function()
     }
     function helperParseValue(value, key, defUnit)
     {
-        var isString = helperElemType(value, 1) === "S";
+        var valType  = helperElemType(value, 1), val,
+            isString = valType === "S",
+            isHex    = isString && value.match(/^0x[0-9a-f\.\+]+$/i);
         
-        if(isFinite(value))
+        if(isFinite(value) || isHex)
         {
-            defUnit = defUnit || CONF_DEFAULT_parse_unit_default;
-            var _vInt = parseInt(value);
-            if(_vInt == value)
+            defUnit = (defUnit || CONF_DEFAULT_parse_unit_default)+"";
+            var vNum = value, frac;
+            
+            if(isHex)
             {
-                if(key.match(/(^|-)color$/i) || (isString && value.match(/^0x[0-9a-f]+$/i)))
+                var endPos = value.search(/[\.\+]/);
+                if(endPos < 0) vNum = parseInt(value);
+                else
                 {
-                    value = "rgb("+([(_vInt&0xff0000)>>16,(_vInt&0xff00)>>8,_vInt&0xff].join(","))+")";
+                    frac = value.substr(endPos+1);
+                    vNum = parseInt(value.substr(0, endPos)) +
+                           (value.charAt(endPos) === "+" ? parseFloat(frac) : 
+                           parseInt(frac, 16) / Math.pow(16, frac.length));
                 }
-                else value = ""+value+defUnit;
+                valType = helperElemType(vNum, 1);
             }
-            else value = ""+(Math.floor(value*100)/100)+defUnit;
+            else if(isString)
+            {
+                vNum    = parseFloat(value);
+                valType = helperElemType(vNum, 1);
+            }
+            
+            if(isHex || key.match(/(^|-)color$/i))
+            {
+                val = vNum; frac = 0;
+                if(valType === "f")
+                {
+                    val = Math.floor(vNum);
+                    frac = vNum-val;
+                }
+                val = [(val&0xff0000)>>16,(val&0xff00)>>8,val&0xff].join(", ");
+                value = frac > 0 ? "rgba("+val+", "+(Math.floor(frac*100)/100)+")" : "rgb("+val+")";
+            }
+            else if(valType === "i") value = vNum+defUnit;
+            else value = (Math.floor(vNum*100)/100)+defUnit;
         }
         else if(isString && value.indexOf(" ") > -1)
         {
-            var v = value.split(" ");
-            if(v.length > 1)
-            {
-                for(var i = 0; i < v.length; i++) 
-                    v[i] = helperParseValue(v[i], key, defUnit);
-                value = v.join(" ");
-            }
+            val = value.split(" ");
+            for(var i = 0; i < val.length; i++) 
+                val[i] = helperParseValue(val[i], key, defUnit);
+            value = val.join(" ");
         }
         return value;
     }
@@ -181,7 +204,6 @@ var CSSC = (function()
             return cssText.replace(/(^@(namespace|import|charset)\s*|\s*;\s*$)/g, "");
         var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
             split = str.split(';'), i, kv, obj = {};
-
         if(str !== "") for(i = 0; i < split.length; i++)
             {
                 if(split[i] === "") continue;
@@ -228,7 +250,7 @@ var CSSC = (function()
 
                     for(i = 0; i < val.length; i++)
                     {
-                        if(key === "@namespace" || key === "@import" || key === "@charset")
+                        if(SINGLE_ROW_KEYS.indexOf(key) > -1) // key === "@namespace"||"@import"||"@charset"
                         {
                             cssText += key+" "+val[i]+";"+(min?'':"\n");
                             continue;
@@ -242,7 +264,7 @@ var CSSC = (function()
                         else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                     }
                 }
-                else if(key === "@namespace" || key === "@import" || key === "@charset")
+                else if(SINGLE_ROW_KEYS.indexOf(key) > -1)
                              cssText += key+" "+val+";"+(min?'':"\n");
                 else if(min) cssText += key+":"+val.trim().replace(/\s*,\s*/g,",")+";";
                 else         cssText += (addTab.length < tab.length ? tab : addTab)+key+": "+val+";\n";
@@ -461,9 +483,9 @@ var CSSC = (function()
             return;
         }
 
-        if(indexType === TYPE_namespace) indexKey = "@namespace";
-        if(indexType === TYPE_import)    indexKey = "@import";
-        if(indexType === TYPE_charset)   indexKey = "@charset";
+        if(indexType === TYPE_namespace) indexKey = SINGLE_ROW_KEYS[2];
+        if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
+        if(indexType === TYPE_charset)   indexKey = SINGLE_ROW_KEYS[0];
 
         toIndex._update = false;
         if(indexType === TYPE_rule) toIndex.style._update = {};
@@ -520,18 +542,15 @@ var CSSC = (function()
 
         if(!!property)
         {
-            var propType = helperElemType(property, 1);
+            var propType = helperElemType(property, 1), prop;
 
             if(propType === "O")
             {
-                var prop;
-
                 for(var key in property)
                 {
                     if(helperElemType(property[key], 1) === "F")
                     {
                         prop = property[key]();
-
                         ruleString += key+":"+prop+"; ";
                     }
                     else
@@ -540,8 +559,7 @@ var CSSC = (function()
             }
             else if(propType === "F")
             {
-                var prop = property();
-
+                prop = property();
                 for(var key in prop)
                     ruleString += key+":"+prop[key]+"; ";
             }
@@ -551,9 +569,8 @@ var CSSC = (function()
 
         var insRuleString = selector+"{"+ruleString+"}", added = false;
 
-        if(selector === "@namespace" || selector === "@import" || selector === "@charset")
+        if(SINGLE_ROW_KEYS.indexOf(selector) > -1) // === "@namespace"||"@import"||"@charset"
             insRuleString = selector+" "+property;
-        
         try
         {
             if("insertRule" in appendToElem)
@@ -675,12 +692,11 @@ var CSSC = (function()
 
         if(!isPreImport && !parent)
         {
-            if("@charset"   in importObj) preImport["@charset"]   = importObj["@charset"];
-            if("@import"    in importObj) preImport["@import"]    = importObj["@import"];
-            if("@namespace" in importObj) preImport["@namespace"] = importObj["@namespace"];
-            if("@font-face" in importObj) preImport["@font-face"] = importObj["@font-face"];
-
-            if(helperObjectKeysValues(preImport).length > 0) handleImport(index, preImport, parent, true);
+            for(i = 0; i < PRE_IMPORT_KEYS.length; i++) 
+                if(PRE_IMPORT_KEYS[i] in importObj)
+                    preImport[PRE_IMPORT_KEYS[i]] = importObj[PRE_IMPORT_KEYS[i]];
+            if(helperObjectKeysValues(preImport).length > 0) 
+                handleImport(index, preImport, parent, true);
         }
         
         for(key in importObj)
@@ -698,7 +714,7 @@ var CSSC = (function()
             {
                 if(key.charAt(0) === "@")
                 {
-                    if(key === "@font-face" || key === "@namespace" || key === "@import" || key === "@charset")
+                    if(PRE_IMPORT_KEYS.indexOf(key) > -1) // key === "@font-face"||"@namespace"||"@import"||"@charset"
                         createRule(index, key, importElem[i], null, parent);
                     else if(key.match(/^@(media|keyframes|supports)/) 
                             || (parent && (parent.type === TYPE_media
@@ -948,7 +964,6 @@ var CSSC = (function()
                         {
                             obj[key] = null;
                             delete obj[key];
-
                             continue;
                         }
 
@@ -1005,15 +1020,11 @@ var CSSC = (function()
         }
 
         var sortExpObj = {};
-        if(exportObj['@charset'])   sortExpObj['@charset']   = exportObj['@charset'];
-        if(exportObj['@import'])    sortExpObj['@import']    = exportObj['@import'];
-        if(exportObj['@namespace']) sortExpObj['@namespace'] = exportObj['@namespace'];
-        if(exportObj['@font-face']) sortExpObj['@font-face'] = exportObj['@font-face'];
-
+        for(i = 0; i < PRE_IMPORT_KEYS.length; i++) if(exportObj[PRE_IMPORT_KEYS[i]])
+                sortExpObj[PRE_IMPORT_KEYS[i]] = exportObj[PRE_IMPORT_KEYS[i]];
         tmp = helperObjectKeysValues(sortExpObj).length > 0;
         if(tmp) for(i in exportObj) if(!sortExpObj[i])
                     sortExpObj[i] = exportObj[i];
-
         return tmp ? sortExpObj : exportObj;
     }
     function _update(index, e)
