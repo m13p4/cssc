@@ -68,6 +68,26 @@ var CSSC = (function()
             parse_unit_default: CONF_DEFAULT_parse_unit_default,
             parse_vars_limit: CONF_DEFAULT_parse_vars_limit
         }),
+        _TYPE_Null      = 1,
+        _TYPE_Undefined = 2,
+        _TYPE_Integer   = 3,
+        _TYPE_Float     = 4,
+        _TYPE_String    = 5,
+        _TYPE_RegExp    = 6,
+        _TYPE_Array     = 7,
+        _TYPE_Object    = 8,
+        _TYPE_Function  = 9,
+        _TYPE = {
+            Null      : _TYPE_Null,
+            Undefined : _TYPE_Undefined,
+            Integer   : _TYPE_Integer,
+            Float     : _TYPE_Float,
+            String    : _TYPE_String,
+            RegExp    : _TYPE_RegExp,
+            Array     : _TYPE_Array,
+            Object    : _TYPE_Object,
+            Function  : _TYPE_Function
+        },
         PRE_IMPORT_KEYS = ["@charset", "@import", "@namespace", "@font-face"],
         SINGLE_ROW_KEYS = PRE_IMPORT_KEYS.slice(0, 3), //["@charset", "@import", "@namespace"]
         MESSAGES = [];
@@ -77,13 +97,11 @@ var CSSC = (function()
         if(cnf.view_err) console.log(err);
         MESSAGES.push(err);
     }
-    function helperElemType(elem, len, returnFullValue)
+    function helperElemType(elem)
     {
-        var type = Object.prototype.toString.call(elem);
-        if(returnFullValue) return type;
-        var n = type.split(/ |\]/)[1];
-        if(n === "Number") n = Math.floor(elem) === elem ? "integer" : "float";
-        return len ? n.substr(0,len) : n;
+        var type = Object.prototype.toString.call(elem).split(/ |\]/)[1];
+        if(type === "Number") type = Math.floor(elem) === elem ? "Integer" : "Float";
+        return _TYPE[type] ? _TYPE[type] : type;
     }
     function helperObjectAssign()
     {
@@ -141,7 +159,6 @@ var CSSC = (function()
             if(document.getElementById(id))
                 throw new Error("cann not create new element..");
         }
-
         var styleElem = document.createElement("style");
         styleElem.setAttribute("type", "text/css");
         styleElem.setAttribute("id", id);
@@ -153,8 +170,8 @@ var CSSC = (function()
     }
     function helperParseValue(value, key, defUnit)
     {
-        var valType  = helperElemType(value, 1), val,
-            isString = valType === "S",
+        var valType  = helperElemType(value), val,
+            isString = valType === _TYPE_String,
             isHex    = isString && value.match(/^0x[0-9a-f\.\+]+$/i);
         
         if(isFinite(value) || isHex)
@@ -173,18 +190,18 @@ var CSSC = (function()
                            (value.charAt(endPos) === "+" ? parseFloat(frac) : 
                            parseInt(frac, 16) / Math.pow(16, frac.length));
                 }
-                valType = helperElemType(vNum, 1);
+                valType = helperElemType(vNum);
             }
             else if(isString)
             {
                 vNum    = parseFloat(value);
-                valType = helperElemType(vNum, 1);
+                valType = helperElemType(vNum);
             }
             
             if(isHex || key.match(/(^|-)color$/i))
             {
                 val = vNum; frac = 0;
-                if(valType === "f")
+                if(valType === _TYPE_Float)
                 {
                     val = Math.floor(vNum);
                     frac = vNum-val;
@@ -192,7 +209,7 @@ var CSSC = (function()
                 val = [(val&0xff0000)>>16,(val&0xff00)>>8,val&0xff].join(", ");
                 value = frac > 0 ? "rgba("+val+", "+(Math.floor(frac*100)/100)+")" : "rgb("+val+")";
             }
-            else if(valType === "i") value = vNum+defUnit;
+            else if(valType === _TYPE_Integer) value = vNum+defUnit;
             else value = (Math.floor(vNum*100)/100)+defUnit;
         }
         else if(isString && value.indexOf(" ") > -1)
@@ -222,23 +239,23 @@ var CSSC = (function()
     function helperCssTextFromObj(obj, min, tabLen, addTab, fromArrayParse)
     {
         var tab = (new Array((parseInt(tabLen)||CONF_DEFAULT_parse_tab_len)+1).join(" ")), 
-            cssText = "", key, val, elType = helperElemType(obj, 1), i, tmp;
+            cssText = "", key, val, elType = helperElemType(obj), i, tmp;
 
         addTab = addTab || "";
 
-        if(elType === "S") return obj;
-        if(elType === "A") for(i = 0; i < obj.length; i++)
+        if(elType === _TYPE_String) return obj;
+        if(elType === _TYPE_Array) for(i = 0; i < obj.length; i++)
                 cssText += helperCssTextFromObj(obj[i], min, tabLen, addTab, true);
         else
         {
             for(key in obj)
             {
                 val = ""+obj[key];
-                elType = helperElemType(obj[key], 1);
+                elType = helperElemType(obj[key]);
 
-                if(/O|A/.test(elType))
+                if(elType === _TYPE_Array || elType === _TYPE_Object)
                 {
-                    if(fromArrayParse && elType === "A")
+                    if(fromArrayParse && elType === _TYPE_Array)
                     {
                         tmp = helperCssTextFromObj(obj[key], min, tabLen, addTab+tab, fromArrayParse);
                         
@@ -250,7 +267,7 @@ var CSSC = (function()
                         continue;
                     }
                         
-                    if(elType === "O") val = [obj[key]];
+                    if(elType === _TYPE_Object) val = [obj[key]];
 
                     for(i = 0; i < val.length; i++)
                     {
@@ -367,18 +384,21 @@ var CSSC = (function()
             for(i = 0; i < keySplit.length; i++)
             {
                 if(keySplit[i].length < 1) continue;
-                type = helperElemType(v,1);
+                type = helperElemType(v);
 
-                if(i === 0 && keySplit[i] in vars)                            v = vars[keySplit[i]];
-                else if(v !== null && /O|A/.test(type) && keySplit[i] in v)   v = v[keySplit[i]];
-                else if(type === "S" && keySplit[i].match(/^[0-9]+$/))        v = v.charAt(keySplit[i]);
+                if(i === 0 && keySplit[i] in vars)                                           
+                    v = vars[keySplit[i]];
+                else if((type === _TYPE_Array || type === _TYPE_Object) && keySplit[i] in v) 
+                    v = v[keySplit[i]];
+                else if(type === _TYPE_String && keySplit[i].match(/^[0-9]+$/))              
+                    v = v.charAt(keySplit[i]);
                 else
                 {
                     v = "$"+key;
                     break;
                 }
                 
-                if(helperElemType(v,1) === "F")
+                if(helperElemType(v) === _TYPE_Function)
                 {
                     if(str.charAt(varEnd+1) === "(")
                     { varEnd++;
@@ -541,15 +561,15 @@ var CSSC = (function()
 
         var rulePos = appendToElem.cssRules.length, ruleString = "";
 
-        if(!!property)
+        if(property)
         {
-            var propType = helperElemType(property, 1), prop;
+            var propType = helperElemType(property), prop;
 
-            if(propType === "O")
+            if(propType === _TYPE_Object)
             {
                 for(var key in property)
                 {
-                    if(helperElemType(property[key], 1) === "F")
+                    if(helperElemType(property[key]) === _TYPE_Function)
                     {
                         prop = property[key]();
                         ruleString += key+":"+prop+"; ";
@@ -558,7 +578,7 @@ var CSSC = (function()
                         ruleString += key+":"+property[key]+"; ";
                 }
             }
-            else if(propType === "F")
+            else if(propType === _TYPE_Function)
             {
                 prop = property();
                 for(var key in prop)
@@ -618,10 +638,10 @@ var CSSC = (function()
     }
     function getHandler(index, sel, getElements)
     {
-        var selType = helperElemType(sel,1),
-            _index = helperElemType(index,1) === "A" ? index[0] : index; 
+        var selType = helperElemType(sel),
+            _index = helperElemType(index) === _TYPE_Array ? index[0] : index; 
 
-        if(selType === "S")
+        if(selType === _TYPE_String)
         {
             sel = helperParseVars(sel, index[3], index[4].parse_vars_limit);
             
@@ -629,7 +649,7 @@ var CSSC = (function()
             
             return ruleHandler(index, (_index[sel] ? _index[sel].content : []), sel);
         }
-        else if(selType === "R")
+        else if(selType === _TYPE_RegExp)
         {
             var matches = [], key;
 
@@ -642,7 +662,7 @@ var CSSC = (function()
 
             return ruleHandler(index, matches, sel);
         }
-        else if(selType === "A")
+        else if(selType === _TYPE_Array)
         {
             var matches = [], i, j, s;
 
@@ -657,7 +677,7 @@ var CSSC = (function()
 
             return ruleHandler(index, matches, sel);
         }
-        else if(/N|U/.test(selType))
+        else if(selType === _TYPE_Null || selType === _TYPE_Undefined)
         {
             var matches = [], key;
 
@@ -672,9 +692,10 @@ var CSSC = (function()
     }
     function handleSelection(index, sel, getElements, _this)
     {
-        var selType = helperElemType(sel, 1);
+        var selType = helperElemType(sel);
 
-        if(/[RUNAS]/.test(selType)) return getHandler(index, sel, getElements);
+        if(selType === _TYPE_String || selType === _TYPE_RegExp || selType === _TYPE_Array || selType === _TYPE_Null || selType === _TYPE_Undefined) 
+            return getHandler(index, sel, getElements);
         else
         {
             handleImport(index, sel);
@@ -698,7 +719,7 @@ var CSSC = (function()
         {
             if(key in preImport) continue;
             
-            if(helperElemType(importObj[key], 1) === "A")
+            if(helperElemType(importObj[key]) === _TYPE_Array)
                 importElem = importObj[key];
             else
                 importElem = [importObj[key]];
@@ -759,7 +780,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(/[Sfi]/.test(helperElemType(importElem[i],1)))
+                else if([_TYPE_String,_TYPE_Float,_TYPE_Integer].indexOf(helperElemType(importElem[i])) > -1)
                 { 
                     tmp = parent ? parent.children : index[0];
                     if(!tmp["*"]) createRule(index, "*", null, null, parent);
@@ -776,7 +797,7 @@ var CSSC = (function()
     
     function _set(index, e, prop, val, pos)
     {
-        if(helperElemType(pos,1) === "i") // single Set
+        if(helperElemType(pos) === _TYPE_Integer) // single Set
         {
             if(e[pos].indexElem.type === TYPE_fontFace)
             {
@@ -790,12 +811,12 @@ var CSSC = (function()
                 _set(index, getHandler(e[pos].children, null, true), prop, val);
             else 
             {
-                var prsVal, valType = helperElemType(val,1), tmp;
+                var prsVal, valType = helperElemType(val), tmp;
 
-                if(/O|A/.test(valType))
+                if(valType === _TYPE_Object || valType === _TYPE_Array)
                 {
                     var isAtRule = prop.charAt(0) === "@", pObj, rule,
-                        valArr = valType === 'O' ? [val] : val, i,
+                        valArr = valType === _TYPE_Object ? [val] : val, i,
                         newSel = helperGenSelector(e[pos].selector, prop);
 
                     if(isAtRule) newSel = e[pos].parent ? helperGenSelector(e[pos].parent.selector, prop) : prop;
@@ -832,7 +853,7 @@ var CSSC = (function()
                         }
                     }
                 }
-                else if(valType === "F")
+                else if(valType === _TYPE_Function)
                 {
                     var oldVal = _get(index, [e[pos]], prop), valToSet;
 
@@ -860,14 +881,14 @@ var CSSC = (function()
         else // multi Set
         {
             var i, propLen, key, props,
-                propType = helperElemType(prop, 1);
+                propType = helperElemType(prop);
 
-            if(propType === "O")      propLen = helperObjectKeysValues(prop).length;
-            else if(propType === "F") props = prop();
+            if(propType === _TYPE_Object)        propLen = helperObjectKeysValues(prop).length;
+            else if(propType === _TYPE_Function) props = prop();
 
-            if(propType === "A" || (propType === "F" && helperElemType(props, 1) === "A"))
+            if(propType === _TYPE_Array || (propType === _TYPE_Function && helperElemType(props) === _TYPE_Array))
             {
-                var prp = (propType === "A" ? prop : props);
+                var prp = (propType === _TYPE_Array ? prop : props);
                 for(i = 0; i < prp.length; i++)
                 {
                     if(e.length > i) _set(index, [e[i]], prp[i]);
@@ -876,9 +897,9 @@ var CSSC = (function()
             }
             else for(i = 0; i < e.length; i++)
             {
-                if(propType === "O" && propLen > 0) 
+                if(propType === _TYPE_Object && propLen > 0) 
                     for(key in prop) _set(index, e, key, prop[key], i);
-                else if(propType === "F")
+                else if(propType === _TYPE_Function)
                 {
                     for(key in props)
                         _set(index, e, key, props[key], i);
@@ -905,7 +926,7 @@ var CSSC = (function()
             {
                 tmp = e[i].obj[prop];
 
-                if(helperElemType(tmp, 1) === "A")
+                if(helperElemType(tmp) === _TYPE_Array)
                     tmp = _export(index, tmp, TYPE_EXPORT_object);
             }
 
@@ -948,7 +969,7 @@ var CSSC = (function()
 
                 for(key in e[i].obj)
                 {
-                    if(helperElemType(e[i].obj[key], 1) === "A")
+                    if(helperElemType(e[i].obj[key]) === _TYPE_Array)
                     {
                         if(type === TYPE_EXPORT_notMDObject || type === TYPE_EXPORT_array)
                         {
@@ -992,7 +1013,7 @@ var CSSC = (function()
             }
             else if(exportObj[e[i].selector])
             {
-                if(helperElemType(exportObj[e[i].selector], 1) !== "A")
+                if(helperElemType(exportObj[e[i].selector]) !== _TYPE_Array)
                     exportObj[e[i].selector] = [exportObj[e[i].selector]];
 
                 exportObj[e[i].selector].push(obj);
@@ -1039,7 +1060,7 @@ var CSSC = (function()
     }
     function _delete(index, e, prop, _this)
     {
-        var isUndef = !!helperElemType(prop,1).match(/[NU]/), i, _e = [];
+        var isUndef = [_TYPE_Null,_TYPE_Undefined].indexOf(helperElemType(prop)) > -1, i, _e = [];
 
         for(i = 0; i < e.length; i++)
         {
@@ -1057,7 +1078,7 @@ var CSSC = (function()
                 
                 if(e[i].obj[prop])
                 {
-                    if(helperElemType(e[i].obj[prop],1) === "A")
+                    if(helperElemType(e[i].obj[prop]) === _TYPE_Array)
                         _delete(index, e[i].obj[prop]);
                     delete e[i].obj[prop];
                 }
@@ -1088,7 +1109,7 @@ var CSSC = (function()
         
         function createRuleIfNotExists()
         {
-            if(els.length < 1 && !fromHas && helperElemType(sel,1) === "S")
+            if(els.length < 1 && !fromHas && helperElemType(sel) === _TYPE_String)
             {
                 var rule, contentElems = [], i, _p = parents ? parents : [null];
 
@@ -1134,22 +1155,22 @@ var CSSC = (function()
     }
     function __confVars(cnfVars, setCnfVars, val, defRet)
     {
-        var cnfType = helperElemType(setCnfVars,1);
+        var cnfType = helperElemType(setCnfVars);
         
-        if(cnfType === "O")      cnfVars = helperObjectAssign(cnfVars, setCnfVars);
-        else if(cnfType === "S") 
+        if(cnfType === _TYPE_Object)      cnfVars = helperObjectAssign(cnfVars, setCnfVars);
+        else if(cnfType === _TYPE_String) 
         {
-            if(helperElemType(val,1) === "U") return cnfVars[setCnfVars];
-            else                              cnfVars[setCnfVars] = val;
+            if(helperElemType(val) === _TYPE_Undefined) return cnfVars[setCnfVars];
+            else                                        cnfVars[setCnfVars] = val;
         }
-        else if(cnfType === "A")
+        else if(cnfType === _TYPE_Array)
         {
             var ret = {}, i;
             for(i = 0; i < setCnfVars.length; i++)
                 ret[setCnfVars[i]] = cnfVars[setCnfVars[i]];
             return ret;
         }
-        else if(cnfType === "U") return cnfVars;
+        else if(cnfType === _TYPE_Undefined) return cnfVars;
         return defRet;
     }
     function getController()
