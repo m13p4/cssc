@@ -40,21 +40,28 @@ var CSSC = (function()
             'fontFeatureValues': TYPE_fontFeatureValues,
             'viewport':          TYPE_viewport
         }),
-        TYPE_EXPORT_css         = "css",
-        TYPE_EXPORT_min         = "min",
-        TYPE_EXPORT_obj         = "obj",
-        TYPE_EXPORT_arr         = "arr",
-        TYPE_EXPORT_object      = "object", //default
-        TYPE_EXPORT_notMDObject = "objNMD", //not MultiDimensional Object
-        TYPE_EXPORT_array       = "array",
-        TYPE_EXPORT = helperObjectFreeze({
-           css:         TYPE_EXPORT_css,
-           min:         TYPE_EXPORT_min,
-           obj:         TYPE_EXPORT_obj,
-           arr:         TYPE_EXPORT_arr,
-           object:      TYPE_EXPORT_object,
-           notMDObject: TYPE_EXPORT_notMDObject,
-           array:       TYPE_EXPORT_array
+        TYPE_EXPORT_css         = 1,
+        TYPE_EXPORT_min         = 2,
+        TYPE_EXPORT_obj         = 3, //default
+        TYPE_EXPORT_arr         = 4,
+        TYPE_EXPORT_notMDObject = 5, //not MultiDimensional Object
+        TYPE_EXPORT = {
+            css:    TYPE_EXPORT_css,
+            min:    TYPE_EXPORT_min,
+            obj:    TYPE_EXPORT_obj,
+            object: TYPE_EXPORT_obj,
+            arr:    TYPE_EXPORT_arr,
+            array:  TYPE_EXPORT_arr,
+            objNMD: TYPE_EXPORT_notMDObject
+        },
+        TYPE_EXPORT_STR = helperObjectFreeze({
+            css:         "css",
+            min:         "min",
+            obj:         "obj",
+            arr:         "arr",
+            object:      "object",
+            notMDObject: "objNMD",
+            array:       "array"
         }),
         CONF_DEFAULT_style_id = "cssc-style",
         CONF_DEFAULT_view_err = true,
@@ -78,15 +85,15 @@ var CSSC = (function()
         _TYPE_Object    = 8,
         _TYPE_Function  = 9,
         _TYPE = {
-            Null      : _TYPE_Null,
-            Undefined : _TYPE_Undefined,
-            Integer   : _TYPE_Integer,
-            Float     : _TYPE_Float,
-            String    : _TYPE_String,
-            RegExp    : _TYPE_RegExp,
-            Array     : _TYPE_Array,
-            Object    : _TYPE_Object,
-            Function  : _TYPE_Function
+            'Null'      : _TYPE_Null,
+            'Undefined' : _TYPE_Undefined,
+            'Integer'   : _TYPE_Integer,
+            'Float'     : _TYPE_Float,
+            'String'    : _TYPE_String,
+            'RegExp'    : _TYPE_RegExp,
+            'Array'     : _TYPE_Array,
+            'Object'    : _TYPE_Object,
+            'Function'  : _TYPE_Function
         },
         PRE_IMPORT_KEYS = ["@charset", "@import", "@namespace", "@font-face"],
         SINGLE_ROW_KEYS = PRE_IMPORT_KEYS.slice(0, 3), //["@charset", "@import", "@namespace"]
@@ -129,9 +136,9 @@ var CSSC = (function()
         {
             var tmp = {}, key;
             for(key in obj) Object.defineProperty(tmp, key, {
-                enumerable: true,
-                value: obj[key]
-            });
+                    enumerable: true,
+                    value: obj[key]
+                });
             obj = tmp;
         }
         if(Object.preventExtensions) Object.preventExtensions(obj);
@@ -914,7 +921,7 @@ var CSSC = (function()
     }
     function _get(index, e, prop, returnAllProps)
     {
-        if(!prop) return _export(index, e, TYPE_EXPORT_object);
+        if(!prop) return _export(index, e, TYPE_EXPORT_obj);
 
         var arrToRet = [], propToRet = "", tmp, i;
 
@@ -927,7 +934,7 @@ var CSSC = (function()
                 tmp = e[i].obj[prop];
 
                 if(helperElemType(tmp) === _TYPE_Array)
-                    tmp = _export(index, tmp, TYPE_EXPORT_object);
+                    tmp = _export(index, tmp, TYPE_EXPORT_obj);
             }
 
             if(!tmp || tmp === "")
@@ -946,12 +953,13 @@ var CSSC = (function()
     }
     function _export(index, e, type, ignore)
     {
+        if(helperElemType(type) !== _TYPE_Integer)
+            type = TYPE_EXPORT[type] || TYPE_EXPORT_obj;
+        
         var exportObj = {}, obj, i, j, key, tmp, _type = type;
 
-        if(type === TYPE_EXPORT_obj) type = TYPE_EXPORT_object;
-
-        if(type === TYPE_EXPORT_arr || type === TYPE_EXPORT_css || type === TYPE_EXPORT_min)
-            type = TYPE_EXPORT_array;
+        if(type === TYPE_EXPORT_css || type === TYPE_EXPORT_min)
+            type = TYPE_EXPORT_arr;
 
         if(!ignore) ignore = [];
 
@@ -971,7 +979,7 @@ var CSSC = (function()
                 {
                     if(helperElemType(e[i].obj[key]) === _TYPE_Array)
                     {
-                        if(type === TYPE_EXPORT_notMDObject || type === TYPE_EXPORT_array)
+                        if(type === TYPE_EXPORT_notMDObject || type === TYPE_EXPORT_arr)
                         {
                             obj[key] = null;
                             delete obj[key];
@@ -1006,7 +1014,7 @@ var CSSC = (function()
 
             if(helperObjectKeysValues(obj).length < 1) continue;
 
-            if(type === TYPE_EXPORT_array)
+            if(type === TYPE_EXPORT_arr)
             {
                 exportObj[e[i].p] = {};
                 exportObj[e[i].p][e[i].selector] = obj;
@@ -1023,11 +1031,10 @@ var CSSC = (function()
             ignore.push(e[i]);
         }
 
-        if(type === TYPE_EXPORT_array) 
+        if(type === TYPE_EXPORT_arr) 
         {   
             exportObj = helperObjectKeysValues(exportObj, !0);
-            return type === _type || _type === TYPE_EXPORT_arr ? exportObj
-                   : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min, index[4].parse_tab_len);
+            return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min, index[4].parse_tab_len);
         }
 
         var sortExpObj = {};
@@ -1207,7 +1214,7 @@ var CSSC = (function()
             //config & defs
             _conf:       CONF_DEFAULT,
             type:        TYPE,
-            type_export: TYPE_EXPORT,
+            type_export: TYPE_EXPORT_STR,
             messages:    MESSAGES
         });
         cntr.conf(CONF_DEFAULT);
