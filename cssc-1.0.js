@@ -226,6 +226,8 @@ var CSSC = (function()
                 val[i] = helperParseValue(val[i], key, defUnit);
             value = val.join(" ");
         }
+        else if(isString && value.charAt(value.length-1) === "!")
+                value = value.substr(0, value.length-1);
         return value;
     }
     function helperObjFromCssText(cssText)
@@ -515,20 +517,18 @@ var CSSC = (function()
         if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
         if(indexType === TYPE_charset)   indexKey = SINGLE_ROW_KEYS[0];
 
-        toIndex._update = false;
-        if(indexType === TYPE_rule) toIndex.style._update = {};
-
-        index[2]++; 
         indexObjWrapper = {
             indexElem: toIndex,
             selector: indexKey,
             csscSelector: csscSelector ? csscSelector : indexKey,
             children: false,
             parent: (!!parent ? parent : false),
-            events: {},
             obj: {},
             type: indexType,
-            p: index[2]
+            p: index[2]++,
+            //updatable 
+            uo: false, //object
+            up: {}     //properties
         };
 
         if(_index[indexKey])
@@ -869,7 +869,7 @@ var CSSC = (function()
                         valToSet = val(oldVal);
 
                         _set(index, e, prop, valToSet, pos);
-                        e[pos].indexElem.style._update[prop] = val;
+                        e[pos].up[prop] = val;
                     }
                     catch(err)
                     {
@@ -912,7 +912,7 @@ var CSSC = (function()
                         _set(index, e, key, props[key], i);
 
                     //add to updatable
-                    e[i].indexElem._update = prop;
+                    e[i].uo = prop;
                 }
                 else _set(index, e, prop, val, i);
             }
@@ -1051,17 +1051,16 @@ var CSSC = (function()
 
         for(i = 0; i < e.length; i++)
         {
-            if(e[i].indexElem._update !== false)
+            if(e[i].uo !== false)
             {
-                tmp = e[i].indexElem._update();
+                tmp = e[i].uo();
                 for(key in tmp) _set(index, e, key, tmp[key], i);
             }
 
             if(e[i].children)
                 _update(index, getHandler(e[i].children, null, true));
-            else if(e[i].indexElem.style) 
-                for(key in e[i].indexElem.style._update)
-                    _set(index, e, key, e[i].indexElem.style._update[key](), i);
+            else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
+                    _set(index, e, key, e[i].up[key](), i);
         }
         return;
     }
