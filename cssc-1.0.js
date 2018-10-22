@@ -108,7 +108,7 @@ var CSSC = (function()
     {
         var type = Object.prototype.toString.call(elem).split(/ |\]/)[1];
         if(type === "Number") type = Math.floor(elem) === elem ? "Integer" : "Float";
-        return _TYPE[type] ? _TYPE[type] : type;
+        return  _TYPE[type] || type;
     }
     function helperObjectAssign()
     {
@@ -255,9 +255,7 @@ var CSSC = (function()
         if(elType === _TYPE_String) return obj;
         if(elType === _TYPE_Array) for(i = 0; i < obj.length; i++)
                 cssText += helperCssTextFromObj(obj[i], min, tabLen, addTab, true);
-        else
-        {
-            for(key in obj)
+        else for(key in obj)
             {
                 val = ""+obj[key];
                 elType = helperElemType(obj[key]);
@@ -299,7 +297,7 @@ var CSSC = (function()
                 else if(min) cssText += key+":"+val.trim().replace(/\s*,\s*/g,",")+";";
                 else         cssText += (addTab.length < tab.length ? tab : addTab)+key+": "+val+";\n";
             }
-        }
+        
         return cssText;
     }
     function helperFindPropInCssText(cssText, prop)
@@ -309,21 +307,19 @@ var CSSC = (function()
     }
     function helperSelectorType(sel)
     {
-        sel = sel.trim();
+        var key = sel.trim();
 
-        if(sel.charAt(0) !== "@") return TYPE_rule;
+        if(key.charAt(0) !== "@") return TYPE_rule;
 
-        sel = sel.substr(1);
+        key = key.substr(1);
 
-        var selIO = sel.indexOf(" "), key;
+        var selIO = key.indexOf(" ");
 
-        if(selIO >= 0) sel = sel.substr(0, selIO);
+        if(selIO > -1) key = key.substr(0, selIO);
 
-        key = sel;
-
-        if(sel.indexOf("-") > -1)
+        if(key.indexOf("-") > -1)
         {
-            var splSel = sel.split("-"), i;
+            var splSel = key.split("-"), i;
 
             key = splSel[0];
 
@@ -331,7 +327,7 @@ var CSSC = (function()
                 key += splSel[i].charAt(0).toUpperCase()+splSel[i].substr(1);
         }
 
-        return (key in TYPE) ? TYPE[key] : -1;
+        return TYPE[key] || -1;
     }
     function helperGenSelector(pSel, sel)
     {
@@ -360,7 +356,7 @@ var CSSC = (function()
     }
     function helperDeleteCSSRule(cssRule)
     {
-        var parent = !!cssRule.parentRule ? cssRule.parentRule : cssRule.parentStyleSheet, i;
+        var parent = cssRule.parentRule ? cssRule.parentRule : cssRule.parentStyleSheet, i;
 
         for(i = 0; i < parent.cssRules.length; i++) 
             if(parent.cssRules[i] === cssRule)
@@ -862,11 +858,9 @@ var CSSC = (function()
                 }
                 else if(valType === _TYPE_Function)
                 {
-                    var oldVal = _get(index, [e[pos]], prop), valToSet;
-
                     try
                     {
-                        valToSet = val(oldVal);
+                        var valToSet = val(prop, _get(index, [e[pos]], prop));
 
                         _set(index, e, prop, valToSet, pos);
                         e[pos].up[prop] = val;
@@ -887,35 +881,30 @@ var CSSC = (function()
         }
         else // multi Set
         {
-            var i, propLen, key, props,
+            var i, key, props,
                 propType = helperElemType(prop);
-
-            if(propType === _TYPE_Object)        propLen = helperObjectKeysValues(prop).length;
-            else if(propType === _TYPE_Function) props = prop();
-
-            if(propType === _TYPE_Array || (propType === _TYPE_Function && helperElemType(props) === _TYPE_Array))
-            {
-                var prp = (propType === _TYPE_Array ? prop : props);
-                for(i = 0; i < prp.length; i++)
+        
+            if(propType === _TYPE_Array) for(i = 0; i < prop.length; i++)
                 {
-                    if(e.length > i) _set(index, [e[i]], prp[i]);
+                    if(e.length > i) _set(index, [e[i]], prop[i]);
                     else             break;
                 }
-            }
             else for(i = 0; i < e.length; i++)
-            {
-                if(propType === _TYPE_Object && propLen > 0) 
-                    for(key in prop) _set(index, e, key, prop[key], i);
-                else if(propType === _TYPE_Function)
                 {
-                    for(key in props)
-                        _set(index, e, key, props[key], i);
+                    if(propType === _TYPE_Object) 
+                        for(key in prop) _set(index, e, key, prop[key], i);
+                    else if(propType === _TYPE_Function)
+                    {
+                        props = prop(e[i].selector, _get(index,[e[i]])[e[i].selector]);
+                        
+                        for(key in props)
+                            _set(index, e, key, props[key], i);
 
-                    //add to updatable
-                    e[i].uo = prop;
+                        //add to updatable
+                        e[i].uo = prop;
+                    }
+                    else _set(index, e, prop, val, i);
                 }
-                else _set(index, e, prop, val, i);
-            }
         }
         return;
     }
@@ -1049,18 +1038,20 @@ var CSSC = (function()
     {
         var i, tmp, key;
 
+        //console.log(e);
+
         for(i = 0; i < e.length; i++)
         {
             if(e[i].uo !== false)
             {
-                tmp = e[i].uo();
+                tmp = e[i].uo(e[i].selector,_get(index,[e[i]])[e[i].selector]); //object update
                 for(key in tmp) _set(index, e, key, tmp[key], i);
             }
 
             if(e[i].children)
                 _update(index, getHandler(e[i].children, null, true));
-            else if(e[i].indexElem.style) for(key in e[i].indexElem.style._update)
-                    _set(index, e, key, e[i].up[key](), i);
+            else if(e[i].indexElem.style) for(key in e[i].up)
+                    _set(index, e, key, e[i].up[key](key,_get(index,[e[i]],key)), i);
         }
         return;
     }
