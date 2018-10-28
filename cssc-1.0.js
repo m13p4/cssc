@@ -12,92 +12,138 @@ var CSSC = (function()
     
     var VERSION = "1.0b",
     
-        TYPE_rule       = 1, //check
-        TYPE_charset    = 2, //check
-        TYPE_import     = 3, //check
-        TYPE_media      = 4, //check
-        TYPE_fontFace   = 5, //check
-        TYPE_page       = 6, //check
-        TYPE_keyframes  = 7, //check
-        TYPE_keyframe   = 8, //check
-        TYPE_namespace      = 10, //check
-        TYPE_counterStyle   = 11, 
-        TYPE_supports       = 12, //check
-        TYPE_fontFeatureValues = 14,
-        TYPE_viewport          = 15,
-        TYPE = helperObjectFreeze({
-            'rule':      TYPE_rule, 
-            'charset':   TYPE_charset, 
-            'import':    TYPE_import,
-            'media':     TYPE_media, 
-            'fontFace':  TYPE_fontFace,
-            'page':      TYPE_page,
-            'keyframes': TYPE_keyframes,
-            'keyframe':  TYPE_keyframe,
-            'namespace':    TYPE_namespace,
-            'counterStyle': TYPE_counterStyle, 
-            'supports':     TYPE_supports,
-            'fontFeatureValues': TYPE_fontFeatureValues,
-            'viewport':          TYPE_viewport
-        }),
-        TYPE_EXPORT_css         = 1,
-        TYPE_EXPORT_min         = 2,
-        TYPE_EXPORT_obj         = 3, //default
-        TYPE_EXPORT_arr         = 4,
-        TYPE_EXPORT_notMDObject = 5, //not MultiDimensional Object
-        TYPE_EXPORT = {
-            css:    TYPE_EXPORT_css,
-            min:    TYPE_EXPORT_min,
-            obj:    TYPE_EXPORT_obj,
-            object: TYPE_EXPORT_obj,
-            arr:    TYPE_EXPORT_arr,
-            array:  TYPE_EXPORT_arr,
-            objNMD: TYPE_EXPORT_notMDObject
-        },
-        TYPE_EXPORT_STR = helperObjectFreeze({
-            css:         "css",
-            min:         "min",
-            obj:         "obj",
-            arr:         "arr",
-            object:      "object",
-            notMDObject: "objNMD",
-            array:       "array"
-        }),
-        CONF_DEFAULT_style_id = "cssc-style",
-        CONF_DEFAULT_view_err = true,
-        CONF_DEFAULT_parse_tab_len = 2,
-        CONF_DEFAULT_parse_unit_default = "px",
-        CONF_DEFAULT_parse_vars_limit = 100,
-        CONF_DEFAULT = helperObjectFreeze({
-            style_id: CONF_DEFAULT_style_id,
-            view_err: CONF_DEFAULT_view_err,
-            parse_tab_len: CONF_DEFAULT_parse_tab_len,
-            parse_unit_default: CONF_DEFAULT_parse_unit_default,
-            parse_vars_limit: CONF_DEFAULT_parse_vars_limit
-        }),
-        _TYPE_Null      = 1,
-        _TYPE_Undefined = 2,
-        _TYPE_Integer   = 3,
-        _TYPE_Float     = 4,
-        _TYPE_String    = 5,
-        _TYPE_RegExp    = 6,
-        _TYPE_Array     = 7,
-        _TYPE_Object    = 8,
-        _TYPE_Function  = 9,
-        _TYPE = {
-            'Null'      : _TYPE_Null,
-            'Undefined' : _TYPE_Undefined,
-            'Integer'   : _TYPE_Integer,
-            'Float'     : _TYPE_Float,
-            'String'    : _TYPE_String,
-            'RegExp'    : _TYPE_RegExp,
-            'Array'     : _TYPE_Array,
-            'Object'    : _TYPE_Object,
-            'Function'  : _TYPE_Function
-        },
-        PRE_IMPORT_KEYS = ["@charset", "@import", "@namespace", "@font-face"],
-        SINGLE_ROW_KEYS = PRE_IMPORT_KEYS.slice(0, 3), //["@charset", "@import", "@namespace"]
-        MESSAGES = [];
+    TYPE_rule       = 1, //check
+    TYPE_charset    = 2, //check
+    TYPE_import     = 3, //check
+    TYPE_media      = 4, //check
+    TYPE_fontFace   = 5, //check
+    TYPE_page       = 6, //check
+    TYPE_keyframes  = 7, //check
+    TYPE_keyframe   = 8, //check
+    TYPE_namespace      = 10, //check
+    TYPE_counterStyle   = 11, 
+    TYPE_supports       = 12, //check
+    TYPE_fontFeatureValues = 14,
+    TYPE_viewport          = 15,
+    
+    TYPE_EXPORT_css         = 1,
+    TYPE_EXPORT_min         = 2,
+    TYPE_EXPORT_obj         = 3, //default
+    TYPE_EXPORT_arr         = 4,
+    TYPE_EXPORT_notMDObject = 5, //not MultiDimensional Object
+    
+    CONF_DEFAULT_style_id = "cssc-style",
+    CONF_DEFAULT_view_err = true,
+    CONF_DEFAULT_parse_tab_len = 2,
+    CONF_DEFAULT_parse_unit_default = "px",
+    CONF_DEFAULT_parse_vars_limit = 100,
+    
+    PRE_IMPORT_KEYS = ["@charset", "@import", "@namespace", "@font-face"],
+    SINGLE_ROW_KEYS = PRE_IMPORT_KEYS.slice(0, 3), //["@charset", "@import", "@namespace"]
+    
+    MESSAGES = [],
+    
+    _TYPE_Null      = 1,
+    _TYPE_Undefined = 2,
+    _TYPE_Integer   = 3,
+    _TYPE_Float     = 4,
+    _TYPE_String    = 5,
+    _TYPE_RegExp    = 6,
+    _TYPE_Array     = 7,
+    _TYPE_Object    = 8,
+    _TYPE_Function  = 9,
+    _TYPE = {
+        'Null'      : _TYPE_Null,
+        'Undefined' : _TYPE_Undefined,
+        'Integer'   : _TYPE_Integer,
+        'Float'     : _TYPE_Float,
+        'String'    : _TYPE_String,
+        'RegExp'    : _TYPE_RegExp,
+        'Array'     : _TYPE_Array,
+        'Object'    : _TYPE_Object,
+        'Function'  : _TYPE_Function
+    },
+    
+    _OBJECT_assign = helperElemType(Object.assign) === _TYPE_Function ? 
+    Object.assign:function()
+    {
+        var key, i, args = arguments;
+        for(i = 1; i < args.length; i++)
+            for(key in args[i]) 
+                args[0][key] = args[i][key];
+        return args[0];
+    },
+    _OBJECT_defineProperty = helperElemType(Object.defineProperty) === _TYPE_Function ?
+    Object.defineProperty:function(obj, key, params)
+    {
+        obj[key] = params.value;
+    },
+    _OBJECT_PREVENTEXTENSIONS = helperElemType(Object.preventExtensions) === _TYPE_Function,
+    _OBJECT_freeze = helperElemType(Object.freeze) === _TYPE_Function ? 
+    Object.freeze:function(obj)
+    {
+        var tmp = {};
+        helperObjectDefineReadOnlyPropertys(tmp, obj);
+        obj = tmp;
+        
+        if(_OBJECT_PREVENTEXTENSIONS) Object.preventExtensions(obj);
+        return obj;
+    },
+    _OBJECT_keys = helperElemType(Object.keys) === _TYPE_Function ?
+    Object.keys:function(obj)
+    {
+        var ret = [], key;
+        for(key in obj) ret.push(key);
+        return ret;
+    },
+    _OBJECT_values = helperElemType(Object.values) === _TYPE_Function ? 
+    Object.values:function(obj)
+    {
+        var ret = [], key;
+        for(key in obj) ret.push(obj[key]);
+        return ret;
+    },
+    
+    TYPE = _OBJECT_freeze({
+        'rule':      TYPE_rule, 
+        'charset':   TYPE_charset, 
+        'import':    TYPE_import,
+        'media':     TYPE_media, 
+        'fontFace':  TYPE_fontFace,
+        'page':      TYPE_page,
+        'keyframes': TYPE_keyframes,
+        'keyframe':  TYPE_keyframe,
+        'namespace':    TYPE_namespace,
+        'counterStyle': TYPE_counterStyle, 
+        'supports':     TYPE_supports,
+        'fontFeatureValues': TYPE_fontFeatureValues,
+        'viewport':          TYPE_viewport
+    }),
+    TYPE_EXPORT = {
+        css:    TYPE_EXPORT_css,
+        min:    TYPE_EXPORT_min,
+        obj:    TYPE_EXPORT_obj,
+        object: TYPE_EXPORT_obj,
+        arr:    TYPE_EXPORT_arr,
+        array:  TYPE_EXPORT_arr,
+        objNMD: TYPE_EXPORT_notMDObject
+    },
+    TYPE_EXPORT_STR = _OBJECT_freeze({
+        css:         "css",
+        min:         "min",
+        obj:         "obj",
+        arr:         "arr",
+        object:      "object",
+        notMDObject: "objNMD",
+        array:       "array"
+    }),
+    CONF_DEFAULT = _OBJECT_freeze({
+        style_id: CONF_DEFAULT_style_id,
+        view_err: CONF_DEFAULT_view_err,
+        parse_tab_len: CONF_DEFAULT_parse_tab_len,
+        parse_unit_default: CONF_DEFAULT_parse_unit_default,
+        parse_vars_limit: CONF_DEFAULT_parse_vars_limit
+    });
     
     function helperError(err, cnf)
     {
@@ -110,47 +156,13 @@ var CSSC = (function()
         if(type === "Number") type = Math.floor(elem) === elem ? "Integer" : "Float";
         return  _TYPE[type] || type;
     }
-    function helperObjectAssign()
-    {
-        if(Object.assign) return Object.assign.apply(null, arguments);
-        var key, i;
-        for(i = 1; i < arguments.length; i++)
-            for(key in arguments[i]) 
-                arguments[0][key] = arguments[i][key];
-        return arguments[0];
-    }
     function helperObjectDefineReadOnlyPropertys(obj, propsObj)
     {
-        var key;
-        if(Object.defineProperty) for(key in propsObj)
-            Object.defineProperty(obj, key, {
+        for(var key in propsObj)
+            _OBJECT_defineProperty(obj, key, {
                 enumerable: true,
                 value: propsObj[key]
             });
-        else for(key in propsObj) obj[key] = propsObj[key];
-    }
-    function helperObjectFreeze(obj)
-    {
-        if(Object.freeze) return Object.freeze(obj);
-        else if(Object.defineProperty)
-        {
-            var tmp = {}, key;
-            for(key in obj) Object.defineProperty(tmp, key, {
-                    enumerable: true,
-                    value: obj[key]
-                });
-            obj = tmp;
-        }
-        if(Object.preventExtensions) Object.preventExtensions(obj);
-        return obj;
-    }
-    function helperObjectKeysValues(obj,getValues)
-    {
-        if(!getValues && Object.keys)  return Object.keys(obj);
-        if(getValues && Object.values) return Object.values(obj);
-        var ret = [], key;
-        for(key in obj) ret.push(getValues ? obj[key] : key);
-        return ret;
     }
     function helperCreateNewStyleElem(index)
     {
@@ -714,7 +726,7 @@ var CSSC = (function()
             for(i = 0; i < PRE_IMPORT_KEYS.length; i++) 
                 if(PRE_IMPORT_KEYS[i] in importObj)
                     preImport[PRE_IMPORT_KEYS[i]] = importObj[PRE_IMPORT_KEYS[i]];
-            if(helperObjectKeysValues(preImport).length > 0) 
+            if(_OBJECT_keys(preImport).length > 0) 
                 handleImport(index, preImport, parent, true);
         }
         
@@ -906,7 +918,6 @@ var CSSC = (function()
                     else _set(index, e, prop, val, i);
                 }
         }
-        return;
     }
     function _get(index, e, prop, returnAllProps)
     {
@@ -962,7 +973,7 @@ var CSSC = (function()
                 obj = e[i].obj;
             else
             {
-                obj = helperObjectAssign({}, e[i].obj);
+                obj = _OBJECT_assign({}, e[i].obj);
 
                 for(key in e[i].obj)
                 {
@@ -985,7 +996,7 @@ var CSSC = (function()
 
                             ignore.push(e[i].obj[key][j]);
 
-                            if(!tmp || helperObjectKeysValues(tmp).length <= 0) continue;
+                            if(!tmp || _OBJECT_keys(tmp).length <= 0) continue;
 
                             obj[key][j] = tmp;
                         }
@@ -998,10 +1009,10 @@ var CSSC = (function()
 
             if(e[i].children)
             {
-                obj = helperObjectAssign(_export(index, getHandler(e[i].children, null, true), type, ignore), obj);
+                obj = _OBJECT_assign(_export(index, getHandler(e[i].children, null, true), type, ignore), obj);
             }
 
-            if(helperObjectKeysValues(obj).length < 1) continue;
+            if(_OBJECT_keys(obj).length < 1) continue;
 
             if(type === TYPE_EXPORT_arr)
             {
@@ -1022,14 +1033,18 @@ var CSSC = (function()
 
         if(type === TYPE_EXPORT_arr) 
         {   
-            exportObj = helperObjectKeysValues(exportObj, !0);
+            exportObj = _OBJECT_values(exportObj);
             return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min, index[4].parse_tab_len);
         }
 
-        var sortExpObj = {};
-        for(i = 0; i < PRE_IMPORT_KEYS.length; i++) if(exportObj[PRE_IMPORT_KEYS[i]])
+        var sortExpObj = {}; tmp = false;
+        for(i = 0; i < PRE_IMPORT_KEYS.length; i++) 
+            if(exportObj[PRE_IMPORT_KEYS[i]])
+            {
                 sortExpObj[PRE_IMPORT_KEYS[i]] = exportObj[PRE_IMPORT_KEYS[i]];
-        tmp = helperObjectKeysValues(sortExpObj).length > 0;
+                tmp = true;
+            }
+        
         if(tmp) for(i in exportObj) if(!sortExpObj[i])
                     sortExpObj[i] = exportObj[i];
         return tmp ? sortExpObj : exportObj;
@@ -1037,8 +1052,6 @@ var CSSC = (function()
     function _update(index, e)
     {
         var i, tmp, key;
-
-        //console.log(e);
 
         for(i = 0; i < e.length; i++)
         {
@@ -1050,10 +1063,9 @@ var CSSC = (function()
 
             if(e[i].children)
                 _update(index, getHandler(e[i].children, null, true));
-            else if(e[i].indexElem.style) for(key in e[i].up)
+            else for(key in e[i].up)
                     _set(index, e, key, e[i].up[key](key,_get(index,[e[i]],key)), i);
         }
-        return;
     }
     function _delete(index, e, prop, _this)
     {
@@ -1100,13 +1112,13 @@ var CSSC = (function()
     {
         return e.length === 1 ? e[0].selector : sel;
     }
-    function ruleHandler(index, els, sel, fromHas, parents)
+    function ruleHandler(index, elems, sel, fromHas, parents)
     {
         var handler;
         
         function createRuleIfNotExists()
         {
-            if(els.length < 1 && !fromHas && helperElemType(sel) === _TYPE_String)
+            if(elems.length < 1 && !fromHas && helperElemType(sel) === _TYPE_String)
             {
                 var rule, contentElems = [], i, _p = parents ? parents : [null];
 
@@ -1116,9 +1128,9 @@ var CSSC = (function()
                     if(rule) contentElems.push(rule);
                 }
 
-                els = contentElems;
-                handler.e = _getE(index, els);
-                handler.selector = _selector(els, sel);
+                elems = contentElems;
+                handler.e = _getE(index, elems);
+                handler.selector = _selector(elems, sel);
             }
         }
         handler = function(sel)
@@ -1126,27 +1138,27 @@ var CSSC = (function()
             var i, j, elArr = [], tmp;
             createRuleIfNotExists();
 
-            for(i = 0; i < els.length; i++)
-                if(els[i].children)
+            for(i = 0; i < elems.length; i++)
+                if(elems[i].children)
                 {
-                    tmp = handleSelection(els[i].children, sel, true);
+                    tmp = handleSelection(elems[i].children, sel, true);
                     for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
                 }
-            return ruleHandler(index, elArr, sel, null, els);
+            return ruleHandler(index, elArr, sel, null, elems);
         };
-        handler.e = _getE(index, els);
-        handler.selector = _selector(els, sel);
+        handler.e = _getE(index, elems);
+        handler.selector = _selector(elems, sel);
         
         helperObjectDefineReadOnlyPropertys(handler, {
-            'set':    function(prop, val){ createRuleIfNotExists(); _set(index, els, prop, val); return handler; },
-            'get':    function(prop, retAP){ return _get(index, els, prop, retAP); },
-            'update': function(){ _update(index, els); return handler; },
-            'delete': function(prop){ _delete(index, els, prop, handler); return handler; },
-            'export': function(type){ return _export(index, els, type); },
-            'parse':  function(min){ return _export(index, els, !min ? TYPE_EXPORT_css : TYPE_EXPORT_min); },
-            'pos':    function(p) { return _pos(index, els, p, sel, parents); },
-            'first':  function(){ return _pos(index, els, 0, sel, parents); },
-            'last':   function(){ return _pos(index, els, -1, sel, parents); }
+            'set':    function(prop, val){ createRuleIfNotExists(); _set(index, elems, prop, val); return handler; },
+            'get':    function(prop, retAP){ return _get(index, elems, prop, retAP); },
+            'update': function(){ _update(index, elems); return handler; },
+            'delete': function(prop){ _delete(index, elems, prop, handler); return handler; },
+            'export': function(type){ return _export(index, elems, type); },
+            'parse':  function(min){ return _export(index, elems, !min ? TYPE_EXPORT_css : TYPE_EXPORT_min); },
+            'pos':    function(p) { return _pos(index, elems, p, sel, parents); },
+            'first':  function(){ return _pos(index, elems, 0, sel, parents); },
+            'last':   function(){ return _pos(index, elems, -1, sel, parents); }
         });
         return handler;
     }
@@ -1154,7 +1166,7 @@ var CSSC = (function()
     {
         var cnfType = helperElemType(setCnfVars);
         
-        if(cnfType === _TYPE_Object)      cnfVars = helperObjectAssign(cnfVars, setCnfVars);
+        if(cnfType === _TYPE_Object)      cnfVars = _OBJECT_assign(cnfVars, setCnfVars);
         else if(cnfType === _TYPE_String) 
         {
             if(helperElemType(val) === _TYPE_Undefined) return cnfVars[setCnfVars];
@@ -1174,31 +1186,31 @@ var CSSC = (function()
     {
         var index = [{},!1,0,{},{}],
 
-        cntr = function(sel)
+        controller = function(sel)
         {
             try
             {
-                return handleSelection(index, sel, false, cntr);
+                return handleSelection(index, sel, false, controller);
             }
             catch (err)
             {
                 helperError(err, index[4]);
             }
         };
-        helperObjectDefineReadOnlyPropertys(cntr, {
+        helperObjectDefineReadOnlyPropertys(controller, {
             version: VERSION,
             //core functions
-            'init':   function(toInit){ initElements(index, toInit); return cntr; },
-            'import': function(importObj){ handleImport(index, importObj); return cntr; },
+            'init':   function(toInit){ initElements(index, toInit); return controller; },
+            'import': function(importObj){ handleImport(index, importObj); return controller; },
             'export': function(type){ return handleSelection(index).export(type); },
             'parse':  function(min){ return handleSelection(index).parse(min); },
-            'update': function(sel){ handleSelection(index, sel).update(); return cntr; },
+            'update': function(sel){ handleSelection(index, sel).update(); return controller; },
             'new':    function(){ return getController(); },
             //conf & vars
-            conf:       function(cnf, val){ return __confVars(index[4], cnf, val, cntr); },
-            vars:       function(vars, val){ return __confVars(index[3], vars, val, cntr); },
+            conf:       function(cnf, val){ return __confVars(index[4], cnf, val, controller); },
+            vars:       function(vars, val){ return __confVars(index[3], vars, val, controller); },
             //helper functions
-            parseVars:  function(txt, vars){ return helperParseVars(txt, vars?helperObjectAssign({}, index[3], vars):index[3], index[4].parse_vars_limit); },
+            parseVars:  function(txt, vars){ return helperParseVars(txt, vars?_OBJECT_assign({}, index[3], vars):index[3], index[4].parse_vars_limit); },
             objFromCss: function(css){ return helperObjFromCssText(css); },
             cssFromObj: function(obj, min, tabLen){ return helperCssTextFromObj(obj, min, tabLen); },
             //config & defs
@@ -1207,9 +1219,9 @@ var CSSC = (function()
             type_export: TYPE_EXPORT_STR,
             messages:    MESSAGES
         });
-        cntr.conf(CONF_DEFAULT);
+        controller.conf(CONF_DEFAULT);
         
-        return cntr;
+        return controller;
     }
     return getController();
 })();
