@@ -83,7 +83,7 @@ var CSSC = (function()
     Object.freeze:function(obj)
     {
         var tmp = {};
-        helperObjectDefineReadOnlyPropertys(tmp, obj);
+        helperDefineReadOnlyPropertys(tmp, obj);
         obj = tmp;
         
         if(_OBJECT_PREVENTEXTENSIONS) Object.preventExtensions(obj);
@@ -147,6 +147,7 @@ var CSSC = (function()
     
     function helperError(err, cnf)
     {
+        err = '"'+cnf.style_id+'": '+err;
         if(cnf.view_err) console.log(err);
         MESSAGES.push(err);
     }
@@ -156,7 +157,7 @@ var CSSC = (function()
         if(type === "Number") type = Math.floor(elem) === elem ? "Integer" : "Float";
         return  _TYPE[type] || type;
     }
-    function helperObjectDefineReadOnlyPropertys(obj, propsObj)
+    function helperDefineReadOnlyPropertys(obj, propsObj)
     {
         for(var key in propsObj)
             _OBJECT_defineProperty(obj, key, {
@@ -166,23 +167,24 @@ var CSSC = (function()
     }
     function helperCreateNewStyleElem(index)
     {
-        var id = index[4].style_id;
-        if(document.getElementById(id))
+        var id = index[4].style_id,
+            doc = document,
+            docGEBID = doc.getElementById;
+        if(docGEBID(id))
         {
-            for(var i = 0; i < 10; i++)
-                if(!document.getElementById(id+'-'+i))
+            for(var i = 0; i < 10; i++) if(!docGEBID(id+'-'+i))
                 {
                     id = id+'-'+i;
                     break;
                 }
-            if(document.getElementById(id))
-                throw new Error("cann not create new element..");
+            if(docGEBID(id))
+                helperError("cann not create new element..", index[4]);
         }
-        var styleElem = document.createElement("style");
+        var styleElem = doc.createElement("style");
         styleElem.setAttribute("type", "text/css");
         styleElem.setAttribute("id", id);
-        styleElem.appendChild(document.createTextNode(""));
-        document.head.appendChild(styleElem);
+        styleElem.appendChild(doc.createTextNode(""));
+        doc.head.appendChild(styleElem);
 
         index[1] = styleElem;
         index[4].style_id = id;
@@ -245,28 +247,28 @@ var CSSC = (function()
     function helperObjFromCssText(cssText)
     {
         if(/^@(namespace|import|charset)/.test(cssText))
-            return cssText.replace(/(^@(namespace|import|charset)\s*|\s*;\s*$)/g, "");
+            return cssText.replace(/(^@.*\s*|\s*;\s*$)/g, "");
         var str = cssText.replace(/(^.*?{\s*|\s*}\s*$)/g, ''),
             split = str.split(';'), i, kv, obj = {};
         if(str !== "") for(i = 0; i < split.length; i++)
-            {
-                if(split[i] === "") continue;
-
-                kv = split[i].split(':');
-                obj[kv[0].trim()] = kv.slice(1).join(':').trim();
-            }
+                if(split[i] !== "")
+                {
+                    kv = split[i].split(':');
+                    obj[kv[0].trim()] = kv.slice(1).join(':').trim();
+                }
         return obj;
     }
     function helperCssTextFromObj(obj, min, tabLen, addTab, fromArrayParse)
     {
-        var tab = (new Array((parseInt(tabLen)||CONF_DEFAULT_parse_tab_len)+1).join(" ")), 
+        var tab = helperElemType(tabLen) === _TYPE_String ? tabLen 
+            : (new Array((parseInt(tabLen)||CONF_DEFAULT_parse_tab_len)+1).join(" ")), 
             cssText = "", key, val, elType = helperElemType(obj), i, tmp;
 
         addTab = addTab || "";
 
         if(elType === _TYPE_String) return obj;
         if(elType === _TYPE_Array) for(i = 0; i < obj.length; i++)
-                cssText += helperCssTextFromObj(obj[i], min, tabLen, addTab, true);
+                cssText += helperCssTextFromObj(obj[i], min, tab, addTab, true);
         else for(key in obj)
             {
                 val = ""+obj[key];
@@ -276,13 +278,13 @@ var CSSC = (function()
                 {
                     if(fromArrayParse && elType === _TYPE_Array)
                     {
-                        tmp = helperCssTextFromObj(obj[key], min, tabLen, addTab+tab, fromArrayParse);
+                        tmp = helperCssTextFromObj(obj[key], min, tab, addTab+tab, fromArrayParse);
                         
-                        if(tmp === "") continue;
-                        
-                        if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
-                        else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
-                        
+                        if(tmp !== "")
+                        {
+                            if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
+                            else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                        }
                         continue;
                     }
                         
@@ -296,12 +298,13 @@ var CSSC = (function()
                             continue;
                         }
 
-                        tmp = helperCssTextFromObj(val[i], min, tabLen, addTab+tab, fromArrayParse);
+                        tmp = helperCssTextFromObj(val[i], min, tab, addTab+tab, fromArrayParse);
 
-                        if(tmp === "") continue;
-                        
-                        if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
-                        else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                        if(tmp !== "")
+                        {
+                            if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
+                            else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                        }
                     }
                 }
                 else if(SINGLE_ROW_KEYS.indexOf(key) > -1)
@@ -470,31 +473,44 @@ var CSSC = (function()
 
     function initElements(index, toInit)
     {
-        toInit = "length" in toInit ? toInit : [toInit];
+        var toIndex, from, funcType;
+        
+        toInit = helperElemType(toInit) === _TYPE_Array ? toInit : [toInit];
 
         for(var i = 0; i < toInit.length; i++)
         {
             if("sheet" in toInit[i]) toInit[i] = toInit[i].sheet;
-
-            if("cssRules" in toInit[i])
+            
+            toIndex = "cssRules" in toInit[i] ? toInit[i].cssRules : false;
+            from    = "href" in toInit[i] ? toInit[i].href : "";
+            
+            if(!toIndex && helperElemType(toInit[i]) === _TYPE_Function)
             {
-                try
+                if(toInit[i].e && helperElemType(toInit[i].e) === _TYPE_Array)
                 {
-                    indexCssRules(index, toInit[i].cssRules, null);
+                    toIndex = toInit[i].e;
+                    funcType = "handler";
                 }
-                catch(err)
+                else if(toInit[i].version === VERSION && toInit[i].type === TYPE)
                 {
-                    helperError("Cannot init CSS from \""+toInit[i].href+"\"", index[4]);
+                    toIndex = toInit[i]().e;
+                    funcType = "ID:"+toInit[i].conf().style_id;
                 }
+                else funcType = toInit[i].name;
+                
+                from = (toIndex ? "CSSC" : "Function") + "["+funcType+"]";
             }
+            
+            if(toIndex && toIndex.length > 0) indexCssRules(index, toIndex, null);
+            else helperError("Cannot init CSS from \""+from+"\"", index[4]);
         }
     }
     function indexCssRules(index, cssRules, parent)
     {
         for(var i = 0; i < cssRules.length; i++)
-            if(cssRules[i] && !!cssRules[i].parentStyleSheet 
-            && !!cssRules[i].parentStyleSheet.ownerNode 
-            && cssRules[i].parentStyleSheet.ownerNode.id === index[4].style_id)
+            if(cssRules[i] && cssRules[i].parentStyleSheet 
+            && cssRules[i].parentStyleSheet.ownerNode 
+            && cssRules[i].parentStyleSheet.ownerNode.id !== index[4].style_id)
                 addToIndex(index, cssRules[i], parent);
     }
     function addToIndex(index, cssRule, parent, csscSelector)
@@ -503,23 +519,20 @@ var CSSC = (function()
             indexType = cssRule.type, 
             toIndex   = cssRule,
             _index    = parent ? parent.children : index[0],
-            indexObjWrapper, indexC;
+            indexObjWrapper, indexC = 0;
 
         //@todo: support all types
-        if(indexType !== TYPE_rule 
-        && indexType !== TYPE_fontFace 
-        && indexType !== TYPE_media
-        && indexType !== TYPE_keyframes
-        && indexType !== TYPE_keyframe
-        && indexType !== TYPE_page
-        && indexType !== TYPE_supports
-        && indexType !== TYPE_namespace
-        && indexType !== TYPE_import
-        && indexType !== TYPE_charset)
-        {
-            helperError("unsuported type: "+indexType, index[4]);
-            return;
-        }
+//        if(indexType !== TYPE_rule 
+//        && indexType !== TYPE_fontFace 
+//        && indexType !== TYPE_media
+//        && indexType !== TYPE_keyframes
+//        && indexType !== TYPE_keyframe
+//        && indexType !== TYPE_page
+//        && indexType !== TYPE_supports
+//        && indexType !== TYPE_namespace
+//        && indexType !== TYPE_import
+//        && indexType !== TYPE_charset)
+//            return helperError("unsuported type: "+indexType, index[4]);
 
         if(indexType === TYPE_namespace) indexKey = SINGLE_ROW_KEYS[2];
         if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
@@ -530,7 +543,7 @@ var CSSC = (function()
             selector: indexKey,
             csscSelector: csscSelector ? csscSelector : indexKey,
             children: false,
-            parent: (!!parent ? parent : false),
+            parent: (parent ? parent : false),
             obj: {},
             type: indexType,
             p: index[2]++,
@@ -539,18 +552,11 @@ var CSSC = (function()
             up: {}     //properties
         };
 
-        if(_index[indexKey])
-            indexC = (_index[indexKey].content.push(indexObjWrapper) - 1);
-        else
-        {
-            _index[indexKey] = {
-                type: indexType,
-                content: [indexObjWrapper],
-                events: {}
-            };
-
-            indexC = 0;
-        }
+        if(_index[indexKey]) indexC = (_index[indexKey].content.push(indexObjWrapper) - 1);
+        else                _index[indexKey] = {
+                                type: indexType,
+                                content: [indexObjWrapper]
+                            };
 
         //handle Media & KeyFrames Rules
         if(indexType === TYPE_media 
@@ -788,7 +794,7 @@ var CSSC = (function()
                             handleImport(index, importElem[i], rule);
                         }
 
-                        if(!!parent)
+                        if(parent)
                         {
                             if(!parent.obj[handlerObj]) parent.obj[handlerObj] = [];
                             parent.obj[handlerObj].push(rule);
@@ -1112,6 +1118,26 @@ var CSSC = (function()
     {
         return e.length === 1 ? e[0].selector : sel;
     }
+    function __confVars(cnfVars, setCnfVars, val, defRet)
+    {
+        var cnfType = helperElemType(setCnfVars);
+        
+        if(cnfType === _TYPE_Object) cnfVars = _OBJECT_assign(cnfVars, setCnfVars);
+        else if(cnfType === _TYPE_String) 
+        {
+            if(helperElemType(val) === _TYPE_Undefined) return cnfVars[setCnfVars];
+            else                                        cnfVars[setCnfVars] = val;
+        }
+        else if(cnfType === _TYPE_Array)
+        {
+            var ret = {}, i;
+            for(i = 0; i < setCnfVars.length; i++)
+                ret[setCnfVars[i]] = cnfVars[setCnfVars[i]];
+            return ret;
+        }
+        else if(cnfType === _TYPE_Undefined) return cnfVars;
+        return defRet;
+    }
     function ruleHandler(index, elems, sel, fromHas, parents)
     {
         var handler;
@@ -1149,7 +1175,7 @@ var CSSC = (function()
         handler.e = _getE(index, elems);
         handler.selector = _selector(elems, sel);
         
-        helperObjectDefineReadOnlyPropertys(handler, {
+        helperDefineReadOnlyPropertys(handler, {
             'set':    function(prop, val){ createRuleIfNotExists(); _set(index, elems, prop, val); return handler; },
             'get':    function(prop, retAP){ return _get(index, elems, prop, retAP); },
             'update': function(){ _update(index, elems); return handler; },
@@ -1161,26 +1187,6 @@ var CSSC = (function()
             'last':   function(){ return _pos(index, elems, -1, sel, parents); }
         });
         return handler;
-    }
-    function __confVars(cnfVars, setCnfVars, val, defRet)
-    {
-        var cnfType = helperElemType(setCnfVars);
-        
-        if(cnfType === _TYPE_Object)      cnfVars = _OBJECT_assign(cnfVars, setCnfVars);
-        else if(cnfType === _TYPE_String) 
-        {
-            if(helperElemType(val) === _TYPE_Undefined) return cnfVars[setCnfVars];
-            else                                        cnfVars[setCnfVars] = val;
-        }
-        else if(cnfType === _TYPE_Array)
-        {
-            var ret = {}, i;
-            for(i = 0; i < setCnfVars.length; i++)
-                ret[setCnfVars[i]] = cnfVars[setCnfVars[i]];
-            return ret;
-        }
-        else if(cnfType === _TYPE_Undefined) return cnfVars;
-        return defRet;
     }
     function getController()
     {
@@ -1197,7 +1203,7 @@ var CSSC = (function()
                 helperError(err, index[4]);
             }
         };
-        helperObjectDefineReadOnlyPropertys(controller, {
+        helperDefineReadOnlyPropertys(controller, {
             version: VERSION,
             //core functions
             'init':   function(toInit){ initElements(index, toInit); return controller; },
@@ -1207,8 +1213,8 @@ var CSSC = (function()
             'update': function(sel){ handleSelection(index, sel).update(); return controller; },
             'new':    function(){ return getController(); },
             //conf & vars
-            conf:       function(cnf, val){ return __confVars(index[4], cnf, val, controller); },
-            vars:       function(vars, val){ return __confVars(index[3], vars, val, controller); },
+            conf:       function(cnf, val){ return __confVars(index[4], cnf, val, controller, false); },
+            vars:       function(vars, val){ return __confVars(index[3], vars, val, controller, false); },
             //helper functions
             parseVars:  function(txt, vars){ return helperParseVars(txt, vars?_OBJECT_assign({}, index[3], vars):index[3], index[4].parse_vars_limit); },
             objFromCss: function(css){ return helperObjFromCssText(css); },
