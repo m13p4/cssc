@@ -169,7 +169,7 @@ var CSSC = (function()
     {
         var id = index[4].style_id,
             doc = document,
-            docGEBID = doc.getElementById;
+            docGEBID = function(id){return doc.getElementById(id);};
         if(docGEBID(id))
         {
             for(var i = 0; i < 10; i++) if(!docGEBID(id+'-'+i))
@@ -178,7 +178,7 @@ var CSSC = (function()
                     break;
                 }
             if(docGEBID(id))
-                helperError("cann not create new element..", index[4]);
+                helperError("can't create new element.", index[4]);
         }
         var styleElem = doc.createElement("style");
         styleElem.setAttribute("type", "text/css");
@@ -502,7 +502,7 @@ var CSSC = (function()
             }
             
             if(toIndex && toIndex.length > 0) indexCssRules(index, toIndex, null);
-            else helperError("Cannot init CSS from \""+from+"\"", index[4]);
+            else helperError("Can't init CSS from \""+from+'"', index[4]);
         }
     }
     function indexCssRules(index, cssRules, parent)
@@ -862,13 +862,13 @@ var CSSC = (function()
                             {
                                 pObj = e[pos].parent;
 
-                                if(!pObj.obj[prop] || !("push" in pObj.obj[prop]))
+                                if(helperElemType(pObj.obj[prop]) !== _TYPE_Array)
                                     pObj.obj[prop] = [];
 
                                 pObj.obj[prop].push(rule.parent);
                             }
 
-                            if(!e[pos].obj[prop] || !("push" in e[pos].obj[prop]))
+                            if(helperElemType(e[pos].obj[prop]) !== _TYPE_Array)
                                 e[pos].obj[prop] = [];
                             e[pos].obj[prop].push(rule);
                         }
