@@ -66,6 +66,11 @@ var CSSC = (function()
         'Function'  : _TYPE_Function
     },
     
+    //check props for IE and older Browsers
+    CSS_PROPERTIES_CHECK = {
+        float: ["cssFloat"]
+    },
+    
     _OBJECT_assign = helperElemType(Object.assign) === _TYPE_Function ? 
     Object.assign:function()
     {
@@ -322,29 +327,26 @@ var CSSC = (function()
         var find = cssText.match(new RegExp(prop+"\s*:\s*(.+?);"));
         return find ? find[1].trim() : "";
     }
+    function helperCamelCase(str)
+    {
+        var splSel = str.split("-"), i;
+        str = splSel[0];
+        for(i = 1; i < splSel.length; i++) str 
+            += splSel[i].charAt(0).toUpperCase()+splSel[i].substr(1);
+        return str;
+    }
     function helperSelectorType(sel)
     {
-        var key = sel.trim();
+        var key = sel.trim(), selIO;
 
         if(key.charAt(0) !== "@") return TYPE_rule;
 
-        key = key.substr(1);
-
-        var selIO = key.indexOf(" ");
+        key   = key.substr(1);
+        selIO = key.indexOf(" ");
 
         if(selIO > -1) key = key.substr(0, selIO);
 
-        if(key.indexOf("-") > -1)
-        {
-            var splSel = key.split("-"), i;
-
-            key = splSel[0];
-
-            for(i = 1; i < splSel.length; i++)
-                key += splSel[i].charAt(0).toUpperCase()+splSel[i].substr(1);
-        }
-
-        return TYPE[key] || -1;
+        return TYPE[helperCamelCase(key)] || -1;
     }
     function helperGenSelector(pSel, sel)
     {
@@ -500,7 +502,7 @@ var CSSC = (function()
                         toIndex = toInit[i].e;
                         funcName = "handler";
                     }
-                    else if(toInit[i].version === VERSION && toInit[i].t === TYPE)
+                    else if(toInit[i].version === VERSION && toInit[i].type === TYPE)
                     {
                         toIndex = toInit[i]().e;
                         funcName = "ID:"+toInit[i].conf().style_id;
@@ -570,10 +572,8 @@ var CSSC = (function()
                             };
 
         //handle Media & KeyFrames Rules
-        if(useChildren)
-            indexCssRules(index, cssRule.cssRules, _index[indexKey].e[indexC]);
-        else
-            _index[indexKey].e[indexC].o = helperObjFromCssText(cssRule.cssText);
+        if(useChildren) indexCssRules(index, cssRule.cssRules, _index[indexKey].e[indexC]);
+        else _index[indexKey].e[indexC].o = helperObjFromCssText(cssRule.cssText);
 
         return indexObjWrapper;
     }
@@ -594,15 +594,12 @@ var CSSC = (function()
             if(propType === _TYPE_Object)
             {
                 for(var key in property)
-                {
                     if(helperElemType(property[key]) === _TYPE_Function)
                     {
                         prop = property[key]();
                         ruleString += key+":"+prop+"; ";
                     }
-                    else
-                        ruleString += key+":"+property[key]+"; ";
-                }
+                    else ruleString += key+":"+property[key]+"; ";
             }
             else if(propType === _TYPE_Function)
             {
@@ -610,11 +607,10 @@ var CSSC = (function()
                 for(var key in prop)
                     ruleString += key+":"+prop[key]+"; ";
             }
-            else
-                ruleString = property+":"+value+";";
+            else ruleString = property+":"+value+";";
         }
 
-        var insRuleString = selector+"{"+ruleString+"}", added = false;
+        var insRuleString = selector+" { "+ruleString+" }", added = false;
 
         if(SINGLE_ROW_KEYS.indexOf(selector) > -1) // === "@namespace"||"@import"||"@charset"
             insRuleString = selector+" "+property;
@@ -631,14 +627,12 @@ var CSSC = (function()
         }
         catch(err)
         {
-            helperError("crRule: "+(parent ? '"' + parent.s + '" > ' : '')
+            helperError("create: "+(parent ? '"' + parent.s + '" > ' : '')
                          + "\"" + selector + "\" -> " + err, index[4]);
         }
         
         return added || addToIndex(index, {
-            _sel: selector,
             cssText: insRuleString,
-            parent: parent||false,
             type: helperSelectorType(selector),
             placeholder: true,
             cssRules: {},
@@ -767,16 +761,14 @@ var CSSC = (function()
                 key = helperParseVars(key, index[3], index[4].parse_vars_limit);
 
                 for(i = 0; i < importElem.length; i++)
-                {
                     if(key.charAt(0) === "@")
                     {
                         if(PRE_IMPORT_KEYS.indexOf(key) > -1) // key === "@font-face"||"@namespace"||"@import"||"@charset"
                             createRule(index, key, importElem[i], null, parent);
-                        else if(key.match(/^@(media|keyframes|supports)/) 
-                                || (parent && (parent.t === TYPE_media
-                                            || parent.t === TYPE_keyframes
-                                            || parent.t === TYPE_supports)
-                                   )
+                        else if((parent && (parent.t === TYPE_media
+                                        || parent.t === TYPE_keyframes
+                                        || parent.t === TYPE_supports)
+                               ) || /^@(media|keyframes|supports)/.test(key)
                         )
                         {
                             handlerObj = key,
@@ -801,9 +793,7 @@ var CSSC = (function()
                                 }
 
                                 tmp = {
-                                    _sel: key,
                                     cssText: key + " {}",
-                                    p: tmp || false,
                                     placeholder: true,
                                     type: helperSelectorType(key),
                                     cssRules: {}
@@ -832,11 +822,10 @@ var CSSC = (function()
                         rule = createRule(index, key, null, null, parent);
                         if(rule) _set(index, [rule], importElem[i]);
                     }
-                }
+                
             }
         }
     }
-    
     function _set(index, e, prop, val, pos)
     {
         if(helperElemType(pos) === _TYPE_Integer) // single Set
@@ -851,7 +840,7 @@ var CSSC = (function()
                 _set(index, getHandler(e[pos].c, null, true), prop, val);
             else 
             {
-                var prsVal, valType = helperElemType(val), tmp;
+                var prsVal, valType = helperElemType(val), tmp, camelProp;
 
                 if(valType === _TYPE_Object || valType === _TYPE_Array)
                 {
@@ -883,7 +872,6 @@ var CSSC = (function()
 
                                 if(helperElemType(pObj.o[prop]) !== _TYPE_Array)
                                     pObj.o[prop] = [];
-
                                 pObj.o[prop].push(rule.p);
                             }
 
@@ -908,6 +896,19 @@ var CSSC = (function()
                 {
                     prsVal = helperParseValue(val, prop, index[4].parse_unit_default);
 
+                    if(prop in CSS_PROPERTIES_CHECK)
+                    {
+                        for(tmp = 0; tmp < CSS_PROPERTIES_CHECK[prop].length; tmp++)
+                            if(CSS_PROPERTIES_CHECK[prop][tmp] in e[pos].e.style)
+                            {
+                                camelProp = CSS_PROPERTIES_CHECK[prop][tmp];
+                                break;
+                            }
+                    }
+                    else camelProp = helperCamelCase(prop);
+                        
+                    if(camelProp !== prop) e[pos].e.style[camelProp] = prsVal;
+                    
                     e[pos].e.style[prop] = prsVal;
                     e[pos].o[prop] = prsVal;
                 }
@@ -915,8 +916,7 @@ var CSSC = (function()
         }
         else // multi Set
         {
-            var i, key, props,
-                propType = helperElemType(prop);
+            var i, key, props, propType = helperElemType(prop);
         
             if(propType === _TYPE_Array) for(i = 0; i < prop.length; i++)
                 {
@@ -933,7 +933,6 @@ var CSSC = (function()
                         
                         for(key in props)
                             _set(index, e, key, props[key], i);
-
                         //add to updatable
                         e[i].uo = prop;
                     }
@@ -1059,8 +1058,8 @@ var CSSC = (function()
                 tmp = true;
             }
         
-        if(tmp) for(i in exportObj) if(!sortExpObj[i])
-                    sortExpObj[i] = exportObj[i];
+        if(tmp) for(i in exportObj) if(!sortExpObj[i]) sortExpObj[i] = exportObj[i];
+        
         return tmp ? sortExpObj : exportObj;
     }
     function _update(index, e)
@@ -1075,8 +1074,7 @@ var CSSC = (function()
                 for(key in tmp) _set(index, e, key, tmp[key], i);
             }
 
-            if(e[i].c)
-                _update(index, getHandler(e[i].c, null, true));
+            if(e[i].c) _update(index, getHandler(e[i].c, null, true));
             else for(key in e[i].up)
                     _set(index, e, key, e[i].up[key](key,_get(index,[e[i]],key)), i);
         }
