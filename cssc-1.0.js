@@ -191,7 +191,7 @@ var CSSC = (function(CONTEXT)
                         break;
                     }
                 if(CONTEXT.getElementById(id))
-                    helperError("crElem: can't create element.", index[4]);
+                    helperError("crElem:can't create element.", index[4]);
             }
             var styleElem = CONTEXT.createElement("style");
             styleElem.setAttribute("type", "text/css");
@@ -202,7 +202,7 @@ var CSSC = (function(CONTEXT)
             index[4].style_id = id;
         }
     }
-    function helperParseValue(value, key, defUnit)
+    function helperParseValue(value, key, index)
     {
         var valType  = helperElemType(value), val,
             isString = valType === _TYPE_String,
@@ -210,8 +210,8 @@ var CSSC = (function(CONTEXT)
         
         if(isFinite(value) || isHex)
         {
-            defUnit = (defUnit || CONF_DEFAULT_parse_unit_default)+"";
-            var vNum = value, frac;
+            var defUnit = (index[4].parse_unit_default || CONF_DEFAULT_parse_unit_default)+"",
+                vNum = value, frac;
             
             if(isHex)
             {
@@ -250,7 +250,7 @@ var CSSC = (function(CONTEXT)
         {
             val = value.split(" ");
             for(var i = 0; i < val.length; i++) 
-                val[i] = helperParseValue(val[i], key, defUnit);
+                val[i] = helperParseValue(val[i], key, index);
             value = val.join(" ");
         }
         else if(isString && value.charAt(value.length-1) === "!")
@@ -389,14 +389,14 @@ var CSSC = (function(CONTEXT)
                 break;
             }
     }
-    function helperParseVars(str, vars, limit)
+    function helperParseVars(str, index)
     {
-        if(!limit) limit = CONF_DEFAULT_parse_vars_limit;
-        if(!vars)  vars = {};
         if(!str)   str = "";
 
         var varStart = str.lastIndexOf("$"), varEnd, 
-            c = 0, v, i, xyz, tmp, key, keySplit, type;
+            c = 0, v, i, xyz, tmp, key, keySplit, type,
+            limit = index[4].parse_vars_limit || CONF_DEFAULT_parse_vars_limit,
+            vars  = index[3] || {};;
 
         while(varStart >= 0 && c < limit)
         { c++; v = null;
@@ -519,7 +519,7 @@ var CSSC = (function(CONTEXT)
             }
             
             if(toIndex && toIndex.length > 0) indexCssRules(index, toIndex, null);
-            else helperError("init: Can't init from \""+from+'"', index[4]);
+            else helperError("init:Can't init from \""+from+'"', index[4]);
         }
     }
     function indexCssRules(index, cssRules, parent)
@@ -550,7 +550,7 @@ var CSSC = (function(CONTEXT)
         && indexType !== TYPE_namespace
         && indexType !== TYPE_import
         && indexType !== TYPE_charset)
-            return helperError('index: Unsuported "'+indexKey+'" ['+indexType+']', index[4]);
+            return helperError('index:Unsuported "'+indexKey+'" ['+indexType+']', index[4]);
 
         if(indexType === TYPE_namespace) indexKey = SINGLE_ROW_KEYS[2];
         if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
@@ -600,26 +600,23 @@ var CSSC = (function(CONTEXT)
                     if(helperElemType(property[key]) === _TYPE_Function)
                     {
                         prop = property[key]();
-                        ruleString += key+":"+helperParseValue(prop, key, index[4].parse_unit_default)+"; ";
+                        ruleString += key+":"+helperParseValue(prop, key, index)+"; ";
                     }
-                    else ruleString += key+":"+helperParseValue(property[key], key, index[4].parse_unit_default)+"; ";
+                    else ruleString += key+":"+helperParseValue(property[key], key, index)+"; ";
             }
             else if(propType === _TYPE_Function)
             {
                 prop = property();
                 for(var key in prop)
-                    ruleString += key+":"+helperParseValue(prop[key], key, index[4].parse_unit_default)+"; ";
+                    ruleString += key+":"+helperParseValue(prop[key], key, index)+"; ";
             }
-            else ruleString = property+":"+helperParseValue(value, key, index[4].parse_unit_default)+";";
+            else ruleString = property+":"+helperParseValue(value, key, index)+";";
         }
         
-        var insRuleString = selector+" { "+ruleString+" }";
+        var insRuleString = selector+"{"+ruleString+"}";
 
         if(SINGLE_ROW_KEYS.indexOf(selector) > -1) // === "@namespace"||"@import"||"@charset"
             insRuleString = selector+" "+property;
-        
-        if(SINGLE_ROW_KEYS.indexOf(selector) > -1)
-            console.log(insRuleString);
         
         if(_ON_SERVER) return addToIndex(index, {
                 cssText: insRuleString,
@@ -642,7 +639,7 @@ var CSSC = (function(CONTEXT)
         }
         catch(err)
         {
-            helperError("create: "+(parent ? '"' + parent.s + '" > ' : '')
+            helperError("create:"+(parent ? '"' + parent.s + '" > ' : '')
                          + "\"" + selector + "\" -> " + err, index[4]);
         }
         
@@ -676,7 +673,7 @@ var CSSC = (function(CONTEXT)
 
         if(selType === _TYPE_String)
         {
-            sel = helperParseVars(sel, index[3], index[4].parse_vars_limit);
+            sel = helperParseVars(sel, index);
             
             if(getElements) return _index[sel] ? _index[sel].e : [];
             
@@ -701,7 +698,7 @@ var CSSC = (function(CONTEXT)
 
             for(i = 0; i < sel.length; i++)
             {
-                s = helperParseVars(sel[i], index[3], index[4].parse_vars_limit);
+                s = helperParseVars(sel[i], index);
                 if(_index[s]) for(j = 0; j < _index[s].e.length; j++)
                         matches.push(_index[s].e[j]);
             }
@@ -773,7 +770,7 @@ var CSSC = (function(CONTEXT)
                 else
                     importElem = [importObj[key]];
 
-                key = helperParseVars(key, index[3], index[4].parse_vars_limit);
+                key = helperParseVars(key, index);
 
                 for(i = 0; i < importElem.length; i++)
                     if(key.charAt(0) === "@")
@@ -824,7 +821,7 @@ var CSSC = (function(CONTEXT)
                                 parent.o[handlerObj].push(rule);
                             }
                         }
-                        else helperError('import: Unsuported "'+key+'" ['+helperSelectorType(key)+']', index[4]);
+                        else helperError('import:Unsuported "'+key+'" ['+helperSelectorType(key)+']', index[4]);
                     }
                     else if([_TYPE_String,_TYPE_Float,_TYPE_Integer].indexOf(helperElemType(importElem[i])) > -1)
                     { 
@@ -846,10 +843,10 @@ var CSSC = (function(CONTEXT)
         if(helperElemType(pos) === _TYPE_Integer) // single Set
         {
             if(!_ON_SERVER && PRE_IMPORT_TYPE.indexOf(e[pos].t) > -1)
-                return helperError('set: Readonly rule "'+e[pos].s
+                return helperError('set:Readonly rule "'+e[pos].s
                                   +'" ['+e[pos].t+']', index[4]);
 
-            prop = helperParseVars(prop, index[3], index[4].parse_vars_limit);
+            prop = helperParseVars(prop, index);
 
             if(e[pos].c)
                 _set(index, getHandler(e[pos].c, null, true), prop, val);
@@ -905,11 +902,11 @@ var CSSC = (function(CONTEXT)
                         _set(index, e, prop, valToSet, pos);
                         e[pos].up[prop] = val;
                     }
-                    catch(err) { helperError("set: "+err, index[4]); }
+                    catch(err) { helperError("set:"+err, index[4]); }
                 }
                 else
                 {
-                    prsVal = helperParseValue(val, prop, index[4].parse_unit_default);
+                    prsVal = helperParseValue(val, prop, index);
                     
                     if(prop in index[5]) for(tmp = 0; tmp < index[5][prop].length; tmp++)
                             _set(index, e, index[5][prop][tmp], prsVal, pos);
@@ -1249,7 +1246,7 @@ var CSSC = (function(CONTEXT)
         controller = function(sel)
         {
             try         { return handleSelection(index, sel, false, controller); }
-            catch (err) { helperError("CSSC: "+err, index[4]); }
+            catch (err) { helperError("CSSC:"+err, index[4]); }
         };
         helperDefineReadOnlyPropertys(controller, {
             version: VERSION,
@@ -1265,7 +1262,7 @@ var CSSC = (function(CONTEXT)
             conf:       function(cnf, val)  { return __confVars(index[4], cnf, val, controller); },
             vars:       function(vars, val) { return __confVars(index[3], vars, val, controller); },
             //helper functions
-            parseVars:  function(txt, vars)        { return helperParseVars(txt, vars?_OBJECT_assign({}, index[3], vars):index[3], index[4].parse_vars_limit); },
+            parseVars:  function(txt, vars)        { return helperParseVars(txt, [0,0,0,(vars?_OBJECT_assign({}, index[3], vars):index[3]),index[4]]); },
             objFromCss: function(css)              { return helperObjFromCssText(css); },
             cssFromObj: function(obj, min, tabLen) { return helperCssTextFromObj(obj, min, tabLen); },
             //config & defs
@@ -1273,16 +1270,11 @@ var CSSC = (function(CONTEXT)
             type:        TYPE,
             type_export: TYPE_EXPORT_STR,
             messages:    MESSAGES
-            
-            ,i: index
         });
-        controller.conf(CONF_DEFAULT);
-        
-        return controller;
+        return controller.conf(CONF_DEFAULT);
     }
     
-    var _controller = getController();
-    if(_ON_SERVER) CONTEXT.exports = _controller;
-    else return _controller;
+    if(_ON_SERVER) CONTEXT.exports = getController();
+    else return getController();
     
 })(typeof module === "undefined" ? document : module);
