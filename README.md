@@ -5,8 +5,8 @@
 **Caution:** This version is a BETA.
 
 *Stable version checklist:*
-- [ ] *Support all modern Browser and IE 9+*
-- [ ] *Support CSS parse on server side*
+- [x] *Support all modern Browser and IE 9+*
+- [x] *Support CSS parse on server side*
 - [ ] *no malfunction of the code*
 
 ---
