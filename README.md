@@ -1110,12 +1110,12 @@ CSSC({
 
 CSSC(".className").e
 ```
-![console screenshot](https://csscjs.com/img/e_array_1.png)
+![console screenshot](https://csscjs.com/img/e_array1.png)
 
 ```javascript
 CSSC(/\.className/).e
 ```
-![console screenshot](https://csscjs.com/img/e_array_2.png)
+![console screenshot](https://csscjs.com/img/e_array2.png)
 
 ---
 
