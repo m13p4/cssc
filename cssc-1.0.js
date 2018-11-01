@@ -155,8 +155,9 @@ var CSSC = (function(CONTEXT)
         parse_vars_limit: CONF_DEFAULT_parse_vars_limit
     });
     
-    function helperError(err, cnf)
+    function helperError(err, index)
     {
+        var cnf = index[4];
         err = '"'+cnf.style_id+'"/'+err.replace(/^.+?:/,function(a)
                                     {return (a+"    ").slice(0,7);});
         if(cnf.view_err) console.log(err);
@@ -184,15 +185,15 @@ var CSSC = (function(CONTEXT)
             var id = index[4].style_id;
 
             if(CONTEXT.getElementById(id))
-            {
                 for(var i = 0; i < 10; i++) if(!CONTEXT.getElementById(id+'-'+i))
                     {
                         id = id+'-'+i;
                         break;
                     }
-                if(CONTEXT.getElementById(id))
-                    helperError("crElem:can't create element.", index[4]);
-            }
+                    
+            if(CONTEXT.getElementById(id))
+                return helperError("create:can't create element.", index);
+            
             var styleElem = CONTEXT.createElement("style");
             styleElem.setAttribute("type", "text/css");
             styleElem.setAttribute("id", id);
@@ -208,7 +209,7 @@ var CSSC = (function(CONTEXT)
             isString = valType === _TYPE_String,
             isHex    = isString && value.match(/^0x[0-9a-f\.\+]+$/i);
         
-        if(isFinite(value) || isHex)
+        if(isHex || isFinite(value))
         {
             var defUnit = (index[4].parse_unit_default || CONF_DEFAULT_parse_unit_default)+"",
                 vNum = value, frac;
@@ -261,7 +262,9 @@ var CSSC = (function(CONTEXT)
     {
         var tab = helperElemType(tabLen) === _TYPE_String ? tabLen 
             : (new Array((parseInt(tabLen)||CONF_DEFAULT_parse_tab)+1).join(" ")), 
-            cssText = "", key, val, elType = helperElemType(obj), i, tmp;
+            cssText = "", key, val, elType = helperElemType(obj), i, tmp,
+            replace = /\s*,\s*/g, minReplace = /\s*(,|:)\s*/g;
+    
         addTab = addTab || "";
 
         if(elType === _TYPE_String) return obj;
@@ -280,8 +283,8 @@ var CSSC = (function(CONTEXT)
                         
                         if(tmp !== "")
                         {
-                            if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
-                            else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                            if(min) cssText += key.replace(minReplace,"$1")+"{"+tmp+"}";
+                            else    cssText += addTab+key.replace(replace, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                         }
                         continue;
                     }
@@ -300,14 +303,14 @@ var CSSC = (function(CONTEXT)
 
                         if(tmp !== "")
                         {
-                            if(min) cssText += key.replace(/\s*(,|:)\s*/g,"$1")+"{"+tmp+"}";
-                            else    cssText += addTab+key.replace(/\s*,\s*/g, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
+                            if(min) cssText += key.replace(minReplace,"$1")+"{"+tmp+"}";
+                            else    cssText += addTab+key.replace(replace, ",\n"+addTab)+" {\n"+tmp+addTab+"}\n";
                         }
                     }
                 }
                 else if(SINGLE_ROW_KEYS.indexOf(key) > -1)
                              cssText += key+" "+val+";"+(min?'':"\n");
-                else if(min) cssText += key+":"+val.trim().replace(/\s*,\s*/g,",")+";";
+                else if(min) cssText += key+":"+val.trim().replace(replace,",")+";";
                 else         cssText += (addTab.length < tab.length ? tab : addTab)+key+": "+val+";\n";
             }
         
@@ -519,7 +522,7 @@ var CSSC = (function(CONTEXT)
             }
             
             if(toIndex && toIndex.length > 0) indexCssRules(index, toIndex, null);
-            else helperError("init:Can't init from \""+from+'"', index[4]);
+            else helperError("init:Can't init from \""+from+'"', index);
         }
     }
     function indexCssRules(index, cssRules, parent)
@@ -550,7 +553,7 @@ var CSSC = (function(CONTEXT)
         && indexType !== TYPE_namespace
         && indexType !== TYPE_import
         && indexType !== TYPE_charset)
-            return helperError('index:Unsuported "'+indexKey+'" ['+indexType+']', index[4]);
+            return helperError('index:Unsuported "'+indexKey+'" ['+indexType+']', index);
 
         if(indexType === TYPE_namespace) indexKey = SINGLE_ROW_KEYS[2];
         if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
@@ -565,6 +568,7 @@ var CSSC = (function(CONTEXT)
             n: index[2]++,               //position
             c: useChildren ? {} : false, //children
             p: parent || false,          //parent
+            io: false,                   //in Object           
             
             uo: false,                   //updatable object
             up: {}                       //updatable properties
@@ -640,7 +644,7 @@ var CSSC = (function(CONTEXT)
         catch(err)
         {
             helperError("create:"+(parent ? '"' + parent.s + '" > ' : '')
-                         + "\"" + selector + "\" -> " + err, index[4]);
+                         + "\"" + selector + "\" -> " + err, index);
         }
         
         return added || addToIndex(index, {
@@ -732,7 +736,8 @@ var CSSC = (function(CONTEXT)
     }
     function handleImport(index, toImport, parent, isPreImport)
     {
-        var importObj, impI, importElem, rule, handlerObj, key, i, tmp, preImport = {};
+        var importObj, impI, importElem, rule, handlerObj, key, i, tmp, preImport = {},
+            medKefrSup = /^@(media|keyframes|supports)/;
 
         if(helperElemType(toImport) !== _TYPE_Array)
             toImport = [toImport];
@@ -780,13 +785,13 @@ var CSSC = (function(CONTEXT)
                         else if((parent && (parent.t === TYPE_media
                                         || parent.t === TYPE_keyframes
                                         || parent.t === TYPE_supports)
-                               ) || /^@(media|keyframes|supports)/.test(key)
+                               ) || medKefrSup.test(key)
                         )
                         {
                             handlerObj = key,
                             tmp = parent;
 
-                            if(parent && !key.match(/^@(media|keyframes|supports)/))
+                            if(parent && !key.match(medKefrSup))
                             {
                                 key = helperGenSelector(parent._s, key);
                                 tmp = parent.p;
@@ -817,11 +822,12 @@ var CSSC = (function(CONTEXT)
 
                             if(parent)
                             {
+                                //rule.io = true;
                                 if(!parent.o[handlerObj]) parent.o[handlerObj] = [];
                                 parent.o[handlerObj].push(rule);
                             }
                         }
-                        else helperError('import:Unsuported "'+key+'" ['+helperSelectorType(key)+']', index[4]);
+                        else helperError('import:Unsuported "'+key+'" ['+helperSelectorType(key)+']', index);
                     }
                     else if([_TYPE_String,_TYPE_Float,_TYPE_Integer].indexOf(helperElemType(importElem[i])) > -1)
                     { 
@@ -844,7 +850,7 @@ var CSSC = (function(CONTEXT)
         {
             if(!_ON_SERVER && PRE_IMPORT_TYPE.indexOf(e[pos].t) > -1)
                 return helperError('set:Readonly rule "'+e[pos].s
-                                  +'" ['+e[pos].t+']', index[4]);
+                                  +'" ['+e[pos].t+']', index);
 
             prop = helperParseVars(prop, index);
 
@@ -881,12 +887,14 @@ var CSSC = (function(CONTEXT)
                             if(isAtRule && e[pos].p)
                             {
                                 pObj = e[pos].p;
-
+                                //rule.p.oi = true;
+                                
                                 if(helperElemType(pObj.o[prop]) !== _TYPE_Array)
                                     pObj.o[prop] = [];
                                 pObj.o[prop].push(rule.p);
                             }
 
+                            rule.io = true;
                             if(helperElemType(e[pos].o[prop]) !== _TYPE_Array)
                                 e[pos].o[prop] = [];
                             e[pos].o[prop].push(rule);
@@ -902,7 +910,7 @@ var CSSC = (function(CONTEXT)
                         _set(index, e, prop, valToSet, pos);
                         e[pos].up[prop] = val;
                     }
-                    catch(err) { helperError("set:"+err, index[4]); }
+                    catch(err) { helperError("set:"+err, index); }
                 }
                 else
                 {
@@ -991,21 +999,21 @@ var CSSC = (function(CONTEXT)
         }
         return toRet;
     }
-    function _export(index, e, type, ignore)
+    function _export(index, e, type, ignore, oCase)
     {
         if(helperElemType(type) !== _TYPE_Integer)
             type = TYPE_EXPORT[type] || TYPE_EXPORT_obj;
         
-        var exportObj = {}, obj, i, j, key, tmp, _type = type;
+        var exportObj = {}, obj, i, j, key, tmp, _type = type, pos = {};
 
         if(type === TYPE_EXPORT_css || type === TYPE_EXPORT_min)
             type = TYPE_EXPORT_arr;
 
         if(!ignore) ignore = [];
-
         for(i = 0; i < e.length; i++)
         {
-            if(ignore.indexOf(e[i]) < 0)
+            //console.log(e[i]);
+            if((oCase || type !== TYPE_EXPORT_obj || !e[i].io) && ignore.indexOf(e[i]) < 0)
             {
                 if(SINGLE_ROW_TYPE.indexOf(e[i].t) > -1)
                     obj = e[i].o;
@@ -1026,14 +1034,11 @@ var CSSC = (function(CONTEXT)
 
                             obj[key] = [];
 
-                            for(j = 0; j < e[i].o[key].length; j++)
-                                if(ignore.indexOf(e[i].o[key][j]) < 0)
+                            for(j = 0; j < e[i].o[key].length; j++) if(ignore.indexOf(e[i].o[key][j]) < 0)
                                 {
-                                    ignore.push(e[i].o[key][j]);
-
-                                    tmp = _export(index, [e[i].o[key][j]], type, ignore)[e[i].o[key][j].s];
+                                    tmp = _export(index, [e[i].o[key][j]], _type, ignore, true)[e[i].o[key][j].s];
                                     if(tmp && _OBJECT_keys(tmp).length > 0)
-                                        obj[key][j] = tmp;
+                                        obj[key].push(tmp);
                                 }
 
                             if(obj[key].length === 0) delete obj[key];
@@ -1044,8 +1049,8 @@ var CSSC = (function(CONTEXT)
                     }
                 }
 
-                if(e[i].c)
-                    obj = _OBJECT_assign(_export(index, getHandler(e[i].c, null, true), type, ignore), obj);
+                if(e[i].c) obj = _OBJECT_assign
+                    (_export(index, getHandler(e[i].c, null, true), type, ignore), obj);
 
                 if(_OBJECT_keys(obj).length < 1) continue;
 
@@ -1054,15 +1059,19 @@ var CSSC = (function(CONTEXT)
                     exportObj[e[i].n] = {};
                     exportObj[e[i].n][e[i].s] = obj;
                 }
-                else if(exportObj[e[i].s])
+                else 
                 {
-                    if(helperElemType(exportObj[e[i].s]) !== _TYPE_Array)
-                        exportObj[e[i].s] = [exportObj[e[i].s]];
+                    if(exportObj[e[i].s])
+                    {
+                        if(helperElemType(exportObj[e[i].s]) !== _TYPE_Array)
+                            exportObj[e[i].s] = [exportObj[e[i].s]];
+                        exportObj[e[i].s].push(obj);
+                    }
+                    else exportObj[e[i].s] = obj;
 
-                    exportObj[e[i].s].push(obj);
+                    pos[e[i].s] = pos[e[i].s] > e[i].n ? pos[e[i].s] : e[i].n;
                 }
-                else exportObj[e[i].s] = obj;
-
+                
                 ignore.push(e[i]);
             }
         }
@@ -1073,17 +1082,13 @@ var CSSC = (function(CONTEXT)
             return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min, index[4].parse_tab);
         }
 
-        var sortExpObj = {}; tmp = false;
-        for(i = 0; i < PRE_IMPORT_KEYS.length; i++) 
-            if(exportObj[PRE_IMPORT_KEYS[i]])
-            {
+        var sortExpObj = {}, posSwap = {};
+        for(i in pos) if(PRE_IMPORT_KEYS.indexOf(i) < 0) posSwap[pos[i]] = i;
+        for(i = 0; i < PRE_IMPORT_KEYS.length; i++) if(exportObj[PRE_IMPORT_KEYS[i]])
                 sortExpObj[PRE_IMPORT_KEYS[i]] = exportObj[PRE_IMPORT_KEYS[i]];
-                tmp = true;
-            }
+        for(i in posSwap) sortExpObj[posSwap[i]] = exportObj[posSwap[i]];
         
-        if(tmp) for(i in exportObj) if(!sortExpObj[i]) sortExpObj[i] = exportObj[i];
-        
-        return tmp ? sortExpObj : exportObj;
+        return sortExpObj;
     }
     function _update(index, e)
     {
@@ -1246,7 +1251,7 @@ var CSSC = (function(CONTEXT)
         controller = function(sel)
         {
             try         { return handleSelection(index, sel, false, controller); }
-            catch (err) { helperError("CSSC:"+err, index[4]); }
+            catch (err) { helperError("CSSC:"+err, index); }
         };
         helperDefineReadOnlyPropertys(controller, {
             version: VERSION,
@@ -1262,7 +1267,7 @@ var CSSC = (function(CONTEXT)
             conf:       function(cnf, val)  { return __confVars(index[4], cnf, val, controller); },
             vars:       function(vars, val) { return __confVars(index[3], vars, val, controller); },
             //helper functions
-            parseVars:  function(txt, vars)        { return helperParseVars(txt, [0,0,0,(vars?_OBJECT_assign({}, index[3], vars):index[3]),index[4]]); },
+            parseVars:  function(txt, vars)        { return helperParseVars(txt, [,,,(vars?_OBJECT_assign({}, index[3], vars):index[3]),index[4]]); },
             objFromCss: function(css)              { return helperObjFromCssText(css); },
             cssFromObj: function(obj, min, tabLen) { return helperCssTextFromObj(obj, min, tabLen); },
             //config & defs
