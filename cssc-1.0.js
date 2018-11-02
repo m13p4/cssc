@@ -844,7 +844,7 @@ var CSSC = (function(CONTEXT)
             }
         }
     }
-    function _set(index, e, prop, val, pos)
+    function _set(index, e, prop, val, pos, fromUpdate)
     {
         if(helperElemType(pos) === _TYPE_Integer) // single Set
         {
@@ -855,9 +855,10 @@ var CSSC = (function(CONTEXT)
             prop = helperParseVars(prop, index);
 
             if(e[pos].c)
-                _set(index, getHandler(e[pos].c, null, true), prop, val);
+                _set(index, getHandler(e[pos].c, null, true), prop, val, false, fromUpdate);
             else 
             {
+                
                 var prsVal, valType = helperElemType(val), tmp, camelProp;
 
                 if(valType === _TYPE_Object || valType === _TYPE_Array)
@@ -866,38 +867,44 @@ var CSSC = (function(CONTEXT)
                         valArr = valType === _TYPE_Object ? [val] : val, i,
                         newSel = helperGenSelector(e[pos].s, prop);
 
-                    if(isAtRule) newSel = e[pos].p ? helperGenSelector(e[pos].p.s, prop) : prop;
+                    if(!fromUpdate && isAtRule) newSel = e[pos].p ? helperGenSelector(e[pos].p.s, prop) : prop;
 
+                    
                     for(i = 0; i < valArr.length; i++)
                     {
-                        rule = createRule(index, newSel, null, null, isAtRule ? false : e[pos].p);
-
-                        if(rule)
+                        if(fromUpdate) _set(index, e[pos].o[prop], valArr[i], false, false, fromUpdate);
+                        else
                         {
-                            if(isAtRule) 
+                            rule = createRule(index, newSel, null, null, isAtRule ? false : e[pos].p);
+
+                            if(!fromUpdate && rule)
                             {
-                                tmp = rule;
-                                rule = createRule(index, e[pos].s, null, null, rule);
-                                
-                                if(!rule) rule = tmp;
+
+                                if(isAtRule) 
+                                {
+                                    tmp = rule;
+                                    rule = createRule(index, e[pos].s, null, null, rule);
+
+                                    if(!rule) rule = tmp;
+                                }
+
+                                _set(index, [rule], valArr[i], false, false, fromUpdate);
+
+                                if(isAtRule && e[pos].p)
+                                {
+                                    pObj = e[pos].p;
+                                    //rule.p.oi = true;
+
+                                    if(helperElemType(pObj.o[prop]) !== _TYPE_Array)
+                                        pObj.o[prop] = [];
+                                    pObj.o[prop].push(rule.p);
+                                }
+
+                                rule.io = true;
+                                if(helperElemType(e[pos].o[prop]) !== _TYPE_Array)
+                                    e[pos].o[prop] = [];
+                                e[pos].o[prop].push(rule);
                             }
-
-                            _set(index, [rule], valArr[i]);
-
-                            if(isAtRule && e[pos].p)
-                            {
-                                pObj = e[pos].p;
-                                //rule.p.oi = true;
-                                
-                                if(helperElemType(pObj.o[prop]) !== _TYPE_Array)
-                                    pObj.o[prop] = [];
-                                pObj.o[prop].push(rule.p);
-                            }
-
-                            rule.io = true;
-                            if(helperElemType(e[pos].o[prop]) !== _TYPE_Array)
-                                e[pos].o[prop] = [];
-                            e[pos].o[prop].push(rule);
                         }
                     }
                 }
@@ -907,8 +914,8 @@ var CSSC = (function(CONTEXT)
                     {
                         var valToSet = val(prop, _get(index, [e[pos]], prop));
 
-                        _set(index, e, prop, valToSet, pos);
-                        e[pos].up[prop] = val;
+                        _set(index, e, prop, valToSet, pos, fromUpdate);
+                        if(!fromUpdate) e[pos].up[prop] = val;
                     }
                     catch(err) { helperError("set:"+err, index); }
                 }
@@ -917,7 +924,7 @@ var CSSC = (function(CONTEXT)
                     prsVal = helperParseValue(val, prop, index);
                     
                     if(prop in index[5]) for(tmp = 0; tmp < index[5][prop].length; tmp++)
-                            _set(index, e, index[5][prop][tmp], prsVal, pos);
+                            _set(index, e, index[5][prop][tmp], prsVal, pos, fromUpdate);
                     if(!_ON_SERVER)
                     {
                         if(prop in CSS_PROPERTIES_CHECK)
@@ -951,17 +958,17 @@ var CSSC = (function(CONTEXT)
             else for(i = 0; i < e.length; i++)
                 {
                     if(propType === _TYPE_Object) 
-                        for(key in prop) _set(index, e, key, prop[key], i);
+                        for(key in prop) _set(index, e, key, prop[key], i, fromUpdate);
                     else if(propType === _TYPE_Function)
                     {
                         props = prop(e[i].s, _get(index,[e[i]])[e[i].s]);
                         
                         for(key in props)
-                            _set(index, e, key, props[key], i);
+                            _set(index, e, key, props[key], i, fromUpdate);
                         //add to updatable
-                        e[i].uo = prop;
+                        if(!fromUpdate) e[i].uo = prop;
                     }
-                    else _set(index, e, prop, val, i);
+                    else _set(index, e, prop, val, i, fromUpdate);
                 }
         }
     }
@@ -1099,12 +1106,12 @@ var CSSC = (function(CONTEXT)
             if(e[i].uo !== false)
             {
                 tmp = e[i].uo(e[i].s,_get(index,[e[i]])[e[i].s]); //object update
-                for(key in tmp) _set(index, e, key, tmp[key], i);
+                for(key in tmp) _set(index, e, key, tmp[key], i, true);
             }
 
             if(e[i].c) _update(index, getHandler(e[i].c, null, true));
             else for(key in e[i].up)
-                    _set(index, e, key, e[i].up[key](key,_get(index,[e[i]],key)), i);
+                    _set(index, e, key, e[i].up[key](key,_get(index,[e[i]],key)), i, true);
         }
     }
     function _delete(index, e, prop, _this)
