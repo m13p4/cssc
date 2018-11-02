@@ -848,7 +848,7 @@ var CSSC = (function(CONTEXT)
     {
         if(helperElemType(pos) === _TYPE_Integer) // single Set
         {
-            if(!_ON_SERVER && PRE_IMPORT_TYPE.indexOf(e[pos].t) > -1)
+            if(PRE_IMPORT_TYPE.indexOf(e[pos].t) > -1)
                 return helperError('set:Readonly rule "'+e[pos].s
                                   +'" ['+e[pos].t+']', index);
 
@@ -869,7 +869,6 @@ var CSSC = (function(CONTEXT)
 
                     if(!fromUpdate && isAtRule) newSel = e[pos].p ? helperGenSelector(e[pos].p.s, prop) : prop;
 
-                    
                     for(i = 0; i < valArr.length; i++)
                     {
                         if(fromUpdate) _set(index, e[pos].o[prop], valArr[i], false, false, fromUpdate);
