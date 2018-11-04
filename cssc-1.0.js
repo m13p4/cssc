@@ -38,10 +38,8 @@ var CSSC = (function(CONTEXT)
     CONF_DEFAULT_parse_unit_default = "px",
     CONF_DEFAULT_parse_vars_limit = 100,
     
-    PRE_IMPORT_TYPE = [TYPE_charset, TYPE_import, TYPE_namespace, TYPE_fontFace],
     PRE_IMPORT_KEYS = ["@charset", "@import", "@namespace", "@font-face"],
     SINGLE_ROW_KEYS = PRE_IMPORT_KEYS.slice(0, 3), //["@charset", "@import", "@namespace"]
-    SINGLE_ROW_TYPE = [TYPE_charset, TYPE_import, TYPE_namespace], //["@charset", "@import", "@namespace"]
     
     MESSAGES = [],
     
@@ -155,6 +153,13 @@ var CSSC = (function(CONTEXT)
         parse_vars_limit: CONF_DEFAULT_parse_vars_limit
     });
     
+    function _IF_OR()
+    {
+        var args = arguments, i = 1;
+        for(; i < args.length; i++) if(args[0] === args[i]) 
+            return true;
+        return false;
+    }
     function helperError(err, index)
     {
         var cnf = index[4];
@@ -166,7 +171,7 @@ var CSSC = (function(CONTEXT)
     function helperElemType(elem, asStr)
     {
         var type = Object.prototype.toString.call(elem).split(/ |\]/)[1];
-        if(type === "Number") type = Math.floor(elem) === elem ? "Integer" : "Float";
+        if(type === "Number" && !asStr) type = Math.floor(elem) === elem ? _TYPE_Integer : _TYPE_Float;
         return asStr ? type : (_TYPE[type] || type);
     }
     function helperDefineReadOnlyPropertys(obj, propsObj)
@@ -260,8 +265,9 @@ var CSSC = (function(CONTEXT)
     }
     function helperCssTextFromObj(obj, min, tabLen, addTab, fromArrayParse)
     {
+        tabLen = tabLen || CONF_DEFAULT_parse_tab;
         var tab = helperElemType(tabLen) === _TYPE_String ? tabLen 
-            : (new Array((parseInt(tabLen)||CONF_DEFAULT_parse_tab)+1).join(" ")), 
+                            : new Array(parseInt(tabLen)+1).join(" "), 
             cssText = "", key, val, elType = helperElemType(obj), i, tmp,
             replace = /\s*,\s*/g, minReplace = /\s*(,|:)\s*/g;
     
@@ -272,10 +278,10 @@ var CSSC = (function(CONTEXT)
                 cssText += helperCssTextFromObj(obj[i], min, tab, addTab, true);
         else for(key in obj)
             {
-                val = ""+obj[key];
+                val = obj[key];
                 elType = helperElemType(obj[key]);
 
-                if(elType === _TYPE_Array || elType === _TYPE_Object)
+                if(_IF_OR(elType, _TYPE_Array, _TYPE_Object))
                 {
                     if(fromArrayParse && elType === _TYPE_Array)
                     {
@@ -329,11 +335,6 @@ var CSSC = (function(CONTEXT)
                     obj[kv[0].trim()] = kv.slice(1).join(':').trim();
                 }
         return obj;
-    }
-    function helperFindPropInCssText(cssText, prop)
-    {
-        var find = cssText.match(new RegExp(prop+"\s*:\s*(.+?);"));
-        return find ? find[1].trim() : "";
     }
     function helperCamelCase(str)
     {
@@ -420,7 +421,7 @@ var CSSC = (function(CONTEXT)
 
                 if(i === 0 && keySplit[i] in vars)                                           
                     v = vars[keySplit[i]];
-                else if((type === _TYPE_Array || type === _TYPE_Object) && keySplit[i] in v) 
+                else if(_IF_OR(type, _TYPE_Array, _TYPE_Object) && keySplit[i] in v) 
                     v = v[keySplit[i]];
                 else if(type === _TYPE_String && keySplit[i].match(/^[0-9]+$/))              
                     v = v.charAt(keySplit[i]);
@@ -540,20 +541,20 @@ var CSSC = (function(CONTEXT)
             toIndex   = cssRule,
             _index    = parent ? parent.c : index[0],
             indexObjWrapper, indexC = 0,
-            useChildren = indexType === TYPE_media || indexType === TYPE_keyframes || indexType === TYPE_supports;
+            useChildren = _IF_OR(indexType, TYPE_media, TYPE_keyframes, TYPE_supports);
 
         //@todo: support all types
-        if(indexType !== TYPE_rule 
-        && indexType !== TYPE_fontFace 
-        && indexType !== TYPE_media
-        && indexType !== TYPE_keyframes
-        && indexType !== TYPE_keyframe
-        && indexType !== TYPE_page
-        && indexType !== TYPE_supports
-        && indexType !== TYPE_namespace
-        && indexType !== TYPE_import
-        && indexType !== TYPE_charset)
-            return helperError('index:Unsuported "'+indexKey+'" ['+indexType+']', index);
+        if(!_IF_OR(indexType, TYPE_rule,
+                             TYPE_fontFace,
+                             TYPE_media,
+                             TYPE_keyframes,
+                             TYPE_keyframe,
+                             TYPE_page,
+                             TYPE_supports,
+                             TYPE_namespace,
+                             TYPE_import,
+                             TYPE_charset)
+        ) return helperError('index:Unsuported "'+indexKey+'" ['+indexType+']', index);
 
         if(indexType === TYPE_namespace) indexKey = SINGLE_ROW_KEYS[2];
         if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
@@ -711,7 +712,7 @@ var CSSC = (function(CONTEXT)
 
             return ruleHandler(index, matches, sel);
         }
-        else if(selType === _TYPE_Null || selType === _TYPE_Undefined)
+        else if(_IF_OR(selType, _TYPE_Null, _TYPE_Undefined))
         {
             var matches = [], key;
 
@@ -728,7 +729,7 @@ var CSSC = (function(CONTEXT)
     {
         var selType = helperElemType(sel);
 
-        if([_TYPE_String,_TYPE_RegExp,_TYPE_Array,_TYPE_Null,_TYPE_Undefined].indexOf(selType) > -1) 
+        if(_IF_OR(selType, _TYPE_String, _TYPE_RegExp, _TYPE_Array, _TYPE_Null, _TYPE_Undefined)) 
             return getHandler(index, sel, getElements);
         else handleImport(index, sel);
         
@@ -782,11 +783,8 @@ var CSSC = (function(CONTEXT)
                     {
                         if(PRE_IMPORT_KEYS.indexOf(key) > -1) // key === "@font-face"||"@namespace"||"@import"||"@charset"
                             createRule(index, key, importElem[i], null, parent);
-                        else if((parent && (parent.t === TYPE_media
-                                        || parent.t === TYPE_keyframes
-                                        || parent.t === TYPE_supports)
-                               ) || medKefrSup.test(key)
-                        )
+                        else if((parent && _IF_OR(parent.t, TYPE_media, TYPE_keyframes, TYPE_supports)) 
+                                || medKefrSup.test(key))
                         {
                             handlerObj = key,
                             tmp = parent;
@@ -822,14 +820,14 @@ var CSSC = (function(CONTEXT)
 
                             if(parent)
                             {
-                                //rule.io = true;
+                                rule.io = true;
                                 if(!parent.o[handlerObj]) parent.o[handlerObj] = [];
                                 parent.o[handlerObj].push(rule);
                             }
                         }
                         else helperError('import:Unsuported "'+key+'" ['+helperSelectorType(key)+']', index);
                     }
-                    else if([_TYPE_String,_TYPE_Float,_TYPE_Integer].indexOf(helperElemType(importElem[i])) > -1)
+                    else if(_IF_OR(helperElemType(importElem[i]), _TYPE_String,_TYPE_Float,_TYPE_Integer))
                     { 
                         tmp = parent ? parent.c : index[0];
                         if(!tmp["*"]) createRule(index, "*", null, null, parent);
@@ -848,7 +846,7 @@ var CSSC = (function(CONTEXT)
     {
         if(helperElemType(pos) === _TYPE_Integer) // single Set
         {
-            if(PRE_IMPORT_TYPE.indexOf(e[pos].t) > -1)
+            if(_IF_OR(e[pos].t, TYPE_charset, TYPE_import, TYPE_namespace, TYPE_fontFace))
                 return helperError('set:Readonly rule "'+e[pos].s
                                   +'" ['+e[pos].t+']', index);
 
@@ -861,7 +859,7 @@ var CSSC = (function(CONTEXT)
                 
                 var prsVal, valType = helperElemType(val), tmp, camelProp;
 
-                if(valType === _TYPE_Object || valType === _TYPE_Array)
+                if(_IF_OR(valType, _TYPE_Object, _TYPE_Array))
                 {
                     var isAtRule = prop.charAt(0) === "@", pObj, rule,
                         valArr = valType === _TYPE_Object ? [val] : val, i,
@@ -871,7 +869,8 @@ var CSSC = (function(CONTEXT)
 
                     for(i = 0; i < valArr.length; i++)
                     {
-                        if(fromUpdate) _set(index, e[pos].o[prop], valArr[i], false, false, fromUpdate);
+                        if(fromUpdate && helperElemType(e[pos].o[prop]) === _TYPE_Array) 
+                            _set(index, e[pos].o[prop], valArr[i], false, false, fromUpdate);
                         else
                         {
                             rule = createRule(index, newSel, null, null, isAtRule ? false : e[pos].p);
@@ -892,7 +891,6 @@ var CSSC = (function(CONTEXT)
                                 if(isAtRule && e[pos].p)
                                 {
                                     pObj = e[pos].p;
-                                    //rule.p.oi = true;
 
                                     if(helperElemType(pObj.o[prop]) !== _TYPE_Array)
                                         pObj.o[prop] = [];
@@ -991,10 +989,12 @@ var CSSC = (function(CONTEXT)
 
             if(!_ON_SERVER)
             {
-                if(!tmp || tmp === "")
-                    tmp = e[i].e.style[prop];
-                if(!tmp || tmp === "")
-                    tmp = helperFindPropInCssText(e[i].e.cssText, prop);
+                if(!tmp) tmp = e[i].e.style[prop];
+                if(!tmp)
+                {
+                    tmp = e[i].e.cssText.match(new RegExp(prop+"\s*:\s*(.+?);"));
+                    tmp = tmp ? tmp[1].trim() : "";
+                }
             }
             
             if(tmp) 
@@ -1005,23 +1005,21 @@ var CSSC = (function(CONTEXT)
         }
         return toRet;
     }
-    function _export(index, e, type, ignore, oCase)
+    function _export(index, e, type, oCase)
     {
         if(helperElemType(type) !== _TYPE_Integer)
             type = TYPE_EXPORT[type] || TYPE_EXPORT_obj;
         
-        var exportObj = {}, obj, i, j, key, tmp, _type = type, pos = {};
+        var exportObj = {}, obj, i, j, key, tmp, _type = type, pos = {},
+            ifTextOutput = _IF_OR(type, TYPE_EXPORT_css, TYPE_EXPORT_min);
 
-        if(type === TYPE_EXPORT_css || type === TYPE_EXPORT_min)
-            type = TYPE_EXPORT_arr;
+        if(ifTextOutput) _type = TYPE_EXPORT_notMDObject;
 
-        if(!ignore) ignore = [];
         for(i = 0; i < e.length; i++)
         {
-            //console.log(e[i]);
-            if((oCase || type !== TYPE_EXPORT_obj || !e[i].io) && ignore.indexOf(e[i]) < 0)
+            if(oCase || type !== TYPE_EXPORT_obj || !e[i].io)
             {
-                if(SINGLE_ROW_TYPE.indexOf(e[i].t) > -1)
+                if(_IF_OR(e[i].t, TYPE_charset, TYPE_import, TYPE_namespace)) 
                     obj = e[i].o;
                 else
                 {
@@ -1031,7 +1029,7 @@ var CSSC = (function(CONTEXT)
                     {
                         if(helperElemType(e[i].o[key]) === _TYPE_Array)
                         {
-                            if(type === TYPE_EXPORT_notMDObject || type === TYPE_EXPORT_arr)
+                            if(type !== TYPE_EXPORT_obj)
                             {
                                 obj[key] = null;
                                 delete obj[key];
@@ -1040,32 +1038,37 @@ var CSSC = (function(CONTEXT)
 
                             obj[key] = [];
 
-                            for(j = 0; j < e[i].o[key].length; j++) if(ignore.indexOf(e[i].o[key][j]) < 0)
-                                {
-                                    tmp = _export(index, [e[i].o[key][j]], _type, ignore, true)[e[i].o[key][j].s];
-                                    if(tmp && _OBJECT_keys(tmp).length > 0)
-                                        obj[key].push(tmp);
-                                }
+                            for(j = 0; j < e[i].o[key].length; j++)
+                            {
+                                tmp = _export(index, [e[i].o[key][j]], type, true)[e[i].o[key][j].s];
+                                if(tmp && _OBJECT_keys(tmp).length > 0)
+                                    obj[key].push(tmp);
+                            }
 
                             if(obj[key].length === 0) delete obj[key];
                             else if(obj[key].length === 1) obj[key] = obj[key][0];
                         }
-                        else if(_type !== TYPE_EXPORT_css && _type !== TYPE_EXPORT_min && isFinite(e[i].o[key]))
+                        else if(type !== TYPE_EXPORT_css && type !== TYPE_EXPORT_min && isFinite(e[i].o[key]))
                             obj[key] = obj[key]+"!";
                     }
                 }
 
                 if(e[i].c) obj = _OBJECT_assign
-                    (_export(index, getHandler(e[i].c, null, true), type, ignore), obj);
+                    (_export(index, getHandler(e[i].c, null, true), _type), obj);
 
                 if(_OBJECT_keys(obj).length < 1) continue;
 
-                if(type === TYPE_EXPORT_arr)
+                if(ifTextOutput)
+                {
+                    tmp = {}; tmp[e[i].s] = obj;
+                    exportObj[e[i].n] = helperCssTextFromObj(tmp, type===TYPE_EXPORT_min, index[4].parse_tab);
+                }
+                else if(type === TYPE_EXPORT_arr)
                 {
                     exportObj[e[i].n] = {};
                     exportObj[e[i].n][e[i].s] = obj;
                 }
-                else 
+                else
                 {
                     if(exportObj[e[i].s])
                     {
@@ -1077,16 +1080,14 @@ var CSSC = (function(CONTEXT)
 
                     pos[e[i].s] = pos[e[i].s] > e[i].n ? pos[e[i].s] : e[i].n;
                 }
-                
-                ignore.push(e[i]);
             }
         }
 
-        if(type === TYPE_EXPORT_arr) 
+        if(ifTextOutput)
         {   
-            exportObj = _OBJECT_values(exportObj);
-            return type === _type ? exportObj : helperCssTextFromObj(exportObj, _type===TYPE_EXPORT_min, index[4].parse_tab);
+            tmp = ""; for(i in exportObj) tmp += exportObj[i]; return tmp;
         }
+        else if(type === TYPE_EXPORT_arr) return _OBJECT_values(exportObj);
 
         var sortExpObj = {}, posSwap = {};
         for(i in pos) if(PRE_IMPORT_KEYS.indexOf(i) < 0) posSwap[pos[i]] = i;
@@ -1115,7 +1116,7 @@ var CSSC = (function(CONTEXT)
     }
     function _delete(index, e, prop, _this)
     {
-        var isUndef = [_TYPE_Null,_TYPE_Undefined].indexOf(helperElemType(prop)) > -1, i, _e = [];
+        var isUndef = _IF_OR(helperElemType(prop), _TYPE_Null, _TYPE_Undefined), i, _e = [];
 
         for(i = 0; i < e.length; i++)
         {
