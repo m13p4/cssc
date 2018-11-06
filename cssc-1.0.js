@@ -1039,19 +1039,12 @@ var CSSC = (function(CONTEXT)
     {
         if(helperElemType(type) !== _TYPE_Integer)
             type = TYPE_EXPORT[type] || TYPE_EXPORT_obj;
-        
-        var exportObj, obj, i, j, key, tmp, _type = type, pre = {},
-            ifTextOutput = _IF_OR(type, TYPE_EXPORT_css, TYPE_EXPORT_min);
-
-        if(ifTextOutput)
-        {
-            exportObj = "";
-            _type = TYPE_EXPORT_notMDObject;
-        }
-        else exportObj = type === TYPE_EXPORT_arr ? [] : {};
-            
         if(!ignore) ignore = [];
         
+        var ifTextOutput = _IF_OR(type, TYPE_EXPORT_css, TYPE_EXPORT_min),
+            exportObj = type === TYPE_EXPORT_arr ? [] : ifTextOutput ? "" : {}, 
+            obj, i, j, key, tmp, _type = type, pre = {};
+
         for(i in e)
         {
             if(ignore.indexOf(i) < 0)
@@ -1281,7 +1274,7 @@ var CSSC = (function(CONTEXT)
             'update': function()            { _update(index, elems); return handler; },
             'delete': function(prop)        { _delete(index, elems, prop, handler); return handler; },
             'export': function(type)        { return _export(index, elems, type); },
-            'parse':  function(min)         { return _export(index, elems, !min ? TYPE_EXPORT_css : TYPE_EXPORT_min); },
+            'parse':  function(min)         { return _export(index, elems, min ? TYPE_EXPORT_min : TYPE_EXPORT_css); },
             'pos':    function(p)           { return _pos(index, elems, p, sel, parents); },
             'first':  function()            { return _pos(index, elems, 0, sel, parents); },
             'last':   function()            { return _pos(index, elems, -1, sel, parents); }
@@ -1302,9 +1295,9 @@ var CSSC = (function(CONTEXT)
             //core functions
             'init':   function(toInit)    { initElements(index, toInit); return controller; },
             'import': function(importObj) { handleImport(index, importObj); return controller; },
-            'export': function(type)      { return handleSelection(index).export(type); },
-            'parse':  function(min)       { return handleSelection(index).parse(min); },
-            'update': function(sel)       { handleSelection(index, sel).update(); return controller; },
+            'export': function(type)      { return _export(index, index[INDEX_GLOBAL], type); },
+            'parse':  function(min)       { return _export(index, index[INDEX_GLOBAL], min ? TYPE_EXPORT_min : TYPE_EXPORT_css); },
+            'update': function(sel)       { if(sel) handleSelection(index, sel).update(); else _update(index, index[INDEX_GLOBAL]); return controller; },
             'new':    function()          { return getController(); },
             //conf & vars
             alias:      function(key, val)  { __alias(index[INDEX_ALIAS], key, val); return controller; },
