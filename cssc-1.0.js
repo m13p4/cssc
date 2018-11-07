@@ -73,6 +73,7 @@ var CSSC = (function(CONTEXT)
     INDEX_ALIAS  = 5,
     INDEX_GLOBAL = 6,
     
+    INDEX_CHILD_SEPARATOR = " >> ",
     
     //check if node Context
     _ON_SERVER = helperElemType(CONTEXT) === _TYPE_Object,
@@ -174,7 +175,7 @@ var CSSC = (function(CONTEXT)
     {
         var cnf = index[INDEX_CONF];
         err = '"'+cnf.style_id+'"/'+err.replace(/^.+?:/,function(a)
-                                    {return (a+"    ").slice(0,7);});
+                                    {return (a+"     ").slice(0,8);});
         if(cnf.view_err) console.log(err);
         MESSAGES.push(err);
     }
@@ -545,73 +546,79 @@ var CSSC = (function(CONTEXT)
             && cssRules[i].parentStyleSheet.ownerNode.id !== index[INDEX_CONF].style_id)
                 addToIndex(index, cssRules[i], parent);
     }
-    function addToIndex(index, cssRule, parent, csscSelector)
+    function addToIndex(index, cssRule, parent, csscSelector, fromCreate)
     {
         var indexKey  = cssRule.cssText.substr(0, cssRule.cssText.indexOf("{")).trim(),
             indexType = cssRule.type, 
             toIndex   = cssRule,
             _index    = parent ? parent.c : index[INDEX_OBJECT],
-            indexObjWrapper, indexC, doWhile = 0,
+            indexObjWrapper, indexC,
             useChildren = _IF_OR(indexType, TYPE_media, TYPE_keyframes, TYPE_supports);
 
         //@todo: support all types
         if(!_IF_OR(indexType, TYPE_rule,
-                             TYPE_fontFace,
-                             TYPE_media,
-                             TYPE_keyframes,
-                             TYPE_keyframe,
-                             TYPE_page,
-                             TYPE_supports,
-                             TYPE_namespace,
-                             TYPE_import,
-                             TYPE_charset)
+                              TYPE_fontFace,
+                              TYPE_media,
+                              TYPE_keyframes,
+                              TYPE_keyframe,
+                              TYPE_page,
+                              TYPE_supports,
+                              TYPE_namespace,
+                              TYPE_import,
+                              TYPE_charset)
         ) return helperError('index:Unsuported "'+indexKey+'" ['+indexType+']', index);
 
-        if(indexType === TYPE_namespace) indexKey = SINGLE_ROW_KEYS[2];
-        if(indexType === TYPE_import)    indexKey = SINGLE_ROW_KEYS[1];
-        if(indexType === TYPE_charset)   indexKey = SINGLE_ROW_KEYS[0];
+        if(_IF_OR(indexType, TYPE_namespace, TYPE_import, TYPE_charset))
+        {
+            if(indexType === TYPE_namespace)    indexKey = SINGLE_ROW_KEYS[2];
+            else if(indexType === TYPE_import)  indexKey = SINGLE_ROW_KEYS[1];
+            else                                indexKey = SINGLE_ROW_KEYS[0];
+            csscSelector = indexKey;
+        }
 
         indexObjWrapper = {
+            n: 0,                        //position
            _s: csscSelector || indexKey, //user-set selector
             s: indexKey,                 //selector
             e: toIndex,                  //element
             t: indexType,                //type
-            o: {},                       //object
-            n: 0,                        //position
-            c: useChildren ? {} : false, //children
             p: parent || false,          //parent
+            o: {},                       //object
+            c: useChildren ? {} : false, //children
+            oc: {},                      //object children
             io: false,                   //in Object           
             
             uo: false,                   //updatable object
             up: {}                       //updatable properties
         };
         
-        
         //handle Media & KeyFrames Rules
-        if(useChildren) indexCssRules(index, cssRule.cssRules, indexObjWrapper);
-        else indexObjWrapper.o = helperObjFromCssText(cssRule.cssText);
-        
+        if(useChildren && !fromCreate) indexCssRules(index, cssRule.cssRules, indexObjWrapper);
+        else if(!useChildren) indexObjWrapper.o = helperObjFromCssText(cssRule.cssText);
         
         indexC = index[INDEX_ARRAY].push(indexObjWrapper)-1;
         indexObjWrapper.n = indexC;
         if(!parent) index[INDEX_GLOBAL][indexC] = indexObjWrapper;
         
-        do
+        var toSet = [[indexKey,_index]], i = 0, altIndex = csscSelector !== indexKey;
+        
+        if(altIndex) 
+            toSet.push([csscSelector,_index]);
+        if(parent) 
+            toSet.push([parent.s+INDEX_CHILD_SEPARATOR+indexKey,index[INDEX_OBJECT]]);
+        if(parent && parent.s !== parent._s && altIndex) 
+            toSet.push([parent._s+INDEX_CHILD_SEPARATOR+csscSelector,index[INDEX_OBJECT]]);
+        if(parent && parent.s !== parent._s)
+            toSet.push([parent._s+INDEX_CHILD_SEPARATOR+indexKey,index[INDEX_OBJECT]]);
+        
+        for(; i < toSet.length; i++)
         {
-            if(_index[indexKey]) _index[indexKey].e.push(indexC);
-            else                _index[indexKey] = {
-                                    t: indexType,        //type
-                                    e: [indexC] //elements
-                                };
-            if(parent)
-            {
-                doWhile++;
-                
-                indexKey = parent.s+" >> "+indexKey;
-                _index = index[INDEX_OBJECT];
-            }
+            if(toSet[i][1][toSet[i][0]]) toSet[i][1][toSet[i][0]].e.push(indexC);
+            else                         toSet[i][1][toSet[i][0]] = {
+                                            t: indexType, //type
+                                            e: [indexC]   //elements
+                                        };
         }
-        while(doWhile === 1);
         
         return indexObjWrapper;
     }
@@ -646,7 +653,7 @@ var CSSC = (function(CONTEXT)
             else ruleString = property+":"+helperParseValue(value, key, index)+";";
         }
         
-        var insRuleString = selector+"{"+ruleString+"}";
+        var insRuleString = selector+" { "+ruleString+" }";
 
         if(SINGLE_ROW_KEYS.indexOf(selector) > -1) // === "@namespace"||"@import"||"@charset"
             insRuleString = selector+" "+property;
@@ -655,20 +662,16 @@ var CSSC = (function(CONTEXT)
         {
             try
             {
-                var rulePos = appendToElem.cssRules.length;
-                if("insertRule" in appendToElem)
-                    appendToElem.insertRule(insRuleString, rulePos);
-                else if("appendRule" in appendToElem)
-                    appendToElem.appendRule(insRuleString, rulePos);
-                else if("addRule" in appendToElem)
-                    appendToElem.addRule(selector, ruleString, rulePos);
-
-                added = addToIndex(index, appendToElem.cssRules[rulePos], parent, selector);
+                var rulePos = appendToElem.insertRule(insRuleString, appendToElem.cssRules.length) || -1;
+                
+                if(rulePos > -1) 
+                    added = addToIndex(index, appendToElem.cssRules[rulePos], parent, selector, true);
+                
             }
             catch(err)
             {
-                helperError("create:"+(parent ? '"' + parent.s + '" > ' : '')
-                             + "\"" + selector + "\" -> " + err, index);
+                helperError("create:\""+(parent ?  parent.s + ' >> ' : '')
+                             + selector + "\" -> " + err, index);
             }
         }
         
@@ -678,7 +681,7 @@ var CSSC = (function(CONTEXT)
             placeholder: !_ON_SERVER,
             cssRules: {},
             style: {}
-        }, parent, selector);
+        }, parent, selector, true);
     }
     function delFromIndex(index, sel, toDel)
     {
@@ -740,7 +743,8 @@ var CSSC = (function(CONTEXT)
             var key;
 
             if(isMainIndex) return getElements ? 
-                            index[INDEX_GLOBAL] : ruleHandler(index, index[INDEX_GLOBAL]);
+                            index[INDEX_GLOBAL] : 
+                            ruleHandler(index, index[INDEX_GLOBAL]);
             else for(key in _index)
                 for(i = 0; i < _index[key].e.length; i++)
                     matches.push(_index[key].e[i]);
@@ -761,7 +765,7 @@ var CSSC = (function(CONTEXT)
                            _TYPE_Undefined)
         ) return getHandler(index, false, sel, getElements);
         
-        handleImport(index, sel);
+        handleImport(index, sel, false);
         return _this;
     }
     function handleImport(index, toImport, parent, isPreImport)
@@ -825,28 +829,8 @@ var CSSC = (function(CONTEXT)
                             }
 
                             rule = createRule(index, key, null, null, tmp);
-
-                            if(rule && rule.s === rule._s)
-                                handleImport(index, importElem[i], rule);
-                            else
-                            {
-                                if(rule)
-                                {
-                                    helperDeleteCSSRule(rule.e);
-                                    delFromIndex(rule.p ? rule.p : index[INDEX_OBJECT], rule.s, rule);
-                                }
-
-                                tmp = {
-                                    cssText: key + " {}",
-                                    placeholder: true,
-                                    type: helperSelectorType(key),
-                                    cssRules: {}
-                                };
-
-                                rule = addToIndex(index, tmp, tmp.p, key);
-                                handleImport(index, importElem[i], rule);
-                            }
-
+                            handleImport(index, importElem[i], rule, false, true);
+                            
                             if(parent)
                             {
                                 rule.io = true;
@@ -1043,7 +1027,8 @@ var CSSC = (function(CONTEXT)
         
         var ifTextOutput = _IF_OR(type, TYPE_EXPORT_css, TYPE_EXPORT_min),
             exportObj = type === TYPE_EXPORT_arr ? [] : ifTextOutput ? "" : {}, 
-            obj, i, j, key, tmp, _type = type, pre = {};
+            _type = ifTextOutput ? TYPE_EXPORT_notMDObject : type,
+            obj, i, j, key, tmp, pre = {};
 
         for(i in e)
         {
@@ -1079,7 +1064,7 @@ var CSSC = (function(CONTEXT)
 
                 if(ifTextOutput || type === TYPE_EXPORT_arr)
                 {
-                    tmp = {}; tmp[e[i].s] = obj;
+                    tmp = {}; tmp[e[i]._s] = obj;
                     if(ifTextOutput)
                         exportObj += helperCssTextFromObj(tmp, type===TYPE_EXPORT_min, index[INDEX_CONF].parse_tab);
                     else exportObj.push(tmp);
@@ -1087,13 +1072,13 @@ var CSSC = (function(CONTEXT)
                 else
                 {
                     tmp = PRE_IMPORT_KEYS.indexOf(e[i].s) < 0 ? exportObj : pre;
-                    if(tmp[e[i].s])
+                    if(tmp[e[i]._s])
                     {
-                        if(helperElemType(tmp[e[i].s]) !== _TYPE_Array)
-                            tmp[e[i].s] = [tmp[e[i].s]];
-                        tmp[e[i].s].push(obj);
+                        if(helperElemType(tmp[e[i]._s]) !== _TYPE_Array)
+                            tmp[e[i]._s] = [tmp[e[i]._s]];
+                        tmp[e[i]._s].push(obj);
                     }
-                    else tmp[e[i].s] = obj;
+                    else tmp[e[i]._s] = obj;
                 }
                 
                 ignore.push(i);
@@ -1165,7 +1150,7 @@ var CSSC = (function(CONTEXT)
     }
     function _pos(index, e, p, sel, parents)
     {
-        if(p < 0) p += _OBJECT_values(e).length;
+        if(p < 0) p += _OBJECT_keys(e).length;
         
         var i, j = 0, obj = {};
         for(i in e)
@@ -1294,7 +1279,7 @@ var CSSC = (function(CONTEXT)
             version: VERSION,
             //core functions
             'init':   function(toInit)    { initElements(index, toInit); return controller; },
-            'import': function(importObj) { handleImport(index, importObj); return controller; },
+            'import': function(importObj) { handleImport(index, importObj, false); return controller; },
             'export': function(type)      { return _export(index, index[INDEX_GLOBAL], type); },
             'parse':  function(min)       { return _export(index, index[INDEX_GLOBAL], min ? TYPE_EXPORT_min : TYPE_EXPORT_css); },
             'update': function(sel)       { if(sel) handleSelection(index, sel).update(); else _update(index, index[INDEX_GLOBAL]); return controller; },
