@@ -6,7 +6,7 @@
  *
  * @author m13p4
  * @copyright Meliantchenkov Pavel
- */
+ */ var _d=[];
 var CSSC = (function(CONTEXT)
 { 'use strict';
     
@@ -662,7 +662,7 @@ var CSSC = (function(CONTEXT)
         {
             try
             {
-                var rulePos = appendToElem.insertRule(insRuleString, appendToElem.cssRules.length) || -1;
+                var rulePos = appendToElem.insertRule(insRuleString, appendToElem.cssRules.length);
                 
                 if(rulePos > -1) 
                     added = addToIndex(index, appendToElem.cssRules[rulePos], parent, selector, true);
@@ -890,7 +890,6 @@ var CSSC = (function(CONTEXT)
 
                             if(!fromUpdate && rule)
                             {
-
                                 if(isAtRule) 
                                 {
                                     tmp = rule;
@@ -899,6 +898,7 @@ var CSSC = (function(CONTEXT)
                                     if(!rule) rule = tmp;
                                 }
 
+                                //tmp = {}; tmp[rule.p] = rule;
                                 _set(index, [rule], valArr[i], false, false, fromUpdate);
 
                                 if(isAtRule && e[pos].p)
