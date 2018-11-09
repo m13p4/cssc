@@ -6,7 +6,7 @@
  *
  * @author m13p4
  * @copyright Meliantchenkov Pavel
- */ var _d=[];
+ */
 var CSSC = (function(CONTEXT)
 { 'use strict';
     
