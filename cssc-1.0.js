@@ -817,9 +817,18 @@ var CSSC = (function(CONTEXT)
             else 
             {
                 var prsVal, valType = helperElemType(val), tmp, camelProp;
-
-                if(/!extend/i.test(prop)) _set(index, [e[pos]], val);
-//                else if(prop === "!Ignore") console.log(val);
+                
+                //controll properties
+                if(prop.charAt(0) === "!")
+                {
+                    prop = prop.toLowerCase();
+                    
+                    switch(prop)
+                    {
+                        case "extend": _set(index, [e[pos]], val); break;
+                        case "ignore": /* @todo: implement */ break;
+                    }
+                }
                 else if(_IF_OR(valType, _TYPE_Object, _TYPE_Array))
                 {
                     var isAtRule = prop.charAt(0) === "@", pObj, rule,
