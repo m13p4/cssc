@@ -72,6 +72,7 @@ var CSSC = (function(CONTEXT)
     INDEX_CONF   = 4,
     INDEX_ALIAS  = 5,
     INDEX_GLOBAL = 6,
+    INDEX_UNITS  = 7,
     
     INDEX_CHILD_SEPARATOR = " >> ",
     
@@ -227,8 +228,12 @@ var CSSC = (function(CONTEXT)
         
         if(isHex || isFinite(value))
         {
-            var defUnit = (index[INDEX_CONF].parse_unit_default || CONF_DEFAULT_parse_unit_default)+"",
+            var unit = index[INDEX_UNITS][key],
                 vNum = value, frac;
+            
+            if(helperElemType(unit) === _TYPE_Undefined)
+                unit = index[INDEX_CONF].parse_unit_default || CONF_DEFAULT_parse_unit_default;
+            unit += "";
             
             if(isHex)
             {
@@ -260,8 +265,8 @@ var CSSC = (function(CONTEXT)
                 val = [(val&0xff0000)>>16,(val&0xff00)>>8,val&0xff].join(", ");
                 value = frac > 0 ? "rgba("+val+", "+(Math.floor(frac*100)/100)+")" : "rgb("+val+")";
             }
-            else if(valType === _TYPE_Integer) value = vNum+defUnit;
-            else value = (Math.floor(vNum*100)/100)+defUnit;
+            else if(valType === _TYPE_Integer) value = vNum+unit;
+            else value = (Math.floor(vNum*100)/100)+unit;
         }
         else if(isString && value.indexOf(" ") > -1)
         {
@@ -271,7 +276,8 @@ var CSSC = (function(CONTEXT)
             value = val.join(" ");
         }
         else if(isString && value.charAt(value.length-1) === "!")
-                value = value.substr(0, value.length-1);
+            value = value.substr(0, value.length-1);
+        
         return value;
     }
     function helperObjFromCssText(cssText)
@@ -316,7 +322,7 @@ var CSSC = (function(CONTEXT)
 
         if(sel.charAt(0) === "/")      sel = sel.substr(1);
         else if(sel.charAt(0) === ",") sel = ", "+sel.substr(1).trim();
-        else                           sel = " " + sel;
+        else                           sel = " " + sel.trim();
 
         if(pSel.indexOf(",") >= 0 || sel.indexOf(",") > 0)
         {
@@ -327,8 +333,8 @@ var CSSC = (function(CONTEXT)
                 for(i = 0; i < pSelSplit.length; i++)
                     for(j = 0; j < selSplit.length; j++)
                         newSel += pSelSplit[i] + selSplit[j] + ", ";
-            else for(i = 0; i < pSelSplit.length; i++)
-                    newSel += pSelSplit[i] + sel + ", ";
+            else //for(i = 0; i < pSelSplit.length; i++)
+                    newSel += pSel + sel + ", ";
 
             return newSel.replace(/,+\s*$/,"");
         }
@@ -810,10 +816,11 @@ var CSSC = (function(CONTEXT)
                 _set(index, getHandler(index, e[pos], null, true), prop, val, false, fromUpdate);
             else 
             {
-                
                 var prsVal, valType = helperElemType(val), tmp, camelProp;
 
-                if(_IF_OR(valType, _TYPE_Object, _TYPE_Array))
+                if(prop === "<extend>") _set(index, [e[pos]], val);
+                else if(prop === "ignore") console.log(val);
+                else if(_IF_OR(valType, _TYPE_Object, _TYPE_Array))
                 {
                     var isAtRule = prop.charAt(0) === "@", pObj, rule,
                         valArr = valType === _TYPE_Object ? [val] : val, i,
@@ -838,8 +845,7 @@ var CSSC = (function(CONTEXT)
 
                                     if(!rule) rule = tmp;
                                 }
-
-                                //tmp = {}; tmp[rule.p] = rule;
+                                
                                 _set(index, [rule], valArr[i], false, false, fromUpdate);
 
                                 if(isAtRule && e[pos].p)
@@ -873,9 +879,10 @@ var CSSC = (function(CONTEXT)
                 else
                 {
                     prsVal = helperParseValue(val, prop, index);
-                    
+
                     if(prop in index[INDEX_ALIAS]) for(tmp = 0; tmp < index[INDEX_ALIAS][prop].length; tmp++)
                             _set(index, e, index[INDEX_ALIAS][prop][tmp], val, pos, fromUpdate);
+
                     if(!_ON_SERVER)
                     {
                         if(prop in CSS_PROPERTIES_CHECK)
@@ -986,11 +993,16 @@ var CSSC = (function(CONTEXT)
             ruleEnd   += "\n";
         }
         
-        var i=0, parsed = "", key, tmp;
+        var i=0, rules = "", cs = "", imp = "", ns = "", ff = "", key, tmp;
         for(; i < e.length; i++) if(e[i] && ignore.indexOf(i) < 0)
         {
             if(_IF_OR(e[i].t, TYPE_charset, TYPE_import, TYPE_namespace))
-                parsed += tabAdd + e[i]._s + " " + e[i].o + rowEnd;
+            {
+                tmp = tabAdd + e[i]._s + " " + e[i].o + rowEnd;
+                if(e[i].t === TYPE_charset)      cs += tmp;
+                else if(e[i].t === TYPE_import) imp += tmp;
+                else                             ns += tmp;
+            }
             else
             {
                 tmp = "";
@@ -1001,13 +1013,20 @@ var CSSC = (function(CONTEXT)
                 }
                 if(e[i].c) 
                     tmp += _parse(index, getHandler(index, e[i], null, true), isMin, ignore, tabAdd + tab, tab);  
+                
                 if(tmp.length > 0)
-                    parsed += tabAdd + e[i]._s + ruleBeginn + tmp + tabAdd + ruleEnd;
+                {
+                    key = e[i]._s;
+                    //if(!isMin && key.indexOf(",") > -1) key = key.replace(/,\s*/g, ",\n"+tabAdd);
+                    tmp = tabAdd + key + ruleBeginn + tmp + tabAdd + ruleEnd;
+                    
+                    if(e[i].t === TYPE_fontFace) ff += tmp;
+                    else                      rules += tmp;
+                }
             }
             ignore.push(i);
         }
-        
-        return parsed;
+        return cs+imp+ns+ff+rules;
     }
     function _export(index, e, type, ignore, returnWithoutSelector)
     {
@@ -1240,14 +1259,14 @@ var CSSC = (function(CONTEXT)
         }
         handler = function(sel)
         {
-            var i, j, elArr = [], tmp;
+            var i = 0, j, elArr = [], tmp;
             createRuleIfNotExists();
 
-            for(i in elems) if(elems[i].c)
-                {
-                    tmp = handleSelection(elems[i].c, sel, true);
-                    for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
-                }
+            for(; i < elems.length; i++) if(elems[i] && elems[i].c)
+            {
+                tmp = handleSelection(elems[i].c, sel, true);
+                for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
+            }
             return ruleHandler(index, elArr, sel, null, elems);
         };
         handler.e = _getE(index, elems);
@@ -1268,7 +1287,7 @@ var CSSC = (function(CONTEXT)
     }
     function getController()
     {
-        var index = [{},!1,[],{},{},{},[]],
+        var index = [{},!1,[],{},{},{},[],{}],
 
         controller = function(sel)
         {
@@ -1288,6 +1307,7 @@ var CSSC = (function(CONTEXT)
             alias:      function(key, val)  { __alias(index[INDEX_ALIAS], key, val); return controller; },
             conf:       function(cnf, val)  { return __confVars(index[INDEX_CONF], cnf, val, controller); },
             vars:       function(vars, val) { return __confVars(index[INDEX_VARS], vars, val, controller); },
+            units:      function(key, unit) { return __confVars(index[INDEX_UNITS], key, unit, controller); },
             //helper functions
             parseVars:  function(txt, vars)        { return helperParseVars(txt, [,,,(vars?_OBJECT_assign({}, index[INDEX_VARS], vars):index[INDEX_VARS]),index[INDEX_CONF]]); },
             objFromCss: function(css)              { return helperObjFromCssText(css); },
