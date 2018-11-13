@@ -818,8 +818,8 @@ var CSSC = (function(CONTEXT)
             {
                 var prsVal, valType = helperElemType(val), tmp, camelProp;
 
-                if(prop === "<extend>") _set(index, [e[pos]], val);
-                else if(prop === "ignore") console.log(val);
+                if(/!extend/i.test(prop)) _set(index, [e[pos]], val);
+//                else if(prop === "!Ignore") console.log(val);
                 else if(_IF_OR(valType, _TYPE_Object, _TYPE_Array))
                 {
                     var isAtRule = prop.charAt(0) === "@", pObj, rule,
