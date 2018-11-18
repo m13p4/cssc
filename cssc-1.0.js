@@ -532,8 +532,8 @@ var CSSC = (function(CONTEXT)
             p: parent || false,          //parent
             o: {},                       //object
             c: useChildren ? {} : false, //children
-            oc: {},                      //object children
-            io: false,                   //in Object           
+//            oc: {},                      //object children
+//            io: false,                   //in Object           
             
             uo: false,                   //updatable object
             up: {}                       //updatable properties
@@ -780,7 +780,7 @@ var CSSC = (function(CONTEXT)
                             
                             if(parent)
                             {
-                                rule.io = true;
+//                                rule.io = true;
                                 if(!parent.o[handlerObj]) parent.o[handlerObj] = [];
                                 parent.o[handlerObj].push(rule.n);
                             }
@@ -821,7 +821,7 @@ var CSSC = (function(CONTEXT)
                 //controll properties
                 if(prop.charAt(0) === "!")
                 {
-                    prop = prop.toLowerCase();
+                    prop = prop.substr(1).toLowerCase();
                     
                     switch(prop)
                     {
@@ -866,7 +866,7 @@ var CSSC = (function(CONTEXT)
                                     pObj.o[prop].push(rule.p.n);
                                 }
 
-                                rule.io = true;
+//                                rule.io = true;
                                 if(helperElemType(e[pos].o[prop]) !== _TYPE_Array)
                                     e[pos].o[prop] = [];
                                 e[pos].o[prop].push(rule.n);
