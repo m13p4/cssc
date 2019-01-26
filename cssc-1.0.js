@@ -1312,7 +1312,7 @@ var CSSC = (function(CONTEXT)
             'export': function(type)      { return _export(index, index[INDEX_GLOBAL], type); },
             'parse':  function(min)       { return _parse(index, index[INDEX_GLOBAL], min); },
             'update': function(sel)       { if(sel) handleSelection(index, sel).update(); else _update(index, index[INDEX_GLOBAL]); return controller; },
-            'new':    function()          { return getController(); },
+            //'new':    function()          { return getController(); },
             //conf & vars
             alias:      function(key, val)  { __alias(index[INDEX_ALIAS], key, val); return controller; },
             conf:       function(cnf, val)  { return __confVars(index[INDEX_CONF], cnf, val, controller); },
