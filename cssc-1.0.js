@@ -1187,7 +1187,7 @@ var CSSC = (function(CONTEXT)
             }
             j++;
         }
-        return ruleHandler(index, obj, sel, false, parents);
+        return ruleHandler(index, obj, sel, parents);
     }
     function _getE(index, e)
     {
@@ -1199,7 +1199,8 @@ var CSSC = (function(CONTEXT)
     }
     function _selector(e, sel)
     {
-        return e.length === 1 ? e[0].s : sel;
+        var eKeys = _OBJECT_keys(e);
+        return eKeys.length === 1 ? e[eKeys[0]].s : sel;
     }
     function __confVars(cnfVars, setCnfVars, val, defRet)
     {
@@ -1243,13 +1244,13 @@ var CSSC = (function(CONTEXT)
                 for(j = 0; j < v.length; j++) aliasObj[i].push(v[j]);
             }
     }
-    function ruleHandler(index, elems, sel, fromHas, parents)
+    function ruleHandler(index, elems, sel, parents)
     {
         var handler;
         
         function createRuleIfNotExists()
         {
-            if(elems.length < 1 && !fromHas && helperElemType(sel) === _TYPE_String)
+            if(elems.length < 1 && helperElemType(sel) === _TYPE_String)
             {
                 var rule, contentElems = [], i, _p = parents ? parents : [null];
 
@@ -1266,15 +1267,14 @@ var CSSC = (function(CONTEXT)
         }
         handler = function(sel)
         {
-            var i = 0, j, elArr = [], tmp;
-            createRuleIfNotExists();
+            var i = 0, j, elArr = [], tmp; createRuleIfNotExists();
 
             for(; i < elems.length; i++) if(elems[i] && elems[i].c)
             {
                 tmp = handleSelection(elems[i].c, sel, true);
                 for(j = 0; j < tmp.length; j++) elArr.push(tmp[j]);
             }
-            return ruleHandler(index, elArr, sel, null, elems);
+            return ruleHandler(index, elArr, sel, elems);
         };
         handler.e = _getE(index, elems);
         handler.selector = _selector(elems, sel);
@@ -1298,7 +1298,7 @@ var CSSC = (function(CONTEXT)
 
         controller = function(sel)
         {
-            if(typeof this !== "undefined" && this.constructor === controller)
+            if(this && this.constructor === controller)
                 return getController();
             
             try         { return handleSelection(index, sel, false, controller); }
