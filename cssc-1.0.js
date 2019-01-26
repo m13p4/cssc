@@ -532,8 +532,8 @@ var CSSC = (function(CONTEXT)
             p: parent || false,          //parent
             o: {},                       //object
             c: useChildren ? {} : false, //children
-//            oc: {},                      //object children
-//            io: false,                   //in Object           
+            oc: {},                      //object children
+            io: false,                   //in Object           
             
             uo: false,                   //updatable object
             up: {}                       //updatable properties
@@ -613,7 +613,6 @@ var CSSC = (function(CONTEXT)
                 
                 if(rulePos > -1) 
                     added = addToIndex(index, appendToElem.cssRules[rulePos], parent, selector, true);
-                
             }
             catch(err)
             {
@@ -780,7 +779,7 @@ var CSSC = (function(CONTEXT)
                             
                             if(parent)
                             {
-//                                rule.io = true;
+                                rule.io = true;
                                 if(!parent.o[handlerObj]) parent.o[handlerObj] = [];
                                 parent.o[handlerObj].push(rule.n);
                             }
@@ -821,7 +820,7 @@ var CSSC = (function(CONTEXT)
                 //controll properties
                 if(prop.charAt(0) === "!")
                 {
-                    prop = prop.substr(1).toLowerCase();
+                    prop = prop.toLowerCase();
                     
                     switch(prop)
                     {
@@ -866,7 +865,7 @@ var CSSC = (function(CONTEXT)
                                     pObj.o[prop].push(rule.p.n);
                                 }
 
-//                                rule.io = true;
+                                rule.io = true;
                                 if(helperElemType(e[pos].o[prop]) !== _TYPE_Array)
                                     e[pos].o[prop] = [];
                                 e[pos].o[prop].push(rule.n);
@@ -919,7 +918,6 @@ var CSSC = (function(CONTEXT)
             
             for(; i < e.length; i++) if(e[i])
             {
-                //i = parseInt(i);
                 if(propType === _TYPE_Object) for(key in prop) 
                         _set(index, e, key, prop[key], i, fromUpdate);
                 else if(propType === _TYPE_Function)
@@ -1300,6 +1298,9 @@ var CSSC = (function(CONTEXT)
 
         controller = function(sel)
         {
+            if(typeof this !== "undefined" && this.constructor === controller)
+                return getController();
+            
             try         { return handleSelection(index, sel, false, controller); }
             catch (err) { helperError("CSSC:"+err, index); }
         };
@@ -1320,7 +1321,6 @@ var CSSC = (function(CONTEXT)
             //helper functions
             parseVars:  function(txt, vars)        { return helperParseVars(txt, [,,,(vars?_OBJECT_assign({}, index[INDEX_VARS], vars):index[INDEX_VARS]),index[INDEX_CONF]]); },
             objFromCss: function(css)              { return helperObjFromCssText(css); },
-            //cssFromObj: function(obj, min, tabLen) { return helperCssTextFromObj(obj, min, tabLen); },
             //config & defs
             _conf:       CONF_DEFAULT,
             type:        TYPE,
